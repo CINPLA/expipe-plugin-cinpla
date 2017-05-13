@@ -1,1 +1,1 @@
-# expipe-plugin-neuro
+# expipe-plugin-cinpla
