@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# !/usr/bin/env python3
 #
 # expipe-plugin-cinpla documentation build configuration file, created by
 # sphinx-quickstart on Fri Feb  3 09:52:17 2017.
