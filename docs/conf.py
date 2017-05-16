@@ -67,8 +67,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'expipe-plugin-cinpla'
-copyright = '2017, Mikkel E. Lepperød, Alessio Buccino'
-author = 'Mikkel E. Lepperød, Alessio Buccino'
+copyright = '2017, Mikkel E. Lepperoed, Alessio Buccino'
+author = 'Mikkel E. Lepperoed, Alessio Buccino'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -155,7 +155,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'expipe-plugin-cinpla.tex', 'expipe-plugin-cinpla Documentation',
-     'Mikkel E. Lepperød, Alessio Buccino', 'manual'),
+     'Mikkel E. Lepperoed, Alessio Buccino', 'manual'),
 ]
 
 
