@@ -348,7 +348,7 @@ def filter_analog_signals(anas, freq, fs, filter_type='bandpass', order=3):
     b, a = butter(order, band, btype=filter_type)
 
     if np.all(np.abs(np.roots(a)) < 1) and np.all(np.abs(np.roots(a)) < 1):
-        print('Filtering...')
+        print('Filtering signals with ', filter_type, ' filter at ' , freq ,'...')
         anas_filt = []
         if len(anas.shape) == 2:
             anas_filt = filtfilt(b, a, anas, axis=1)
