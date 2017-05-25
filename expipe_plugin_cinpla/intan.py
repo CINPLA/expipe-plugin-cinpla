@@ -1086,7 +1086,7 @@ class IntanPlugin(IPlugin):
                                              avg_spectrum[np.where((fpre>freq_range[0]) & (fpre<freq_range[1]))])]
                     stopband = [fpeak-150*pq.Hz, fpeak+150*pq.Hz]
                     anas = filter_analog_signals(anas, freq=stopband,
-                                                 fs=fs, filter_type='bandstop', order=2)
+                                                 fs=fs, filter_type='bandstop', order=4)
 
                 if len(ground) != 0:
                     ground = [int(g) for g in ground]
