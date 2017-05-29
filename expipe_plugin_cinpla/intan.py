@@ -1078,15 +1078,9 @@ class IntanPlugin(IPlugin):
                     anas = filter_analog_signals(anas, freq=[filter_low, filter_high],
                                                      fs=fs, filter_type='bandpass')
                 if filter_noise:
-                    freq_range=[2000, 4000]
-                    fpre, Pxxpre = signal.welch(eap_pre, fs, nperseg=1024)
-                    avg_spectrum = np.mean(Pxxpre, axis=0)
-                    fpeak = fpre[np.where((fpre>freq_range[0]) &
-                                            (fpre<freq_range[1]))][np.argmax(
-                                             avg_spectrum[np.where((fpre>freq_range[0]) & (fpre<freq_range[1]))])]
-                    stopband = [fpeak-150*pq.Hz, fpeak+150*pq.Hz]
+                    stopband = [3100, 3600]
                     anas = filter_analog_signals(anas, freq=stopband,
-                                                 fs=fs, filter_type='bandstop', order=4)
+                                                 fs=fs, filter_type='bandstop', order=2)
 
                 if len(ground) != 0:
                     ground = [int(g) for g in ground]
