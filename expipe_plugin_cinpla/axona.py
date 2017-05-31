@@ -40,7 +40,7 @@ class AxonaPlugin(IPlugin):
         @click.option('--action-id',
                       type=click.STRING,
                       help=('Desired action id for this action, if none' +
-                             ', it is generated from axona-path.'),
+                            ', it is generated from axona-path.'),
                       )
         @click.option('--no-local',
                       is_flag=True,
@@ -99,7 +99,6 @@ class AxonaPlugin(IPlugin):
             axona_file = pyxona.File(axona_filename)
 
             add_message(action, message)
-
             action.type = 'Recording'
             action.datetime = axona_file._start_datetime
             action.tags = tag + ['axona']
@@ -127,7 +126,7 @@ class AxonaPlugin(IPlugin):
                 register_depth(project, action, left, right)
             fr = action.require_filerecord()
             if not no_local:
-                exdir_path = _get_local_path(fr)
+                exdir_path = _get_local_path(fr, make=True)
             else:
                 exdir_path = fr.server_path
             if not no_files:
