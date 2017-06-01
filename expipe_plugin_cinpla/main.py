@@ -680,6 +680,10 @@ class CinplaPlugin(IPlugin):
                       is_flag=True,
                       help='Skip previously generated files.',
                       )
+        @click.option('--orient-tuning',
+                      is_flag=True,
+                      help='Plot orientation tuning overview.',
+                      )
         def plotting(**kwargs):
             """Analyse a dataset
 
@@ -709,6 +713,8 @@ class CinplaPlugin(IPlugin):
                 plot.spike_lfp_coherence()
             if kwargs['tfr']:
                 plot.tfr()
+            if kwargs['orient_tuning']:
+                plot.orient_tuning_overview()
             ## do not use:
             # plot.spatial_stim_overview()
 
