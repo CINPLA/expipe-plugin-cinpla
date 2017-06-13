@@ -9,7 +9,8 @@ from .action_tools import (generate_templates, _get_local_path,
                            _get_probe_file, GIT_NOTE, add_message)
 from exana.misc.signal_tools import (create_klusta_prm, save_binary_format, apply_CAR,
                                      filter_analog_signals, ground_bad_channels,
-                                     remove_stimulation_artifacts, duplicate_bad_channels)
+                                     remove_stimulation_artifacts, duplicate_bad_channels,
+                                     extract_rising_edges)
 import quantities as pq
 import shutil
 import sys
@@ -53,6 +54,10 @@ class IntanPlugin(IPlugin):
         @click.option('--pre-filter',
                       is_flag=True,
                       help='Pre filter or not, replaces klusta filter. Default = True',
+                      )
+        @click.option('--filter-noise',
+                      is_flag=True,
+                      help='Filter out spurious noise between 2-4 kHz noise from Intan RHS chips. Default = False',
                       )
         @click.option('--filter-low',
                       type=click.INT,
@@ -148,6 +153,16 @@ class IntanPlugin(IPlugin):
                 if pre_filter:
                     anas = filter_analog_signals(anas, freq=[filter_low, filter_high],
                                                  fs=fs, filter_type='bandpass')
+                if filter_noise:
+                    freq_range=[2000, 4000]
+                    fpre, Pxxpre = signal.welch(eap_pre, fs, nperseg=1024)
+                    avg_spectrum = np.mean(Pxxpre, axis=0)
+                    fpeak = fpre[np.where((fpre>freq_range[0]) & 
+                                            (fpre<freq_range[1]))][np.argmax(
+                                             avg_spectrum[np.where((fpre>freq_range[0]) & (fpre<freq_range[1]))])]
+                    stopband = [fpeak-150*pq.Hz, fpeak+150*pq.Hz]
+                    anas = filter_analog_signals(anas, freq=stopband,
+                                                 fs=fs, filter_type='bandstop', order=2)
                 if len(ground) != 0:
                     ground = [int(g) for g in ground]
                     anas = ground_bad_channels(anas, ground)
@@ -168,7 +183,7 @@ class IntanPlugin(IPlugin):
                                         split_probe=split_probe)
                 if len(ground) != 0:
                     duplicate = [int(g) for g in ground]
-                    anas = duplicate_bad_channels(anas, duplicate)
+                    anas = duplicate_bad_channels(anas, duplicate, prb_path)
 
                 save_binary_format(intan_base, anas)
 
@@ -229,6 +244,10 @@ class IntanPlugin(IPlugin):
         @click.option('--pre-filter',
                       is_flag=True,
                       help='Pre filter or not, replaces klusta filter. Default = True',
+                      )
+        @click.option('--filter-noise',
+                      is_flag=True,
+                      help='Filter out spurious noise between 2-4 kHz noise from Intan RHS chips. Default = False',
                       )
         @click.option('--filter-low',
                       type=click.INT,
@@ -333,8 +352,8 @@ class IntanPlugin(IPlugin):
                     assert len(intan_sync) == 2
                     intan_chan = int(intan_sync[1])
                     if intan_sync[0] == 'adc':
-                        intan_clip_times = pyintan.extract_sync_times(intan_file.adc_signals[0].signal[intan_chan],
-                                                                      intan_file.times)
+                        intan_clip_times = extract_rising_edges(intan_file.adc_signals[0].signal[intan_chan],
+                                                                intan_file.times)
                     elif intan_sync[0] == 'dig':
                         intan_clip_times = intan_file.digital_in_signals[0].times[intan_chan]
                     else:
@@ -373,8 +392,8 @@ class IntanPlugin(IPlugin):
 
                     if shutter_sys == 'intan':
                         if shutter_sig == 'adc':
-                            shutter_ttl = pyintan.extract_sync_times(intan_file.adc_signals[0].signal[shutter_chan],
-                                                                     intan_file.times)
+                            shutter_ttl = extract_rising_edges(intan_file.adc_signals[0].signal[shutter_chan],
+                                                             intan_file.times)
                         elif shutter_sig == 'dig':
                             shutter_ttl = intan_file.digital_in_signals[0].times[shutter_chan]
                     elif shutter_sys == 'ephys':
@@ -399,6 +418,16 @@ class IntanPlugin(IPlugin):
                 if pre_filter:
                     anas = filter_analog_signals(anas, freq=[filter_low, filter_high],
                                                  fs=fs, filter_type='bandpass')
+                if filter_noise:
+                    freq_range=[2000, 4000]
+                    fpre, Pxxpre = signal.welch(eap_pre, fs, nperseg=1024)
+                    avg_spectrum = np.mean(Pxxpre, axis=0)
+                    fpeak = fpre[np.where((fpre>freq_range[0]) & 
+                                            (fpre<freq_range[1]))][np.argmax(
+                                             avg_spectrum[np.where((fpre>freq_range[0]) & (fpre<freq_range[1]))])]
+                    stopband = [fpeak-150*pq.Hz, fpeak+150*pq.Hz]
+                    anas = filter_analog_signals(anas, freq=stopband,
+                                                 fs=fs, filter_type='bandstop', order=2)
                 if len(ground) != 0:
                     ground = [int(g) for g in ground]
                     anas = ground_bad_channels(anas, ground)
@@ -421,7 +450,7 @@ class IntanPlugin(IPlugin):
 
                 if len(ground) != 0:
                     duplicate = [int(g) for g in ground]
-                    anas = duplicate_bad_channels(anas, duplicate)
+                    anas = duplicate_bad_channels(anas, duplicate, prb_path)
 
                 save_binary_format(intan_ephys_base, anas)
                 if action is not None:
@@ -871,7 +900,7 @@ class IntanPlugin(IPlugin):
                       )
         @click.option('--filter-noise',
                       is_flag=True,
-                      help='Filter out 2.7 kHz noise from Intan RHS chips. Default = False',
+                      help='Filter out spurious noise between 2-4 kHz noise from Intan RHS chips. Default = False',
                       )
         @click.option('--filter-low',
                       type=click.INT,
@@ -939,8 +968,8 @@ class IntanPlugin(IPlugin):
                 assert len(intan_sync) == 2
                 intan_chan = int(intan_sync[1])
                 if intan_sync[0] == 'adc':
-                    intan_clip_times = pyintan.extract_sync_times(intan_file.adc_signals[0].signal[intan_chan],
-                                                                  intan_file.times)
+                    intan_clip_times = extract_rising_edges(intan_file.adc_signals[0].signal[intan_chan],
+                                                            intan_file.times)
                 elif intan_sync[0] == 'dig':
                     intan_clip_times = intan_file.digital_in_signals[0].times[intan_chan]
                 else:
@@ -979,8 +1008,8 @@ class IntanPlugin(IPlugin):
 
                 if shutter_sys == 'intan':
                     if shutter_sig == 'adc':
-                        shutter_ttl = pyintan.extract_sync_times(intan_file.adc_signals[0].signal[shutter_chan],
-                                                                 intan_file.times)
+                        shutter_ttl = extract_rising_edges(intan_file.adc_signals[0].signal[shutter_chan],
+                                                           intan_file.times)
                     elif shutter_sig == 'dig':
                         shutter_ttl = intan_file.digital_in_signals[0].times[shutter_chan]
                 elif shutter_sys == 'ephys':
@@ -1047,10 +1076,15 @@ class IntanPlugin(IPlugin):
                                                filter_high=filter_high)
                 if pre_filter:
                     anas = filter_analog_signals(anas, freq=[filter_low, filter_high],
-                                                 fs=fs, filter_type='bandpass')
-
+                                                     fs=fs, filter_type='bandpass')
                 if filter_noise:
-                    stopband = [3150, 3250]
+                    freq_range=[2000, 4000]
+                    fpre, Pxxpre = signal.welch(eap_pre, fs, nperseg=1024)
+                    avg_spectrum = np.mean(Pxxpre, axis=0)
+                    fpeak = fpre[np.where((fpre>freq_range[0]) & 
+                                            (fpre<freq_range[1]))][np.argmax(
+                                             avg_spectrum[np.where((fpre>freq_range[0]) & (fpre<freq_range[1]))])]
+                    stopband = [fpeak-150*pq.Hz, fpeak+150*pq.Hz]
                     anas = filter_analog_signals(anas, freq=stopband,
                                                  fs=fs, filter_type='bandstop', order=2)
 
@@ -1080,8 +1114,8 @@ class IntanPlugin(IPlugin):
 
                     if trigger_sys == 'intan':
                         if trigger_sig == 'adc':
-                            trigger_ttl = pyintan.extract_sync_times(intan_file.adc_signals[0].signal[trigger_chan],
-                                                                     intan_file.times)
+                            trigger_ttl = extract_rising_edges(intan_file.adc_signals[0].signal[trigger_chan],
+                                                               intan_file.times)
                         elif trigger_sig == 'dig':
                             trigger_ttl = intan_file.digital_in_signals[0].times[trigger_chan]
                     elif trigger_sys == 'ephys':
@@ -1098,7 +1132,7 @@ class IntanPlugin(IPlugin):
 
                 if len(ground) != 0:
                     duplicate = [int(g) for g in ground]
-                    anas = duplicate_bad_channels(anas, duplicate)
+                    anas = duplicate_bad_channels(anas, duplicate, prb_path)
 
                 if action is not None:
                     prepro = {
@@ -1108,6 +1142,7 @@ class IntanPlugin(IPlugin):
                             'klusta_filter': klusta_filter,
                             'filter_low': filter_low,
                             'filter_high': filter_high,
+                            'filter_noise': filter_noise
                         },
                         'grounded_channels': ground,
                         'probe_split': (str(split_chans[:split_probe]) +
