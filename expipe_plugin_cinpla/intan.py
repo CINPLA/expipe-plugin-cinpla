@@ -157,7 +157,7 @@ class IntanPlugin(IPlugin):
                     freq_range=[2000, 4000]
                     fpre, Pxxpre = signal.welch(eap_pre, fs, nperseg=1024)
                     avg_spectrum = np.mean(Pxxpre, axis=0)
-                    fpeak = fpre[np.where((fpre>freq_range[0]) & 
+                    fpeak = fpre[np.where((fpre>freq_range[0]) &
                                             (fpre<freq_range[1]))][np.argmax(
                                              avg_spectrum[np.where((fpre>freq_range[0]) & (fpre<freq_range[1]))])]
                     stopband = [fpeak-150*pq.Hz, fpeak+150*pq.Hz]
@@ -422,7 +422,7 @@ class IntanPlugin(IPlugin):
                     freq_range=[2000, 4000]
                     fpre, Pxxpre = signal.welch(eap_pre, fs, nperseg=1024)
                     avg_spectrum = np.mean(Pxxpre, axis=0)
-                    fpeak = fpre[np.where((fpre>freq_range[0]) & 
+                    fpeak = fpre[np.where((fpre>freq_range[0]) &
                                             (fpre<freq_range[1]))][np.argmax(
                                              avg_spectrum[np.where((fpre>freq_range[0]) & (fpre<freq_range[1]))])]
                     stopband = [fpeak-150*pq.Hz, fpeak+150*pq.Hz]
@@ -1081,7 +1081,7 @@ class IntanPlugin(IPlugin):
                     freq_range=[2000, 4000]
                     fpre, Pxxpre = signal.welch(eap_pre, fs, nperseg=1024)
                     avg_spectrum = np.mean(Pxxpre, axis=0)
-                    fpeak = fpre[np.where((fpre>freq_range[0]) & 
+                    fpeak = fpre[np.where((fpre>freq_range[0]) &
                                             (fpre<freq_range[1]))][np.argmax(
                                              avg_spectrum[np.where((fpre>freq_range[0]) & (fpre<freq_range[1]))])]
                     stopband = [fpeak-150*pq.Hz, fpeak+150*pq.Hz]
