@@ -29,7 +29,7 @@ class CinplaPlugin(IPlugin):
                       )
         @click.option('--channel-group',
                       type=click.INT,
-                      help='Which channel-group to plot.',
+                      help='Which channel-group to analyse.',
                       )
         @click.option('--run',
                       is_flag=True,
@@ -205,17 +205,9 @@ class CinplaPlugin(IPlugin):
                       is_flag=True,
                       help='Transfer without tags etc.',
                       )
-        @click.option('--merge',
-                      is_flag=True,
-                      help='Merge with existing, overwriting equal files.',
-                      )
         @click.option('-r', '--recursive',
                       is_flag=True,
                       help='Recursive directory transfer.',
-                      )
-        @click.option('-m', '--message',
-                      type=click.STRING,
-                      help='Add message, use "text here" for sentences.',
                       )
         @click.option('-e', '--exclude',
                       multiple=True,
@@ -246,7 +238,7 @@ class CinplaPlugin(IPlugin):
                       help='Name of server as named in config.yaml. Default is "norstore"',
                       )
         def transfer(action_id, to_local, from_local, overwrite, no_trash,
-                     message, raw, exclude, include, merge, port, username,
+                     raw, exclude, include, port, username,
                      hostname, recursive, server):
             """Transfer a dataset related to an expipe action
 
@@ -261,12 +253,6 @@ class CinplaPlugin(IPlugin):
             import shutil
             project = expipe.get_project(USER_PARAMS['project_id'])
             action = project.require_action(action_id)
-            user = USER_PARAMS['user_name']
-            if message is not None:
-                action.messages.extend([{'message': m,
-                                         'user': user,
-                                         'datetime': datetime.now()}
-                                         for m in message])
             fr = action.require_filerecord()
 
             host, user, pas, port = get_login(hostname=hostname,
@@ -622,7 +608,7 @@ class CinplaPlugin(IPlugin):
         @click.option('--channel-group',
                       multiple=True,
                       type=click.INT,
-                      help='Which channel-group to plot.',
+                      help='Which channel-group to analyse.',
                       )
         @click.option('--no-local',
                       is_flag=True,
@@ -633,7 +619,7 @@ class CinplaPlugin(IPlugin):
                       type=click.Choice(['spike-stat', 'spatial', 'all',
                                          'psd', 'spike-lfp', 'tfr', 'stim-stat',
                                          'occupancy', 'orient-tuning']),
-                      help='Plot spike statistics.',
+                      help='Analyse data.',
                       )
         @click.option('--tag', '-t',
                       multiple=True,
@@ -657,17 +643,11 @@ class CinplaPlugin(IPlugin):
                       is_flag=True,
                       help='Skip previously generated files.',
                       )
-        @click.option('--debug',
-                      is_flag=True,
-                      help='Raise exceptions.',
-                      )
         def analysis(**kwargs):
             """Analyse a dataset
 
             COMMAND: action-id: Provide action id to find exdir path"""
-            from .plotter import Plotter
-            import neo
-            import copy
+            from .analyser import Analyser
             from datetime import datetime
             if len(kwargs['channel_group']) == 0: kwargs['channel_group'] = None
             project = expipe.get_project(USER_PARAMS['project_id'])
@@ -680,81 +660,55 @@ class CinplaPlugin(IPlugin):
             if len(user) == 0:
                 raise ValueError('Please add user name')
 
-            users = list(set(action.users))
+            users = list(set(rec_action.users))
             if user not in users:
                 users.append(user)
             action.users = users
             action.tags.extend(list(kwargs['tag']) + list(rec_action.tags))
+            action.location = rec_action.location or ''
+            action.datetime = rec_action.datetime or ''
+            subjects = rec_action.subjects or []
+            action.subjects.extend(list(subjects))
             action.messages.extend([{'message': m,
                                      'user': user,
                                      'datetime': datetime.now()}
                                    for m in kwargs['message']])
+            action.messages.extend(rec_action.messages.messages)
             fr = rec_action.require_filerecord()
             if not kwargs['no_local']:
                 exdir_path = _get_local_path(fr)
             else:
                 exdir_path = fr.server_path
-            io = neo.io.ExdirIO(exdir_path)
-            blk = io.read_block()
-            chxs_contents = {}
-            for chx in blk.channel_indexes:
-                contents = {}
-                group_id = chx.annotations['group_id']
-                if kwargs['channel_group'] is None:
-                    pass
-                elif group_id not in kwargs['channel_group']:
-                    continue
-                for unit in chx.units:
-                    sptr = unit.spiketrains[0]
-                    if sptr.annotations['cluster_group'].lower() == 'noise':
-                        continue
-                    attrs = copy.copy(UNIT_INFO)
-                    attrs.update(sptr.annotations)
-                    attrs['exdir_path'] = '/'.join([rec_action.id, 'main.exdir',
-                                                    attrs['exdir_path'].lstrip('/')])
-                    if sptr.name is None:
-                        sptr.name = 'cluster_{}'.format(sptr.annotations['cluster_id'])
-                    name = sptr.name.replace(' ', '_').replace('#', '')
-                    assert group_id == sptr.annotations['electrode_group_id']
-                    contents[name] = attrs
-                modname = 'channel_group_' + str(group_id)
-                chxs_contents[modname] = contents
-                print('Generating module ', modname)
             action.require_module('software_version_control_git',
                                   contents=GIT_NOTE,
                                   overwrite=kwargs['overwrite'])
             action.require_module('software_analysis_parameters',
                                   contents=ANALYSIS_PARAMS,
                                   overwrite=kwargs['overwrite'])
-            if len(kwargs['analysis']) > 0:
-                plot = Plotter(exdir_path, params=ANALYSIS_PARAMS,
-                               analysis_output=chxs_contents,
-                               channel_group=kwargs['channel_group'],
-                               no_local=kwargs['no_local'],
-                               overwrite=kwargs['overwrite'],
-                               skip=kwargs['skip'])
-                if any(arg in kwargs['analysis'] for arg in ['stim_stat', 'all']):
-                    plot.stimulation_statistics()
-                if any(arg in kwargs['analysis'] for arg in ['occupancy', 'all']):
-                    plot.occupancy()
-                if any(arg in kwargs['analysis'] for arg in ['spatial', 'all']):
-                    plot.spatial_overview()
-                if any(arg in kwargs['analysis'] for arg in ['spike-stat', 'all']):
-                    plot.spike_statistics()
-                if any(arg in kwargs['analysis'] for arg in ['psd', 'all']):
-                    plot.psd()
-                if any(arg in kwargs['analysis'] for arg in ['spike_lfp', 'all']):
-                    plot.spike_lfp_coherence()
-                if any(arg in kwargs['analysis'] for arg in ['tfr']):
-                    plot.tfr()
-                if any(arg in kwargs['analysis'] for arg in ['orient_tuning', 'all']):
-                    plot.orient_tuning_overview()
-                for key, val in plot.analysis_output.items():
-                    action.require_module(key, contents=val, overwrite=True)
-            else:
-                for key, val in chxs_contents.items():
-                    action.require_module(key, contents=val,
-                                          overwrite=kwargs['overwrite'])
+            an = Analyser(exdir_path, params=ANALYSIS_PARAMS,
+                          unit_info=UNIT_INFO,
+                          channel_group=kwargs['channel_group'],
+                          no_local=kwargs['no_local'],
+                          overwrite=kwargs['overwrite'],
+                          skip=kwargs['skip'])
+            if any(arg in kwargs['analysis'] for arg in ['stim_stat', 'all']):
+                an.stimulation_statistics()
+            if any(arg in kwargs['analysis'] for arg in ['occupancy', 'all']):
+                an.occupancy()
+            if any(arg in kwargs['analysis'] for arg in ['spatial', 'all']):
+                an.spatial_overview()
+            if any(arg in kwargs['analysis'] for arg in ['spike_stat', 'all']):
+                an.spike_statistics()
+            if any(arg in kwargs['analysis'] for arg in ['psd', 'all']):
+                an.psd()
+            if any(arg in kwargs['analysis'] for arg in ['spike_lfp', 'all']):
+                an.spike_lfp_coherence()
+            if any(arg in kwargs['analysis'] for arg in ['tfr']):
+                an.tfr()
+            if any(arg in kwargs['analysis'] for arg in ['orient_tuning']):
+                an.orient_tuning_overview()
+            for key, val in an.analysis_output.items():
+                action.require_module(key, contents=val, overwrite=kwargs['overwrite'])
 
         @cli.command('group-analyse')
         @click.argument('action-id', type=click.STRING)
@@ -762,17 +716,22 @@ class CinplaPlugin(IPlugin):
                       type=click.STRING,
                       help='The experimenter performing the analysis.',
                       )
-        @click.option('-t', '--tag',
+        @click.option('-t', '--tags',
                       multiple=True,
                       type=click.STRING,
                       help='Tags to sort the analysis.',
                       )
-        @click.option('-s', '--subject',
+        @click.option('-a', '--actions',
+                      multiple=True,
+                      type=click.STRING,
+                      help='Actions to include in the analysis.',
+                      )
+        @click.option('-s', '--subjects',
                       multiple=True,
                       type=click.STRING,
                       help='Subjects to sort the analysis.',
                       )
-        @click.option('-l', '--location',
+        @click.option('-l', '--locations',
                       multiple=True,
                       type=click.STRING,
                       help='Subjects to sort the analysis.',
@@ -781,7 +740,8 @@ class CinplaPlugin(IPlugin):
                       is_flag=True,
                       help='Overwrite.',
                       )
-        def group_analysis(action_id, user, tag, overwrite):
+        def group_analysis(action_id, user, tags, overwrite, subjects,
+                           locations, actions):
             """Parse info about recorded units
 
             COMMAND: action-id: Provide action id to get action"""
@@ -795,26 +755,31 @@ class CinplaPlugin(IPlugin):
                 raise ValueError('Please add user name')
             if len(user) == 0:
                 raise ValueError('Please add user name')
-            users = analysis_action.users or list()
-            if user not in users:
-                users.append(user)
-            analysis_action.users = users
-            subjects = {}
-            analysis_action.tags = tag
+            analysis_action.users.append(user)
+            analysis_action.tags = list(tag)
+            # TODO this is slow, can omit loading all the modules for each action
             for action in project.actions:
                 if action.type != 'Action-analysis':
                     continue
-                if action.tags is None:
+                if len(actions) > 0:
+                    if action.id not in actions:
+                        continue
+                if len(action.tags) == 0:
                     raise ValueError('No tags in "' + action.id + '"')
-                if not any(t in tag for t in action.tags.keys()):
+                if not any(t in tags for t in action.tags):
                     continue
+                if len(subjects) > 0:
+                    if not any(s in subjects for s in action.subjects):
+                        continue
+                if les(locations) > 0:
+                    if action.location not in locations:
+                        continue
                 fr = action.require_filerecord()
-                name = action.id
-                subjects.update(action.subjects)
+                name = action.id.rstrip('-analysis')
+                analysis_action.subjects.extend(list(action.subjects))
                 contents = {}
                 for key, val in action.modules.items():
                     if 'channel_group' in key:
                         contents[key] = val
                 analysis_action.require_module(name=name, contents=contents,
                                                overwrite=overwrite)
-            analysis_action.subjects = subjects
