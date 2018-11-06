@@ -38,11 +38,6 @@ def pathlib():
     return pathlib
 
 @lazy_import
-def sig_tools():
-    import exana.misc.signal_tools as sig_tools
-    return sig_tools
-
-@lazy_import
 def pyopenephys():
     import pyopenephys
     return pyopenephys
