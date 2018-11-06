@@ -136,8 +136,8 @@ def load_parameters(): # load global and merge
     try:
         project = expipe.get_project(path=local_root)
         config = project.config
-    except KeyError:
-        warnings.warn('Unable to find "project-id", some commands will fail.')
+    except:
+        print('WARNING: Unable to find "project-id", some commands will fail.')
         PAR = set_empty_if_no_value(None)
         PAR.PROJECT_ID, PAR.USERNAME = None, None
         return PAR

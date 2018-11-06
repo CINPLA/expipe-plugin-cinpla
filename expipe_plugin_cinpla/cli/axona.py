@@ -151,7 +151,7 @@ def attach_to_cli(cli):
             if get_inp:
                 axona.generate_inp(exdir_path, axona_file)
             else:
-                warnings.warn('Not registering Axona ".inp".')
+                print('WARNING: Not registering Axona ".inp".')
         time_string = exdir.File(exdir_path).attrs['session_start_time']
         dtime = datetime.strptime(time_string, '%Y-%m-%dT%H:%M:%S')
         action.datetime = dtime

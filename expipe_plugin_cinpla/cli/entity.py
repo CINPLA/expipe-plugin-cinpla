@@ -129,5 +129,5 @@ def attach_to_cli(cli):
                 elif len(val.get('value')) == 0:
                     not_reg_keys.append(key)
         if len(not_reg_keys) > 0:
-            warnings.warn('No value registered for {}'.format(not_reg_keys))
+            print('WARNING: No value registered for {}'.format(not_reg_keys))
         entity.create_module(name=PAR.TEMPLATES['entity'], contents=template)

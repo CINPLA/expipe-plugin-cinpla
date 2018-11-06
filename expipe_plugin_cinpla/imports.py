@@ -6,20 +6,21 @@ def expipe():
     import expipe
     return expipe
 
-@lazy_import
-def warnings():
-    import warnings
-    def _warning(
-        message,
-        category = UserWarning,
-        filename = '',
-        lineno = -1):
-        print()
-        print('WARNING:', message)
-        print()
+# @lazy_import
+# def warnings():
+#     import warnings
+#     def _warning(
+#         message,
+#         category = UserWarning,
+#         filename = '',
+#         lineno = -1):
+#         print()
+#         print('WARNING:', message)
+#         print()
+#
+#     warnings.showwarning = _warning
+#     return warnings
 
-    warnings.showwarning = _warning
-    return warnings
 
 @lazy_import
 def PAR():
