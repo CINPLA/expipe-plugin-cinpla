@@ -177,8 +177,8 @@ def _make_data_path(action, overwrite):
             raise FileExistsError(
                 'The exdir path to this action "' + str(exdir_path) +
                 '" exists, optionally use "--overwrite"')
-    relpath = str(exdir_path).replace(str(PAR.PROJECT_ROOT),  '')
-    action.data['main'] = relpath
+    relpath = exdir_path.relative_to(PAR.PROJECT_ROOT)
+    action.data['main'] = str(relpath)
     return exdir_path
 
 
