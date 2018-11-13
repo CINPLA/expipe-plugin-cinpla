@@ -147,7 +147,7 @@ def load_parameters(): # load global and merge
     PAR.LOCATION = config.get('location')
     PAR.CONFIG = config
     try:
-        PAR.__dict__.update(project.modules['settings'].to_dict())
+        PAR.__dict__.update(project.modules['settings'].contents)
     except KeyError:
         pass
     return PAR

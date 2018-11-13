@@ -90,7 +90,7 @@ def attach_to_cli(cli):
             index = 0
         else:
             prev_depth = action.modules[
-                '{:03d}_adjustment'.format(index - 1)].to_dict()['depth']
+                '{:03d}_adjustment'.format(index - 1)].contents['depth']
         name = '{:03d}_adjustment'.format(index)
         assert isinstance(prev_depth, dict), 'Unable to retrieve previous depth.'
         adjustment_dict = {key: dict() for key in prev_depth}
@@ -131,7 +131,7 @@ def attach_to_cli(cli):
                      for pos_key in sorted(val, key=lambda x: last_num(x)))
         )
         template_name = PAR.TEMPLATES['adjustment']
-        template = project.templates[template_name].to_dict()
+        template = project.templates[template_name].contents
         template['depth'] = curr_depth
         template['adjustment'] = adjustment
         template['experimenter'] = user

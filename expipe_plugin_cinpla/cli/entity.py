@@ -110,7 +110,7 @@ def attach_to_cli(cli):
         entity.users = [user]
         for m in message:
             entity.create_message(text=m, user=user, datetime=datetime.now())
-        template = project.templates[PAR.TEMPLATES['entity']].to_dict()
+        template = project.templates[PAR.TEMPLATES['entity']].contents
         for key, val in kwargs.items():
             if isinstance(val, (str, float, int)):
                 template[key]['value'] = val

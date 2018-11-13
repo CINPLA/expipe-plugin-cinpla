@@ -77,7 +77,7 @@ def test_reg_rat_init_depth_adjustment(teardown_setup_project):
                  '-d', 'now'], inp='y')
 
     action = project.require_action(pytest.RAT_ID + '-adjustment')
-    ad_dict = action.modules.to_dict()
+    ad_dict = action.modules.contents
     assert ad_dict['000_adjustment']['depth']['mecl'] == 1.95 * pq.mm
     assert ad_dict['000_adjustment']['depth']['mecr'] == 1.85 * pq.mm
     assert ad_dict['001_adjustment']['depth']['mecl'] == 2 * pq.mm

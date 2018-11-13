@@ -70,7 +70,7 @@ def position_to_dict(depth):
 def get_position_from_surgery(project, entity_id):
     index = 0
     surgery = project.actions[entity_id + '-surgery-implantation']
-    sdict = surgery.modules.to_dict()
+    sdict = surgery.modules.contents
     available_modules = {
         key: mod for key, mod in PAR.TEMPLATES['implantation'].items()
         if mod in sdict}
@@ -103,13 +103,13 @@ def register_depth(project, action, depth=None, answer=False):
             adjustments = project.actions[entity_id + '-adjustment']
             adjusts = {}
             for adjust in adjustments.modules.values():
-                values = adjust.to_dict()
+                values = adjust.contents
                 adjusts[datetime.strptime(values['date'], DTIME_FORMAT)] = adjust
 
             regdate = action.datetime
             adjustdates = adjusts.keys()
             adjustdate = min(adjustdates, key=lambda x: deltadate(x, regdate))
-            adjustment = adjusts[adjustdate].to_dict()
+            adjustment = adjusts[adjustdate].contents
             curr_depth = {key: adjustment['depth'].get(key) for key in mod_info
                           if adjustment['depth'].get(key) is not None}
         except KeyError as e:
@@ -151,9 +151,9 @@ def register_depth(project, action, depth=None, answer=False):
         if key not in curr_depth: # module not used in surgery
             continue
         if surgery:
-            mod = surgery.modules[name].to_dict()
+            mod = surgery.modules[name].contents
         else:
-            mod = project.templates[name].to_dict()
+            mod = project.templates[name].contents
             del(mod['position'])
         for pos_key, val in curr_depth[key].items():
             print('Registering depth:', key, pos_key, '=', val)
@@ -178,14 +178,13 @@ def _make_data_path(action, overwrite):
                 'The exdir path to this action "' + str(exdir_path) +
                 '" exists, optionally use "--overwrite"')
     relpath = str(exdir_path).replace(str(PAR.PROJECT_ROOT),  '')
-    action.data = [relpath]
+    action.data['main'] = relpath
     return exdir_path
 
 
 def _get_data_path(action):
-    action_path = action._backend.path
-    exdir_path = action_path / 'data' / 'main.exdir'
-    return exdir_path
+    action_path = action.data['main']
+    return PAR.PROJECT_ROOT / action_path
 
 
 def generate_templates(action, templates_key, overwrite=False):

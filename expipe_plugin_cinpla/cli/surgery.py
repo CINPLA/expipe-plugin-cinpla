@@ -92,10 +92,10 @@ def attach_to_cli(cli):
         action.users.append(user)
         for m in message:
             action.create_message(text=m, user=user, datetime=datetime.now())
-        modules_dict = action.modules.to_dict()
+        modules_dict = action.modules.contents
         keys = list(set([pos[0] for pos in position]))
         modules = {
-            key: project.templates[PAR.TEMPLATES[procedure][key]].to_dict()
+            key: project.templates[PAR.TEMPLATES[procedure][key]].contents
             for key in keys}
         for key, num, x, y, z, unit in position:
             mod = modules[key]
