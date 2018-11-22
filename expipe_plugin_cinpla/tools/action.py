@@ -1,22 +1,9 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla._version import get_versions
 from .config import load_parameters
 
 nwb_main_groups = ['acquisition', 'analysis', 'processing', 'epochs',
                    'general']
 tmp_phy_folders = ['.klustakwik2', '.phy', '.spikedetect']
-
-
-def get_git_info():
-    DTIME_FORMAT = expipe.core.datetime_format
-
-    GIT_NOTE = {
-        'registered': datetime.strftime(datetime.now(), DTIME_FORMAT),
-        'note': 'Registered with the expipe cinpla plugin',
-        'expipe-plugin-cinpla-version': get_versions()['version'],
-        'expipe-version': expipe.__version__
-    }
-    return GIT_NOTE
 
 
 def query_yes_no(question, default="yes", answer=None):
