@@ -2,19 +2,6 @@ from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.tools import config, openephys
 
 
-
-def validate_depth(ctx, param, depth):
-    try:
-        out = []
-        for pos in depth:
-            key, num, z, unit = pos.split(' ', 4)
-            out.append((key, int(num), float(z), unit))
-        return tuple(out)
-    except ValueError:
-        raise click.BadParameter('Depth need to be contained in "" and ' +
-                                 'separated with white space i.e ' +
-                                 '<"key num depth physical_unit"> (ommit <>).')
-
 def attach_to_cli(cli):
     @cli.command('openephys',
                  short_help='Register an open-ephys recording-action to database.')
