@@ -1,6 +1,7 @@
 import ipywidgets
 import IPython.display as ipd
 import pathlib
+from expipe_plugin_cinpla.imports import *
 import traitlets
 from tkinter import Tk, filedialog
 from expipe_plugin_cinpla.tools import openephys
@@ -8,7 +9,7 @@ from expipe_plugin_cinpla.tools import openephys
 
 def op():
     openephys_path = SelectFilesButton()
-    user = ipywidgets.Text(placeholder='User')
+    user = ipywidgets.Text(placeholder='User', value=PAR.USERNAME)
     more_depth = ipywidgets.Button(description='Add depth')
     depth = ipywidgets.HBox([
         more_depth,
@@ -16,15 +17,15 @@ def op():
         ipywidgets.Text(placeholder='Probe'),
         ipywidgets.Text(placeholder='Depth'),
         ipywidgets.Text(placeholder='Unit')])
-    location = ipywidgets.Text(placeholder='Location')
     session = ipywidgets.Text(placeholder='Session')
+    location = ipywidgets.Text(placeholder='Location', value=PAR.LOCATION)
     action_id = ipywidgets.Text(placeholder='Action id')
     entity_id = ipywidgets.Text(placeholder='Entity id')
     message = ipywidgets.Text(placeholder='Message')
     tag = ipywidgets.Text(placeholder='Tags (; to separate)')
 
-    no_modules = ipywidgets.Checkbox(description='No modules')
-    overwrite = ipywidgets.Checkbox(description='Overwrite')
+    no_modules = ipywidgets.Checkbox(description='No modules', value=False)
+    overwrite = ipywidgets.Checkbox(description='Overwrite', value=False)
     delete_raw_data = ipywidgets.Checkbox(
         description='Delete raw data', value=False)
     register = ipywidgets.Button(description='Register')
