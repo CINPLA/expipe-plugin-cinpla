@@ -16,8 +16,9 @@ def query_yes_no(question, default="yes", answer=None):
 
     The "answer" return value is True for "yes" or False for "no".
     """
-    if answer is True:
-        return True
+    if answer is not None:
+        assert isinstance(answer, bool)
+        return answer
     valid = {"yes": True, "y": True, "ye": True,
              "no": False, "n": False}
     if default is None:
@@ -100,11 +101,13 @@ def register_depth(project, action, depth=None, answer=False):
             curr_depth = {key: adjustment['depth'].get(key) for key in mod_info
                           if adjustment['depth'].get(key) is not None}
         except KeyError as e:
-            raise KeyError(
+            print(
                 str(e) + '. Cannot find current depth, from adjustments. ' +
                 'Depth can be given either in adjustments with ' +
                 '"expipe adjust entity-id --init" ' +
                 'or with "--depth".')
+            print('Aborting depth registration')
+            return False
 
     else:
         curr_depth = position_to_dict(depth)
@@ -122,16 +125,20 @@ def register_depth(project, action, depth=None, answer=False):
         print('Aborting depth registration')
         return False
 
-    assert len(action.entities) == 1, ('Multiple entities registered for ' +
-                                       'this action, unable to get surgery.')
+    if len(action.entities) > 1:
+        print('Multiple entities registered for this action, unable to get surgery.')
+        print('Aborting depth registration')
+        return False
     surgery_action_id = action.entities[0] + '-surgery-implantation'
     try:
         surgery = project.actions[surgery_action_id]
     except KeyError as e:
         if len(depth) == 0:
-            raise NameError(str(e) + ' There are no surgery-implantation ' +
-                            'registered for this animal. Please insert depth' +
-                            'manually')
+            print(
+                str(e) + ' There are no surgery-implantation ' +
+                'registered for this animal. Please insert depth manually')
+            print('Aborting depth registration')
+            return False
         else:
             surgery = None
     for key, name in mod_info.items():

@@ -76,4 +76,5 @@ def attach_to_cli(cli):
                                   location, message, tag):
         openephys.generate_openephys_action(
             action_id, openephys_path, depth, overwrite, no_modules,
-            entity_id, user, session, location, message, tag)
+            entity_id, user, session, location, message, tag,
+            delete_raw_data=None, query_depth_answer=None)
