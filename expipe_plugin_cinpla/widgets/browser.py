@@ -7,9 +7,7 @@ from tkinter import Tk, filedialog
 from expipe_plugin_cinpla.tools import openephys
 
 
-def op():
-    openephys_path = SelectFilesButton()
-    user = ipywidgets.Text(placeholder='User', value=PAR.USERNAME)
+def add_depth(main_box, i):
     more_depth = ipywidgets.Button(description='Add depth')
     depth = ipywidgets.HBox([
         more_depth,
@@ -17,6 +15,45 @@ def op():
         ipywidgets.Text(placeholder='Probe'),
         ipywidgets.Text(placeholder='Depth'),
         ipywidgets.Text(placeholder='Unit')])
+    children = list(main_box.children)
+    children = children[:i] + [depth] + children[i:]
+    main_box.children = children
+
+    def on_more_depth(change):
+        new_depth = ipywidgets.VBox([
+            main_box.children[i],
+            ipywidgets.HBox([
+                ipywidgets.Output(layout={'width': '165px'}),
+                ipywidgets.Text(placeholder='Key'),
+                ipywidgets.Text(placeholder='Probe'),
+                ipywidgets.Text(placeholder='Depth'),
+                ipywidgets.Text(placeholder='Unit')])
+            ])
+        children = list(main_box.children)
+        children[i] = new_depth
+        main_box.children = children
+        depth = new_depth
+
+    more_depth.on_click(on_more_depth)
+    return depth
+
+
+def extract_depth(main_box, i):
+    depth = main_box.children[i]
+    if isinstance(depth, ipywidgets.HBox):
+        depths = (' '.join([a.value for a in depth.children[1:]]))
+    elif isinstance(depth, ipywidgets.VBox):
+        depths = []
+        for ch in depth.children:
+            depths.append(' '.join([a.value for a in ch.children[1:]]))
+    else:
+        raise AssertionError()
+    return depths
+
+
+def op():
+    openephys_path = SelectFilesButton()
+    user = ipywidgets.Text(placeholder='User', value=PAR.USERNAME)
     session = ipywidgets.Text(placeholder='Session')
     location = ipywidgets.Text(placeholder='Location', value=PAR.LOCATION)
     action_id = ipywidgets.Text(placeholder='Action id')
@@ -30,18 +67,24 @@ def op():
         description='Delete raw data', value=False)
     register = ipywidgets.Button(description='Register')
 
+    main_box = ipywidgets.VBox([
+            ipywidgets.HBox([openephys_path, no_modules, overwrite, delete_raw_data]),
+            user,
+            location,
+            session,
+            action_id,
+            entity_id,
+            message,
+            tag,
+            register
+        ])
+
+    add_depth(main_box, 6)
+
     def on_register(change):
         fname = openephys_path.files
         tags = tag.value.split(';')
-        depth = main_box.children[2]
-        if isinstance(depth, ipywidgets.HBox):
-            depths = (' '.join([a.value for a in depth.children[1:]]))
-        elif isinstance(depth, ipywidgets.VBox):
-            depths = []
-            for ch in depth.children:
-                depths.append(' '.join([a.value for a in ch.children[1:]]))
-        else:
-            raise AssertionError()
+        depths = extract_depth(main_box, 6)
         openephys.generate_openephys_action(
             action_id=action_id.value,
             openephys_path=fname,
@@ -57,39 +100,7 @@ def op():
             delete_raw_data=delete_raw_data.value,
             query_depth_answer=True)
 
-    main_box = ipywidgets.VBox([
-        ipywidgets.HBox([openephys_path, no_modules, overwrite, delete_raw_data]),
-        user,
-        depth,
-        location,
-        session,
-        action_id,
-        entity_id,
-        message,
-        tag,
-        register
-    ])
-
-    def on_more_depth(change):
-        new_depth = ipywidgets.VBox([
-            main_box.children[2],
-            ipywidgets.HBox([
-                ipywidgets.Output(layout={'width': '165px'}),
-                ipywidgets.Text(placeholder='Key'),
-                ipywidgets.Text(placeholder='Probe'),
-                ipywidgets.Text(placeholder='Depth'),
-                ipywidgets.Text(placeholder='Unit')])
-            ])
-        children = list(main_box.children)
-        children[2] = new_depth
-        main_box.children = children
-        depth = new_depth
-
-
     register.on_click(on_register)
-    more_depth.on_click(on_more_depth)
-
-
     ipd.display(main_box)
 
 
