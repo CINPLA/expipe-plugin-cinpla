@@ -3,11 +3,10 @@ from expipe_plugin_cinpla.tools import action as action_tools
 from expipe_plugin_cinpla.tools import config
 
 
-def generate_openephys_action(action_id, openephys_path,
-                              depth, overwrite, no_modules,
-                              entity_id, user, session,
-                              location, message, tag, delete_raw_data,
-                              query_depth_answer):
+def generate_openephys_action(
+    project_path, action_id, openephys_path, depth, overwrite, no_modules,
+    entity_id, user, session, location, message, tag, delete_raw_data,
+    query_depth_answer):
     user = user or PAR.USERNAME
     if user is None:
         print('Missing option "user".')
@@ -19,7 +18,7 @@ def generate_openephys_action(action_id, openephys_path,
 
     openephys_path = pathlib.Path(openephys_path)
     openephys_dirname = openephys_path.parent
-    project = expipe.get_project(PAR.PROJECT_ROOT)
+    project = expipe.get_project(project_path)
     openephys_file = pyopenephys.File(str(openephys_path))
     openephys_exp = openephys_file.experiments[0]
     openephys_rec = openephys_exp.recordings[0]

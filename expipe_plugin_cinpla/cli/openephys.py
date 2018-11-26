@@ -57,11 +57,21 @@ def attach_to_cli(cli):
                   is_flag=True,
                   help='Generate action without storing modules.',
                   )
-    def _generate_openephys_action(action_id, openephys_path,
-                                  depth, overwrite, no_modules,
-                                  entity_id, user, session,
-                                  location, message, tag):
+    def _generate_openephys_action(
+        action_id, openephys_path, depth, overwrite, no_modules,
+        entity_id, user, session, location, message, tag):
         openephys.generate_openephys_action(
-            action_id, openephys_path, depth, overwrite, no_modules,
-            entity_id, user, session, location, message, tag,
-            delete_raw_data=None, query_depth_answer=None)
+            project_path=PAR.PROJECT_ROOT,
+            action_id=action_id,
+            openephys_path=openephys_path,
+            depth=depth,
+            overwrite=overwrite,
+            no_modules=no_modules,
+            entity_id=entity_id,
+            user=user,
+            session=session,
+            location=location,
+            message=message,
+            tag=tag,
+            delete_raw_data=None,
+            query_depth_answer=None)
