@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.tools import action as action_tools
-from expipe_plugin_cinpla.tools import config
+from expipe_plugin_cinpla.scripts import adjust
+from . import utils
 from datetime import datetime as dt
 
 
@@ -15,7 +15,7 @@ def attach_to_cli(cli):
                   )
     @click.option('-a', '--adjustment',
                   multiple=True,
-                  callback=config.validate_adjustment,
+                  callback=utils.validate_adjustment,
                   help=('The adjustment amount on given anatomical location ' +
                         'given as <key num value unit>'),
                   )
@@ -30,7 +30,7 @@ def attach_to_cli(cli):
                   )
     @click.option('-d', '--depth',
                   multiple=True,
-                  callback=config.validate_depth,
+                  callback=utils.validate_depth,
                   help=('The depth given as <key num depth unit> e.g. ' +
                         '<mecl 0 10 um> (omit <>).'),
                   )
@@ -48,5 +48,6 @@ def attach_to_cli(cli):
                   )
     def _register_adjustment(entity_id, date, adjustment, user, index, init,
                              depth, yes, overwrite):
-        register_adjustment(PAR.PROJECT_ROOT, entity_id, date, adjustment, user, index, init,
-                                 depth, yes, overwrite)
+        adjust.register_adjustment(
+            PAR.PROJECT_ROOT, entity_id, date, adjustment, user, index, init,
+            depth, yes, overwrite)

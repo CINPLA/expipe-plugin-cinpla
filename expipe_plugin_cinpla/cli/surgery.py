@@ -1,6 +1,7 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.tools.action import generate_templates, query_yes_no
-from expipe_plugin_cinpla.tools import config, surgery
+from expipe_plugin_cinpla.scripts.utils import generate_templates, query_yes_no
+from expipe_plugin_cinpla.scripts import surgery
+from . import utils
 
 
 def attach_to_cli(cli):
@@ -14,7 +15,7 @@ def attach_to_cli(cli):
     @click.option('-t', '--tag',
                   multiple=True,
                   type=click.STRING,
-                  callback=config.optional_choice,
+                  callback=utils.optional_choice,
                   envvar=PAR.POSSIBLE_TAGS,
                   help='Add tags to action.',
                   )
@@ -40,13 +41,13 @@ def attach_to_cli(cli):
     @click.option('-p', '--position',
                   required=True,
                   multiple=True,
-                  callback=config.validate_position,
+                  callback=utils.validate_position,
                   help='The position e.g. <"mecl 0 x y z mm"> (ommit <>).',
                   )
     @click.option('-a', '--angle',
                   required=True,
                   multiple=True,
-                  callback=config.validate_angle,
+                  callback=utils.validate_angle,
                   help='The angle of implantation/injection.',
                   )
     @click.option('--message', '-m',

@@ -50,32 +50,28 @@ def deltadate(adjustdate, regdate):
 def position_to_dict(depth):
     position = {d[0]: dict() for d in depth}
     for key, num, val, unit in depth:
-        pos_key = 'position_{}'.format(num)
-        position[key][pos_key] = pq.Quantity(val, unit)
+        probe_key = 'probe_{}'.format(num)
+        position[key][probe_key] = pq.Quantity(val, unit)
     return position
 
 
-def get_position_from_surgery(project, entity_id):
+def get_depth_from_surgery(project, entity_id):
     index = 0
     surgery = project.actions[entity_id + '-surgery-implantation']
-    sdict = surgery.modules.contents
-    available_modules = {
-        key: mod for key, mod in PAR.TEMPLATES['implantation'].items()
-        if mod in sdict}
-    if len(available_modules.keys()) == 0:
-        raise ValueError('Unable to retrieve position from surgery.')
-    position = {key: {pos_key: sdict[mod][pos_key][2]
-                        for pos_key in sdict[mod]
-                        if pos_key.startswith('position_')
-                        and pos_key.split('_')[-1].isnumeric()}
-                  for key, mod in available_modules.items()}
+    position = {}
+    for key, module in surgery.modules.items():
+        for probe_key, probe in module.items():
+            if probe_key.startswith('probe_') and probe_key.split('_')[-1].isnumeric():
+                if key not in position:
+                    position[key] = {}
+                position[key][probe_key] = probe['position']
     for key, groups in position.items():
-        for group, depth in groups.items():
-            if not isinstance(depth, pq.Quantity):
+        for group, pos in groups.items():
+            if not isinstance(pos, pq.Quantity):
                 raise ValueError('Depth of implant ' +
-                                 '"{} {} = {}"'.format(key, group, depth) +
+                                 '"{} {} = {}"'.format(key, group, pos) +
                                  ' not recognized')
-            position[key][group] = depth.astype(float)
+            position[key][group] = pos.astype(float)[2]  # index 2 = z
     return position
 
 
@@ -117,9 +113,9 @@ def register_depth(project, action, depth=None, answer=False):
     correct = query_yes_no(
         'Are the following values correct:\n' +
         'Adjust date time = {}\n'.format(adjustdate) +
-        ''.join('{} {} = {}\n'.format(key, pos_key, val[pos_key])
+        ''.join('{} {} = {}\n'.format(key, probe_key, val[probe_key])
                 for key, val in curr_depth.items()
-                for pos_key in sorted(val, key=lambda x: last_num(x)))
+                for probe_key in sorted(val, key=lambda x: last_num(x)))
         , answer=answer)
     if not correct:
         print('Aborting depth registration')
@@ -149,12 +145,12 @@ def register_depth(project, action, depth=None, answer=False):
         else:
             mod = project.templates[name].contents
             del(mod['position'])
-        for pos_key, val in curr_depth[key].items():
-            print('Registering depth:', key, pos_key, '=', val)
-            if pos_key in mod:
-                mod[pos_key][2] = val
+        for probe_key, val in curr_depth[key].items():
+            print('Registering depth:', key, probe_key, '=', val)
+            if probe_key in mod:
+                mod[probe_key][2] = val
             else:
-                mod[pos_key] = [np.nan, np.nan, float(val.magnitude)] * val.units
+                mod[probe_key] = [np.nan, np.nan, float(val.magnitude)] * val.units
         action.create_module(name=name, contents=mod)
     return True
 

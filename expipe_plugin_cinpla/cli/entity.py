@@ -1,6 +1,7 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.tools.action import generate_templates, query_yes_no
-from expipe_plugin_cinpla.tools import config
+from expipe_plugin_cinpla.scripts.utils import generate_templates, query_yes_no
+from expipe_plugin_cinpla.scripts import entity
+from . import utils
 
 
 def attach_to_cli(cli):
@@ -23,7 +24,7 @@ def attach_to_cli(cli):
                   )
     @click.option('--cell_line',
                   type=click.STRING,
-                  callback=config.optional_choice,
+                  callback=utils.optional_choice,
                   envvar=PAR.POSSIBLE_CELL_LINES,
                   help='Add cell line to entity.',
                   )
@@ -77,7 +78,7 @@ def attach_to_cli(cli):
     @click.option('-t', '--tag',
                   multiple=True,
                   type=click.STRING,
-                  callback=config.optional_choice,
+                  callback=utils.optional_choice,
                   envvar=PAR.POSSIBLE_TAGS,
                   help='Add tags to entity.',
                   )

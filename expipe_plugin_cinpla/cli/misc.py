@@ -1,8 +1,7 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.tools.action import (
+from expipe_plugin_cinpla.scripts.utils import (
     generate_templates, query_yes_no)
-from expipe_plugin_cinpla.tools import config
-
+from . import utils
 
 def attach_to_cli(cli):
     @cli.command('annotate', short_help='Parse info about recorded units')
@@ -10,7 +9,7 @@ def attach_to_cli(cli):
     @click.option('-t', '--tag',
                     multiple=True,
                     type=click.STRING,
-                    callback=config.optional_choice,
+                    callback=utils.optional_choice,
                     envvar=PAR.POSSIBLE_TAGS,
                     help='Add tags to action.',
                     )

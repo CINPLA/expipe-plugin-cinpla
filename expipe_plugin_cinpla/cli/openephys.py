@@ -1,5 +1,6 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.tools import config, openephys
+from expipe_plugin_cinpla.scripts import openephys
+from . import utils
 
 
 def attach_to_cli(cli):
@@ -12,7 +13,7 @@ def attach_to_cli(cli):
                   )
     @click.option('-d', '--depth',
                   multiple=True,
-                  callback=config.validate_depth,
+                  callback=utils.validate_depth,
                   help=(
                     'Alternative "find" to find from surgery or adjustment' +
                     ' or given as <key num depth unit> e.g. ' +
@@ -20,7 +21,7 @@ def attach_to_cli(cli):
                   )
     @click.option('-l', '--location',
                   type=click.STRING,
-                  callback=config.optional_choice,
+                  callback=utils.optional_choice,
                   envvar=PAR.POSSIBLE_LOCATIONS,
                   help='The location of the recording, i.e. "room-1-ibv".'
                   )
@@ -45,7 +46,7 @@ def attach_to_cli(cli):
     @click.option('-t', '--tag',
                   multiple=True,
                   type=click.STRING,
-                  callback=config.optional_choice,
+                  callback=utils.optional_choice,
                   envvar=PAR.POSSIBLE_TAGS,
                   help='Add tags to action.',
                   )
@@ -57,10 +58,10 @@ def attach_to_cli(cli):
                   is_flag=True,
                   help='Generate action without storing modules.',
                   )
-    def _generate_openephys_action(
+    def _register_openephys_recording(
         action_id, openephys_path, depth, overwrite, no_modules,
         entity_id, user, session, location, message, tag):
-        openephys.generate_openephys_action(
+        openephys.register_openephys_recording(
             project_path=PAR.PROJECT_ROOT,
             action_id=action_id,
             openephys_path=openephys_path,

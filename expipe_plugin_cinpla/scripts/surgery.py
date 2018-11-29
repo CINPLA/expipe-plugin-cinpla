@@ -1,5 +1,5 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.tools.action import generate_templates, query_yes_no
+from .utils import generate_templates, query_yes_no
 
 
 def register_surgery(
@@ -30,12 +30,14 @@ def register_surgery(
             print(str(e) + ' Use "overwrite"')
             return
     entity = project.entities[entity_id]
-    entity_module = entity.modules[PAR.TEMPLATES['entity']]
-    entity_module['surgery_weight'] = weight
-    entity.tags.extend(['surgery', PAR.PROJECT_ID])
+    surgery_key = 'surgery-' + procedure + '-' + date.strftime(expipe.core.datetime_key_format)
+    if surgery_key not in entity.modules:
+        entity.modules[surgery_key] = {}
+    entity.modules[surgery_key]['weight'] = weight
+    entity.tags.extend([surgery_key, PAR.PROJECT_ID])
     entity.users.append(user)
 
-    generate_templates(action, 'surgery_' + procedure)
+    # generate_templates(action, 'surgery_' + procedure)
     if date == 'now':
         date = datetime.now()
     if isinstance(date, str):
@@ -50,27 +52,20 @@ def register_surgery(
     action.users.append(user)
     for m in message:
         action.create_message(text=m, user=user, datetime=datetime.now())
-    modules_dict = action.modules.contents
-    keys = list(set([pos[0] for pos in position]))
-    modules = {
-        key: project.templates[PAR.TEMPLATES[procedure][key]].contents
-        for key in keys}
-    for key, num, x, y, z, unit in position:
-        mod = modules[key]
-        if 'position' in mod:
-            del(mod['position']) # delete position template
+    for key, probe, x, y, z, unit in position:
+        action.modules[key] = {}
+        probe_key = 'probe_{}'.format(probe)
+        action.modules[key][probe_key] = {}
         print('Registering position ' +
-              '{} {}: x={}, y={}, z={} {}'.format(key, num, x, y, z, unit))
-        mod['position_{}'.format(num)] = pq.Quantity([x, y, z], unit)
-    for key, ang, unit in angle:
-        mod = modules[key]
-        if 'angle' in mod:
-            del(mod['angle']) # delete position template
+              '{} {}: x={}, y={}, z={} {}'.format(key, probe, x, y, z, unit))
+        action.modules[key][probe_key]['position'] = pq.Quantity([x, y, z], unit)
+    for key, probe, ang, unit in angle:
+        probe_key = 'probe_{}'.format(probe)
+        if probe_key not in action.modules[key]:
+            action.modules[key][probe_key] = {}
         print('Registering angle ' +
-              '{}: angle={} {}'.format(key, ang, unit))
-        mod['angle'] = pq.Quantity(ang, unit)
-    for key in keys:
-        action.modules[PAR.TEMPLATES[procedure][key]] = modules[key]
+              '{} {}: angle={} {}'.format(key, probe, ang, unit))
+        action.modules[key][probe_key]['angle'] = pq.Quantity(ang, unit)
 
 
 def register_perfusion(project_path, entity_id, date, user, weight, overwrite,
@@ -106,6 +101,7 @@ def register_perfusion(project_path, entity_id, date, user, weight, overwrite,
     print('Registering user ' + user)
     action.users = [user]
     if weight != (None, None):
-        action.modules[PAR.TEMPLATES['entity']]['weight'] = pq.Quantity(weight[0], weight[1])
+        action.create_module(
+            'perfusion', contents={'weight': pq.Quantity(weight[0], weight[1])})
     entity = project.entities[entity_id]
     entity.tags.extend(['perfused', 'euthanised'])

@@ -1,9 +1,8 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.tools import action as action_tools
-from expipe_plugin_cinpla.tools import config
+from . import utils
 
 
-def generate_openephys_action(
+def register_openephys_recording(
     project_path, action_id, openephys_path, depth, overwrite, no_modules,
     entity_id, user, session, location, message, tag, delete_raw_data,
     query_depth_answer):
@@ -50,14 +49,14 @@ def generate_openephys_action(
             project.delete_action(action_id)
             return
         if len(depth) > 0:
-            correct_depth = action_tools.register_depth(
+            correct_depth = utils.register_depth(
                 project=project, action=action, depth=depth,
                 answer=query_depth_answer)
             if not correct_depth:
                 print('Aborting registration!')
                 project.delete_action(action_id)
                 return
-        action_tools.generate_templates(action, 'openephys')
+        utils.generate_templates(action, 'openephys')
 
     action.datetime = openephys_exp.datetime
     action.type = 'Recording'
@@ -78,11 +77,11 @@ def generate_openephys_action(
         #     dtime = openephys_file.datetime + timedelta(secs)
         #     action.create_message(text=m['message'], user=user, datetime=dtime)
 
-    exdir_path = action_tools._make_data_path(action, overwrite)
+    exdir_path = utils._make_data_path(action, overwrite)
     # TODO change to alessio stuff
     openephys.convert(
         openephys_rec, exdir_path=exdir_path, session=session)
-    if action_tools.query_yes_no(
+    if utils.query_yes_no(
         'Delete raw data in {}? (yes/no)'.format(openephys_path),
         default='no', answer=delete_raw_data):
         shutil.rmtree(openephys_path)

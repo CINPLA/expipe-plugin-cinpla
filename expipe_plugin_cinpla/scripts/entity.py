@@ -1,5 +1,5 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.tools.action import generate_templates, query_yes_no
+from .utils import generate_templates, query_yes_no
 
 
 def register_entity(project_path, entity_id, user, message, location, tag, overwrite,
@@ -33,25 +33,15 @@ def register_entity(project_path, entity_id, user, message, location, tag, overw
     entity.users = [user]
     for m in message:
         entity.create_message(text=m, user=user, datetime=datetime.now())
-    template = project.templates[PAR.TEMPLATES['entity']].contents
     for key, val in kwargs.items():
+        if 'register' not in entity.modules:
+            entity.modules['register'] = {}
         if isinstance(val, (str, float, int)):
-            template[key]['value'] = val
+            entity.modules['register'][key]['value'] = val
         elif isinstance(val, tuple):
             if not None in val:
-                template[key] = pq.Quantity(val[0], val[1])
+                entity.modules['register'][key] = pq.Quantity(val[0], val[1])
         elif isinstance(val, type(None)):
             pass
         else:
             print('Not recognized type ' + str(type(val)))
-            return
-    not_reg_keys = []
-    for key, val in template.items():
-        if isinstance(val, dict):
-            if val.get('value') is None:
-                not_reg_keys.append(key)
-            elif len(val.get('value')) == 0:
-                not_reg_keys.append(key)
-    if len(not_reg_keys) > 0:
-        print('WARNING: No value registered for {}'.format(not_reg_keys))
-    entity.create_module(name=PAR.TEMPLATES['entity'], contents=template)

@@ -8,7 +8,7 @@ def expipe():
 
 @lazy_import
 def PAR():
-    from expipe_plugin_cinpla.tools.config import load_parameters
+    from expipe_plugin_cinpla.scripts.config import load_parameters
     return load_parameters()
 
 @lazy_import
@@ -17,9 +17,19 @@ def pd():
     return pd
 
 @lazy_import
+def dt():
+    import datetime as dt
+    return dt
+
+@lazy_import
 def pathlib():
     import pathlib
     return pathlib
+
+@lazy_import
+def ipywidgets():
+    import ipywidgets
+    return ipywidgets
 
 @lazy_import
 def pyopenephys():
