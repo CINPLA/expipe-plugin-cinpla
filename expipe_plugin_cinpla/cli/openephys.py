@@ -66,7 +66,7 @@ def attach_to_cli(cli):
     def _register_openephys_recording(
         action_id, openephys_path, depth, overwrite, templates,
         entity_id, user, session, location, message, tag, delete_raw_data,
-        query_depth_answer, register_depth):
+        correct_depth_answer, register_depth):
         openephys.register_openephys_recording(
             project=PAR.PROJECT,
             action_id=action_id,
@@ -81,5 +81,5 @@ def attach_to_cli(cli):
             message=message,
             tag=tag,
             delete_raw_data=None,
-            query_depth_answer=None,
+            correct_depth_answer=None,
             register_depth=register_depth)

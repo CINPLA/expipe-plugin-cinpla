@@ -1,10 +1,10 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import openephys
-from .utils import SelectFilesButton, MultiInput, Templates
+from .utils import SelectDirectoryButton, MultiInput, Templates
 
 
 def openephys_view(project):
-    openephys_path = SelectFilesButton()
+    openephys_path = SelectDirectoryButton()
     user = ipywidgets.Text(placeholder='*User', value=PAR.USERNAME)
     session = ipywidgets.Text(placeholder='Session')
     location = ipywidgets.Text(placeholder='*Location', value=PAR.LOCATION)
@@ -68,13 +68,12 @@ def openephys_view(project):
 
 
     def on_register(change):
-        fname = openephys_path.files
         tags = tag.value.split(';')
         openephys.register_openephys_recording(
             templates=templates.value,
             project=project,
             action_id=action_id.value,
-            openephys_path=fname,
+            openephys_path=openephys_path.directory,
             depth=depth.value,
             overwrite=overwrite.value,
             register_depth=register_depth.value,
@@ -85,7 +84,7 @@ def openephys_view(project):
             message=message.value,
             tag=tags,
             delete_raw_data=delete_raw_data.value,
-            query_depth_answer=True)
+            correct_depth_answer=True)
 
     register.on_click(on_register)
     return main_box

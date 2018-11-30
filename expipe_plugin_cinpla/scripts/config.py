@@ -18,8 +18,13 @@ def set_empty_if_no_value(PAR=None):
         'POSSIBLE_LOCATIONS',
         'POSSIBLE_CELL_LINES')
     give_attrs_val(
-        PAR, dict(),
-        'TEMPLATES')
+        PAR, None,
+        'PROJECT_ID',
+        'PROJECT_ROOT',
+        'PROJECT',
+        'USERNAME',
+        'LOCATION',
+        'CONFIG')
     return PAR
 
 
@@ -30,9 +35,6 @@ def load_parameters(): # load global and merge
         project = expipe.get_project(path=local_root)
         config = project.config
     except:
-        print('WARNING: Unable to find "project-id", some commands will fail.')
-        PAR = set_empty_if_no_value(None)
-        PAR.PROJECT_ID, PAR.USERNAME, PAR.PROJECT = None, None, None
         return PAR
     PAR.PROJECT_ID = config['project']
     PAR.PROJECT_ROOT = local_root

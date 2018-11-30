@@ -7,7 +7,6 @@ from click.testing import CliRunner
 
 expipe.ensure_testing()
 
-# TODO ADD ALL PAR.TEMPLATES
 
 PROJECT_ID = PAR.PROJECT_ID
 ACTION_ID = 'action-plugin-test'

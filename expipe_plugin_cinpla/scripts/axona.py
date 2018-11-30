@@ -1,10 +1,10 @@
 from . import utils
 
 
-def register_axona_action(
+def register_axona_recording(
     project, action_id, axona_filename, depth, user, overwrite, templates,
-    entity_id, location, message, tag, get_inp, yes, no_cut, cluster_group,
-    set_zero_cluster_to_noise, register_depth):
+    entity_id, location, message, tag, get_inp, no_cut, cluster_group,
+    set_zero_cluster_to_noise, register_depth, correct_depth_answer=None):
     user = user or PAR.USERNAME
     if user is None:
         print('Missing option "user".')
@@ -51,7 +51,7 @@ def register_axona_action(
     if register_depth:
         correct_depth = utils.register_depth(
             project=project, action=action, depth=depth,
-            answer=query_depth_answer)
+            answer=correct_depth_answer)
         if not correct_depth:
             print('Aborting registration!')
             project.delete_action(action_id)

@@ -5,7 +5,7 @@ from . import utils
 def register_openephys_recording(
     project, action_id, openephys_path, depth, overwrite, templates,
     entity_id, user, session, location, message, tag, delete_raw_data,
-    query_depth_answer, register_depth):
+    correct_depth_answer, register_depth):
     user = user or PAR.USERNAME
     if user is None:
         print('Missing option "user".')
@@ -53,7 +53,7 @@ def register_openephys_recording(
     if register_depth:
         correct_depth = utils.register_depth(
             project=project, action=action, depth=depth,
-            answer=query_depth_answer)
+            answer=correct_depth_answer)
         if not correct_depth:
             print('Aborting registration!')
             project.delete_action(action_id)
