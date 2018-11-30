@@ -37,9 +37,9 @@ def pyopenephys():
     return pyopenephys
 
 @lazy_import
-def openephys():
-    from expipe_io_neuro import openephys
-    return openephys
+def openephys_io():
+    from expipe_io_neuro import openephys as openephys_io
+    return openephys_io
 
 @lazy_import
 def pyxona():

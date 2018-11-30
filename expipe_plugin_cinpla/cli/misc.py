@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts.utils import (
-    generate_templates, query_yes_no)
+    register_templates, query_yes_no)
 from . import utils
 
 def attach_to_cli(cli):
@@ -23,7 +23,7 @@ def attach_to_cli(cli):
                   help='The experimenter performing the annotation.',
                   )
     def annotate(action_id, tag, message, user):
-        project = expipe.get_project(PAR.PROJECT_ROOT)
+        project = PAR.PROJECT
         action = project.actions[action_id]
         user = user or PAR.USERNAME
         if user is None:
@@ -52,7 +52,7 @@ def attach_to_cli(cli):
         ch.setLevel(logging.DEBUG)
         logger.addHandler(ch)
 
-        project = expipe.get_project(PAR.PROJECT_ROOT)
+        project = PAR.PROJECT
         action = project.require_action(action_id)
         exdir_path = PAR.PROJECT_ROOT / action.data[0]
         print('Spikesorting ', exdir_path)

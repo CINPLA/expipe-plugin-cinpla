@@ -3,9 +3,9 @@ from . import utils
 
 
 def register_openephys_recording(
-    project_path, action_id, openephys_path, depth, overwrite, no_modules,
+    project, action_id, openephys_path, depth, overwrite, templates,
     entity_id, user, session, location, message, tag, delete_raw_data,
-    query_depth_answer):
+    query_depth_answer, register_depth):
     user = user or PAR.USERNAME
     if user is None:
         print('Missing option "user".')
@@ -17,7 +17,6 @@ def register_openephys_recording(
 
     openephys_path = pathlib.Path(openephys_path)
     openephys_dirname = openephys_path.parent
-    project = expipe.get_project(project_path)
     openephys_file = pyopenephys.File(str(openephys_path))
     openephys_exp = openephys_file.experiments[0]
     openephys_rec = openephys_exp.recordings[0]
@@ -41,23 +40,6 @@ def register_openephys_recording(
         else:
             print(str(e) + ' Use "overwrite"')
             return
-
-    if not no_modules:
-        if 'openephys' not in PAR.TEMPLATES:
-            print('Could not find "openephys" in PAR.TEMPLATES, ' + # TODO be more descriptive than TEMPLATES
-                  'use option "no-modules"')
-            project.delete_action(action_id)
-            return
-        if len(depth) > 0:
-            correct_depth = utils.register_depth(
-                project=project, action=action, depth=depth,
-                answer=query_depth_answer)
-            if not correct_depth:
-                print('Aborting registration!')
-                project.delete_action(action_id)
-                return
-        utils.generate_templates(action, 'openephys')
-
     action.datetime = openephys_exp.datetime
     action.type = 'Recording'
     action.tags.extend(list(tag) + ['open-ephys'])
@@ -67,6 +49,16 @@ def register_openephys_recording(
     action.users = [user]
     print('Registering location ' + location)
     action.location = location
+
+    if register_depth:
+        correct_depth = utils.register_depth(
+            project=project, action=action, depth=depth,
+            answer=query_depth_answer)
+        if not correct_depth:
+            print('Aborting registration!')
+            project.delete_action(action_id)
+            return
+    utils.register_templates(action, templates)
 
     for m in message:
         action.create_message(text=m, user=user, datetime=datetime.now())
@@ -79,7 +71,7 @@ def register_openephys_recording(
 
     exdir_path = utils._make_data_path(action, overwrite)
     # TODO change to alessio stuff
-    openephys.convert(
+    openephys_io.convert(
         openephys_rec, exdir_path=exdir_path, session=session)
     if utils.query_yes_no(
         'Delete raw data in {}? (yes/no)'.format(openephys_path),

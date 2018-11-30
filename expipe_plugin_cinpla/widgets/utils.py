@@ -20,52 +20,78 @@ def required_values_filled(*widgets):
     return all(filled)
 
 
-def extract_multi_input(multi_input):
-    if isinstance(multi_input, ipywidgets.HBox):
-        multi_inputs = [[a.value for a in multi_input.children[1:]]]
-    elif isinstance(multi_input, ipywidgets.VBox):
+class Templates(ipywidgets.VBox):
+    def __init__(self, project, *args, **kwargs):
+        super(Templates, self).__init__(*args, **kwargs)
+        self.templates = ipywidgets.SelectMultiple(
+            options=project.templates,
+            value=(),
+            disabled=False,
+            layout={'height': '200px', 'width': '300px'}
+        )
+        search_widget = ipywidgets.Text(
+            placeholder='Templates', layout={'width': self.templates.layout.width})
+        orig_list = list(self.templates.options)
+        # Wire the search field to the checkboxes
+        def on_text_change(change):
+            search_input = change['new']
+            if search_input == '':
+                # Reset search field
+                new_options = orig_list
+            else:
+                # Filter by search field.
+                new_options = [a for a in orig_list if search_input in a]
+            self.templates.options = new_options
+
+        search_widget.observe(on_text_change, names='value')
+        self.children = [search_widget, self.templates]
+        # self.layout={'width': '310px'}
+
+    @property
+    def value(self):
+        return self.templates.value
+
+
+class MultiInput(ipywidgets.VBox):
+    def __init__(self, placeholders, description, *args, **kwargs):
+        super(MultiInput, self).__init__(*args, **kwargs)
+        self.description = description
+        more_input = ipywidgets.Button(
+            description=description, layout={'width': '160px'})
+        self.children = [ipywidgets.HBox(
+            [more_input] +
+            [ipywidgets.Text(placeholder=v, layout={'width': '60px'})
+            for v in placeholders])]
+
+        def on_more_input(change):
+            children = list(self.children)
+            children.append(
+                ipywidgets.HBox(
+                    [ipywidgets.Output(layout={'width': '165px'})] +
+                    [ipywidgets.Text(placeholder=v, layout={'width': '60px'})
+                     for v in placeholders])
+            )
+            self.children = children
+
+        more_input.on_click(on_more_input)
+
+    @property
+    def value(self):
         multi_inputs = []
-        for ch in multi_input.children:
-            multi_inputs.append([a.value for a in ch.children[1:]])
-    else:
-        raise AssertionError(multi_input.description)
-    return multi_inputs
+        for ch in self.children:
+            val = [a.value for a in ch.children[1:]]
+            if all([a!='' for a in val]):
+                multi_inputs.append(val)
 
-
-def add_multi_input(main_box, i, var, description):
-    more_input = ipywidgets.Button(
-        description=description, layout={'width': '160px'})
-    inp = ipywidgets.HBox(
-        [more_input] +
-        [ipywidgets.Text(placeholder=v, layout={'width': '100px'}) for v in var])
-    children = list(main_box.children)
-    children = children[:i] + [inp] + children[i:]
-    main_box.children = children
-
-    def on_more_input(change):
-        new_input = ipywidgets.VBox([
-            main_box.children[i],
-            ipywidgets.HBox(
-                [ipywidgets.Output(layout={'width': '165px'})] +
-                [ipywidgets.Text(placeholder=v, layout={'width': '100px'})
-                 for v in var])
-        ])
-        children = list(main_box.children)
-        children[i] = new_input
-        main_box.children = children
-        inp = new_input
-
-    more_input.on_click(on_more_input)
-    return inp
-
+        return tuple(multi_inputs)
 
 class DateTimePicker(ipywidgets.HBox):
     def __init__(self, *args, **kwargs):
         super(DateTimePicker, self).__init__(*args, **kwargs)
         self.d = ipywidgets.DatePicker(disabled=False)
-        self.h = ipywidgets.Text(placeholder='HH')
-        self.m = ipywidgets.Text(placeholder='MM')
-        self.s = ipywidgets.Text(placeholder='SS')
+        self.h = ipywidgets.Text(placeholder='HH', layout={'width': '60px'})
+        self.m = ipywidgets.Text(placeholder='MM', layout={'width': '60px'})
+        self.s = ipywidgets.Text(placeholder='SS', layout={'width': '60px'})
         self.children = [self.d, self.h, self.m, self.s]
 
     @property

@@ -34,13 +34,14 @@ def attach_to_cli(cli):
                   help=('Desired action id for this action, if none' +
                         ', it is generated from axona-path.'),
                   )
-    @click.option('--no-files',
+    @click.option('--register-depth',
                   is_flag=True,
                   help='Generate action without storing files.',
                   )
-    @click.option('--no-modules',
-                  is_flag=True,
-                  help='Generate action without storing modules.',
+    @click.option('--templates',
+                  multiple=True,
+                  type=click.STRING,
+                  help='Which templates to add',
                   )
     @click.option('--entity-id',
                   type=click.STRING,
@@ -70,7 +71,11 @@ def attach_to_cli(cli):
                   is_flag=True,
                   help='Do not load ".cut" files',
                   )
-    @click.option('--set-noise',
+    @click.option('--register-depth',
+                  is_flag=True,
+                  help='Do not load ".cut" files',
+                  )
+    @click.option('--set-zero-cluster-to-noise',
                   is_flag=True,
                   help='All units not defined in cluster-group are noise.',
                   )
@@ -78,13 +83,11 @@ def attach_to_cli(cli):
                   is_flag=True,
                   help='Yes to depth registering query.',
                   )
-    def _generate_axona_action(action_id, axona_filename, depth, user,
-                              overwrite, no_files, no_modules,
-                              entity_id, location, message, tag,
-                              get_inp, yes, no_cut, cluster_group,
-                              set_noise):
-        generate_axona_action(action_id, axona_filename, depth, user,
-                                  overwrite, no_files, no_modules,
-                                  entity_id, location, message, tag,
-                                  get_inp, yes, no_cut, cluster_group,
-                                  set_noise)
+    def _register_axona_action(
+        action_id, axona_filename, depth, user, overwrite, templates,
+        entity_id, location, message, tag, get_inp, yes, no_cut, cluster_group,
+        set_zero_cluster_to_noise, register_depth):
+        axona.register_axona_action(
+            PAR.PROJECT, action_id, axona_filename, depth, user, overwrite, templates,
+            entity_id, location, message, tag, get_inp, yes, no_cut, cluster_group,
+            set_zero_cluster_to_noise, register_depth)

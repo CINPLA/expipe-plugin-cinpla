@@ -32,10 +32,11 @@ def load_parameters(): # load global and merge
     except:
         print('WARNING: Unable to find "project-id", some commands will fail.')
         PAR = set_empty_if_no_value(None)
-        PAR.PROJECT_ID, PAR.USERNAME = None, None
+        PAR.PROJECT_ID, PAR.USERNAME, PAR.PROJECT = None, None, None
         return PAR
     PAR.PROJECT_ID = config['project']
     PAR.PROJECT_ROOT = local_root
+    PAR.PROJECT = project
     PAR.USERNAME = config.get('username')
     PAR.LOCATION = config.get('location')
     PAR.CONFIG = config

@@ -4,17 +4,28 @@ from .openephys import openephys_view
 from .entity import entity_view
 from .adjust import adjustment_view
 from .surgery import perfuse_view, surgery_view
+import expipe
 
+# TODO: add templates view
+# TODO: axona view
+# TODO: register depth
+# TODO: remove default templates and settings stuff
+# TODO: how to make templates
+# TODO: convert templates to yaml
+# TODO: transfer to db for processing
+# TODO: processing
+# TODO: fix old data
 
 def display(project_path=None):
-    project_path = project_path or pathlib.Path.cwd()
+    project_path = project_path or PAR.PROJECT_ROOT
+    project = expipe.get_project(project_path)
     # register tab
     register_tab_tab_titles = ['OpenEphys', 'Adjustment', 'Entity', 'Surgery', 'Perfusion', ]
     register_tab = ipywidgets.Tab()
     register_tab.children = [
-        openephys_view(project_path), adjustment_view(project_path),
-        entity_view(project_path),
-        surgery_view(project_path), perfuse_view(project_path),
+        openephys_view(project), adjustment_view(project),
+        entity_view(project),
+        surgery_view(project), perfuse_view(project),
     ]
     for i, title in enumerate(register_tab_tab_titles):
         register_tab.set_title(i, title)

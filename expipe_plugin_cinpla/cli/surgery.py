@@ -1,5 +1,5 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.scripts.utils import generate_templates, query_yes_no
+from expipe_plugin_cinpla.scripts.utils import register_templates, query_yes_no
 from expipe_plugin_cinpla.scripts import surgery
 from . import utils
 
@@ -55,10 +55,15 @@ def attach_to_cli(cli):
                   type=click.STRING,
                   help='Add message, use "text here" for sentences.',
                   )
+    @click.option('--templates',
+                  multiple=True,
+                  type=click.STRING,
+                  help='Which templates to add',
+                  )
     def _register_surgery(entity_id, procedure, date, user, weight,
-                         overwrite, position, angle, message, tag):
-        surgery.register_surgery(PAR.PROJECT_ROOT, entity_id, procedure, date, user, weight,
-                             overwrite, position, angle, message, tag)
+                         overwrite, position, angle, message, tag, templates):
+        surgery.register_surgery(PAR.PROJECT, entity_id, procedure, date, user, weight,
+                             overwrite, position, angle, message, tag, templates)
 
 
     @cli.command('perfusion',
@@ -89,6 +94,11 @@ def attach_to_cli(cli):
                   type=click.STRING,
                   help='Add message, use "text here" for sentences.',
                   )
-    def _register_perfusion(entity_id, date, user, weight, overwrite, message):
+    @click.option('--templates',
+                  multiple=True,
+                  type=click.STRING,
+                  help='Which templates to add',
+                  )
+    def _register_perfusion(entity_id, date, user, weight, overwrite, message, templates):
         surgery.register_perfusion(
-            PAR.PROJECT_ROOT, entity_id, date, user, weight, overwrite, message)
+            PAR.PROJECT, entity_id, date, user, weight, overwrite, message, templates)

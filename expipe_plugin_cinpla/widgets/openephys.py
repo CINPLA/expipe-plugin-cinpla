@@ -1,49 +1,83 @@
-from expipe_plugin_cinpla.scripts import openephys
 from expipe_plugin_cinpla.imports import *
-from .utils import SelectFilesButton, add_multi_input, extract_multi_input
+from expipe_plugin_cinpla.scripts import openephys
+from .utils import SelectFilesButton, MultiInput, Templates
 
 
-def openephys_view(project_path):
+def openephys_view(project):
     openephys_path = SelectFilesButton()
-    user = ipywidgets.Text(placeholder='User', value=PAR.USERNAME)
+    user = ipywidgets.Text(placeholder='*User', value=PAR.USERNAME)
     session = ipywidgets.Text(placeholder='Session')
-    location = ipywidgets.Text(placeholder='Location', value=PAR.LOCATION)
+    location = ipywidgets.Text(placeholder='*Location', value=PAR.LOCATION)
     action_id = ipywidgets.Text(placeholder='Action id')
     entity_id = ipywidgets.Text(placeholder='Entity id')
     message = ipywidgets.Text(placeholder='Message')
     tag = ipywidgets.Text(placeholder='Tags (; to separate)')
+    templates = Templates(project)
+    depth = MultiInput(['Key', 'Probe', 'Depth', 'Unit'], 'Add depth')
+    register_depth = ipywidgets.Checkbox(description='Register depth', value=False)
+    register_depth_from_adjustment = ipywidgets.Checkbox(
+        description='Find adjustments', value=True)
 
-    no_modules = ipywidgets.Checkbox(description='No modules', value=False)
     overwrite = ipywidgets.Checkbox(description='Overwrite', value=False)
     delete_raw_data = ipywidgets.Checkbox(
         description='Delete raw data', value=False)
     register = ipywidgets.Button(description='Register')
 
+    fields = ipywidgets.VBox([
+        user,
+        location,
+        session,
+        action_id,
+        entity_id,
+        message,
+        tag,
+        register
+    ])
+    checks = ipywidgets.HBox([openephys_path, register_depth, overwrite, delete_raw_data])
     main_box = ipywidgets.VBox([
-            ipywidgets.HBox([openephys_path, no_modules, overwrite, delete_raw_data]),
-            user,
-            location,
-            session,
-            action_id,
-            entity_id,
-            message,
-            tag,
-            register
+            checks,
+            ipywidgets.HBox([fields, templates])
         ])
 
-    add_multi_input(main_box, 6, ['Key', 'Probe', 'Depth', 'Unit'], 'Add depth')
+
+    def on_register_depth(change):
+         if change['name'] == 'value':
+             if change['owner'].value:
+                 children = list(checks.children)
+                 children = children[:2] + [register_depth_from_adjustment] + children[2:]
+                 checks.children = children
+             else:
+                children = list(checks.children)
+                del(children[2])
+                checks.children = children
+
+
+    def on_register_depth_from_adjustment(change):
+         if change['name'] == 'value':
+             if not change['owner'].value:
+                 children = list(fields.children)
+                 children = children[:5] + [depth] + children[5:]
+                 fields.children = children
+             else:
+                 children = list(fields.children)
+                 del(children[5])
+                 fields.children = children
+
+    register_depth.observe(on_register_depth)
+    register_depth_from_adjustment.observe(on_register_depth_from_adjustment)
+
 
     def on_register(change):
         fname = openephys_path.files
         tags = tag.value.split(';')
-        depths = extract_multi_input(main_box, 6)
         openephys.register_openephys_recording(
-            project_path=project_path,
+            templates=templates.value,
+            project=project,
             action_id=action_id.value,
             openephys_path=fname,
-            depth=depths,
+            depth=depth.value,
             overwrite=overwrite.value,
-            no_modules=no_modules.value,
+            register_depth=register_depth.value,
             entity_id=entity_id.value,
             user=user.value,
             session=session.value,

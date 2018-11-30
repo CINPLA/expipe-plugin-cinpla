@@ -75,83 +75,52 @@ def get_depth_from_surgery(project, entity_id):
     return position
 
 
-def register_depth(project, action, depth=None, answer=False):
+def get_depth_from_adjustment(project, action, entity_id):
     DTIME_FORMAT = expipe.core.datetime_format
-    mod_info = PAR.TEMPLATES['implantation']
+    try:
+        adjustments = project.actions[entity_id + '-adjustment']
+    except KeyError as e:
+        return None, None
+    adjusts = {}
+    for adjust in adjustments.modules.values():
+        values = adjust.contents
+        adjusts[datetime.strptime(values['date'], DTIME_FORMAT)] = adjust
+
+    regdate = action.datetime
+    adjustdates = adjusts.keys()
+    adjustdate = min(adjustdates, key=lambda x: deltadate(x, regdate))
+    return adjusts[adjustdate]['depth'].contents, adjustdate
+
+
+def register_depth(project, action, depth=None, answer=None):
+    if len(action.entities) != 1:
+        print('Exactly 1 entity is required to register depth.')
+        return False
     depth = depth or []
-    adjustdate = None
-    if depth == 'find':
-        assert len(action.entities) == 1
-        entity_id = action.entities[0]
-        try:
-            adjustments = project.actions[entity_id + '-adjustment']
-            adjusts = {}
-            for adjust in adjustments.modules.values():
-                values = adjust.contents
-                adjusts[datetime.strptime(values['date'], DTIME_FORMAT)] = adjust
-
-            regdate = action.datetime
-            adjustdates = adjusts.keys()
-            adjustdate = min(adjustdates, key=lambda x: deltadate(x, regdate))
-            adjustment = adjusts[adjustdate].contents
-            curr_depth = {key: adjustment['depth'].get(key) for key in mod_info
-                          if adjustment['depth'].get(key) is not None}
-        except KeyError as e:
-            print(
-                str(e) + '. Cannot find current depth, from adjustments. ' +
-                'Depth can be given either in adjustments with ' +
-                '"expipe adjust entity-id --init" ' +
-                'or with "--depth".')
-            print('Aborting depth registration')
-            return False
-
-    else:
+    curr_depth = None
+    if len(depth) > 0:
         curr_depth = position_to_dict(depth)
+        adjustdate = None
+    else:
+        curr_depth, adjustdate = get_depth_from_adjustment(
+            project, action, action.entities[0])
+    if curr_depth is None:
+        print('Cannot find current depth from adjustments.')
+        return False
 
     def last_num(x):
-        return '%.3d' % int(x.split('_')[-1])
+        return '{:03d}'.format(int(x.split('_')[-1]))
+    print('Adjust date time: {}\n'.format(adjustdate))
+    print(''.join('Depth: {} {} = {}\n'.format(key, probe_key, val[probe_key])
+            for key, val in curr_depth.items()
+            for probe_key in sorted(val, key=lambda x: last_num(x))))
     correct = query_yes_no(
-        'Are the following values correct:\n' +
-        'Adjust date time = {}\n'.format(adjustdate) +
-        ''.join('{} {} = {}\n'.format(key, probe_key, val[probe_key])
-                for key, val in curr_depth.items()
-                for probe_key in sorted(val, key=lambda x: last_num(x)))
-        , answer=answer)
+        'Are the values correct?',
+        answer=answer)
     if not correct:
-        print('Aborting depth registration')
         return False
 
-    if len(action.entities) > 1:
-        print('Multiple entities registered for this action, unable to get surgery.')
-        print('Aborting depth registration')
-        return False
-    surgery_action_id = action.entities[0] + '-surgery-implantation'
-    try:
-        surgery = project.actions[surgery_action_id]
-    except KeyError as e:
-        if len(depth) == 0:
-            print(
-                str(e) + ' There are no surgery-implantation ' +
-                'registered for this animal. Please insert depth manually')
-            print('Aborting depth registration')
-            return False
-        else:
-            surgery = None
-    for key, name in mod_info.items():
-        if key not in curr_depth: # module not used in surgery
-            continue
-        if surgery:
-            mod = surgery.modules[name].contents
-        else:
-            mod = project.templates[name].contents
-            del(mod['position'])
-        for probe_key, val in curr_depth[key].items():
-            print('Registering depth:', key, probe_key, '=', val)
-            if probe_key in mod:
-                mod[probe_key][2] = val
-            else:
-                mod[probe_key] = [np.nan, np.nan, float(val.magnitude)] * val.units
-        action.create_module(name=name, contents=mod)
+    action.create_module(name='depth', contents=curr_depth)
     return True
 
 
@@ -177,28 +146,24 @@ def _get_data_path(action):
     return PAR.PROJECT_ROOT / action_path
 
 
-def generate_templates(action, templates_key, overwrite=False):
+def register_templates(action, templates, overwrite=False):
     '''
-
-    :param action:
-    :param templates:
-    :return:
+    Parameters
+    ----------
+    action : expipe.Action
+    templates : list
     '''
-    templates = PAR.TEMPLATES.get(templates_key)
-    if templates is None:
-        print('Warning: no templates matching "' + templates_key + '".')
-        return
     for template in templates:
         try:
             action.create_module(template=template)
             print('Adding module ' + template)
-        except NameError as e:
+        except KeyError as e:
             if overwrite:
                 action.delete_module(template)
                 action.create_module(template=template)
                 print('Adding module ' + template)
             else:
-                raise NameError(str(e) + '. Optionally use "--overwrite"')
+                raise KeyError(str(e) + '. Optionally use "overwrite"')
         except Exception as e:
             print(template)
             raise e

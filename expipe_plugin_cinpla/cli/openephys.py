@@ -54,20 +54,26 @@ def attach_to_cli(cli):
                   is_flag=True,
                   help='Overwrite files and expipe action.',
                   )
-    @click.option('--no-modules',
+    @click.option('--register-depth',
                   is_flag=True,
-                  help='Generate action without storing modules.',
+                  help='Overwrite files and expipe action.',
+                  )
+    @click.option('--templates',
+                  multiple=True,
+                  type=click.STRING,
+                  help='Which templates to add',
                   )
     def _register_openephys_recording(
-        action_id, openephys_path, depth, overwrite, no_modules,
-        entity_id, user, session, location, message, tag):
+        action_id, openephys_path, depth, overwrite, templates,
+        entity_id, user, session, location, message, tag, delete_raw_data,
+        query_depth_answer, register_depth):
         openephys.register_openephys_recording(
-            project_path=PAR.PROJECT_ROOT,
+            project=PAR.PROJECT,
             action_id=action_id,
             openephys_path=openephys_path,
             depth=depth,
             overwrite=overwrite,
-            no_modules=no_modules,
+            templates=templates,
             entity_id=entity_id,
             user=user,
             session=session,
@@ -75,4 +81,5 @@ def attach_to_cli(cli):
             message=message,
             tag=tag,
             delete_raw_data=None,
-            query_depth_answer=None)
+            query_depth_answer=None,
+            register_depth=register_depth)

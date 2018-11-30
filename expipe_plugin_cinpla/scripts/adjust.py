@@ -24,7 +24,7 @@ adjustment_template = {
 }
 
 
-def register_adjustment(project_path, entity_id, date, adjustment, user,
+def register_adjustment(project, entity_id, date, adjustment, user,
                         depth, yes):
     user = user or PAR.USERNAME
     if user is None:
@@ -42,7 +42,6 @@ def register_adjustment(project_path, entity_id, date, adjustment, user,
     if isinstance(date, str):
         date = dt.strptime(date, DTIME_FORMAT)
     datestring = date.strftime(DTIME_FORMAT)
-    project = expipe.get_project(project_path)
     action_id = entity_id + '-adjustment'
     try:
         action = project.actions[action_id]
@@ -85,7 +84,7 @@ def register_adjustment(project_path, entity_id, date, adjustment, user,
             current[key][pos_key] = round(prev_value + adjust_value, 3) # round to um
 
     def last_probe(x):
-        return '%.3d' % int(x.split('_')[-1])
+        return '{:03d}'.format(int(x.split('_')[-1]))
     correct = utils.query_yes_no(
         'Correct adjustment?: \n' +
         ' '.join('{} {} = {}\n'.format(key, pos_key, val[pos_key])

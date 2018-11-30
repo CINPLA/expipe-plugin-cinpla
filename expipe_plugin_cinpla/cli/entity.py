@@ -1,5 +1,5 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.scripts.utils import generate_templates, query_yes_no
+from expipe_plugin_cinpla.scripts.utils import register_templates, query_yes_no
 from expipe_plugin_cinpla.scripts import entity
 from . import utils
 
@@ -28,7 +28,7 @@ def attach_to_cli(cli):
                   envvar=PAR.POSSIBLE_CELL_LINES,
                   help='Add cell line to entity.',
                   )
-    @click.option('--developmental_stage',
+    @click.option('--developmental-stage',
                   type=click.STRING,
                   help="The developemtal stage of the entity. E.g. 'embroyonal', 'adult', 'larval' etc.",
                   )
@@ -86,7 +86,12 @@ def attach_to_cli(cli):
                   is_flag=True,
                   help='Overwrite existing module',
                   )
+    @click.option('--templates',
+                  multiple=True,
+                  type=click.STRING,
+                  help='Which templates to add',
+                  )
     def _register_entity(entity_id, user, message, location, tag, overwrite,
-                         **kwargs):
-        entity.register_entity(PAR.PROJECT_ROOT, entity_id, user, message, location, tag, overwrite,
-                             **kwargs)
+                         templates, **kwargs):
+        entity.register_entity(PAR.PROJECT, entity_id, user, message, location, tag, overwrite,
+                             templates, **kwargs)

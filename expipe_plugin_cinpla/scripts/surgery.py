@@ -1,10 +1,10 @@
 from expipe_plugin_cinpla.imports import *
-from .utils import generate_templates, query_yes_no
+from .utils import register_templates, query_yes_no
 
 
 def register_surgery(
-    project_path, entity_id, procedure, date, user, weight, location,
-    overwrite, position, angle, message, tag):
+    project, entity_id, procedure, date, user, weight, location,
+    overwrite, position, angle, message, tag, templates):
     # TODO tag sucject as active
     if weight == (None, None):
         print('Missing option "weight".')
@@ -18,7 +18,6 @@ def register_surgery(
         print('Missing option "location".')
         return
     weight = pq.Quantity(weight[0], weight[1])
-    project = expipe.get_project(project_path)
     action_id = entity_id + '-surgery-' + procedure
     try:
         action = project.create_action(action_id)
@@ -37,7 +36,7 @@ def register_surgery(
     entity.tags.extend([surgery_key, PAR.PROJECT_ID])
     entity.users.append(user)
 
-    # generate_templates(action, 'surgery_' + procedure)
+    register_templates(action, templates)
     if date == 'now':
         date = datetime.now()
     if isinstance(date, str):
@@ -68,9 +67,8 @@ def register_surgery(
         action.modules[key][probe_key]['angle'] = pq.Quantity(ang, unit)
 
 
-def register_perfusion(project_path, entity_id, date, user, weight, overwrite,
-                       message):
-    project = expipe.get_project(project_path)
+def register_perfusion(project, entity_id, date, user, weight, overwrite,
+                       message, templates):
     action_id = entity_id + '-perfusion'
     user = user or PAR.USERNAME
     if user is None:
@@ -85,7 +83,7 @@ def register_perfusion(project_path, entity_id, date, user, weight, overwrite,
         else:
             print(str(e) + '. Use "overwrite"')
             return
-    generate_templates(action, 'perfusion')
+    register_templates(action, templates)
     if date == 'now':
         date = datetime.now()
     if isinstance(date, str):

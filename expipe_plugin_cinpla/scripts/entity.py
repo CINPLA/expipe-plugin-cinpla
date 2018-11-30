@@ -1,11 +1,10 @@
 from expipe_plugin_cinpla.imports import *
-from .utils import generate_templates, query_yes_no
+from .utils import register_templates, query_yes_no
 
 
-def register_entity(project_path, entity_id, user, message, location, tag, overwrite,
-                    birthday, **kwargs):
+def register_entity(project, entity_id, user, message, location, tag, overwrite,
+                    birthday, templates, **kwargs):
     DTIME_FORMAT = expipe.core.datetime_format
-    project = expipe.get_project(project_path)
     user = user or PAR.USERNAME
     if user is None:
         print('Missing option "user".')
@@ -25,6 +24,7 @@ def register_entity(project_path, entity_id, user, message, location, tag, overw
     if isinstance(birthday, str):
         birthday = datetime.strftime(
             datetime.strptime(birthday, '%d.%m.%Y'), DTIME_FORMAT)
+    utils.register_templates(entity, templates)
     entity.datetime = datetime.now()
     entity.type = 'Subject'
     entity.tags.extend(list(tag))
