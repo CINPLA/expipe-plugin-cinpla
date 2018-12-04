@@ -83,3 +83,20 @@ def attach_to_cli(cli):
             delete_raw_data=None,
             correct_depth_answer=None,
             register_depth=register_depth)
+
+
+def attach_to_cli(cli):
+    @cli.command('process',
+                 short_help='Generate a klusta .dat and .prm files from openephys directory.')
+    @click.argument('action-id', type=click.STRING)
+    @click.option('--probe-path',
+                  type=click.STRING,
+                  help='Path to probefile, assumed to be in expipe config directory by default.',
+                  )
+    @click.option('--sorter',
+                  default='klusta',
+                  type=click.Choice(['klusta', 'mountain', 'kilosort']),
+                  help='',
+                  )
+    def _process_openephys(action_id, probe_path, sorter):
+        openephys.process_openephys(PAR.PROJECT, action_id, probe_path, sorter)

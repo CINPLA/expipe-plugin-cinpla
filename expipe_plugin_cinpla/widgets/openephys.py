@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import openephys
-from .utils import SelectDirectoryButton, MultiInput, Templates
+from .utils import SelectDirectoryButton, MultiInput, Templates, SelectFilesButton
 
 
 def openephys_view(project):
@@ -87,4 +87,34 @@ def openephys_view(project):
             correct_depth_answer=True)
 
     register.on_click(on_register)
+    return main_box
+
+
+def process_view(project):
+    probe_path = SelectFilesButton()
+    action_id = ipywidgets.Text(placeholder='Action id')
+    templates = Templates(project)
+    sorter = ipywidgets.Dropdown(
+        description='*Sorter', options=['klusta', 'mountain', 'kilosort'])
+
+    run = ipywidgets.Button(description='Process')
+
+    fields = ipywidgets.VBox([
+        action_id,
+        sorter,
+        run
+    ])
+    main_box = ipywidgets.VBox([
+            probe_path,
+            fields
+        ])
+
+
+    def on_run(change):
+        tags = tag.value.split(';')
+        openephys.process_openephys(
+            project=project,
+            action_id=action_id.value)
+
+    run.on_click(on_run)
     return main_box

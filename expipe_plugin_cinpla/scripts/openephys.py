@@ -77,3 +77,40 @@ def register_openephys_recording(
         'Delete raw data in {}? (yes/no)'.format(openephys_path),
         default='no', answer=delete_raw_data):
         shutil.rmtree(openephys_path)
+
+
+def process_openephys(project, action_id, probe_path, sorter):
+    import spikeinterface as si
+    import spiketoolkit as st
+    action = project.actions[action_id]
+    if exdir_path is None:
+        exdir_path = action_tools._get_data_path(action)
+        exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+    if openephys_path is None:
+        acquisition = exdir_file["acquisition"]
+        if acquisition.attrs['acquisition_system'] is None:
+            raise ValueError('No Open Ephys aquisition system ' +
+                             'related to this action')
+        openephys_session = acquisition.attrs["openephys_session"]
+        openephys_path = os.path.join(str(acquisition.directory), openephys_session)
+        probe_path = probe_path or project.config.get('probe')
+
+    recording = se.OpenEphysRecordingExtractor(openephys_path)
+    se.loadProbeFile(recording, probe_path)
+    # apply cmr
+    recording_cmr = st.preprocessing.common_reference(recording)
+    recording_lfp = st.preprocessing.bandpass_filter(recording, freq_min=1, freq_max=300)
+    recording_lfp = st.preprocessing.resample(recording, 1000)
+
+    if sorter == 'klusta':
+        sorting = st.sorters.klusta(recording, by_property='group')
+    elif sorter == 'mountain':
+        sorting = st.sorters.mountainsort4(recording, by_property='group',
+                                           adjacency_radius=10, detect_sign=-1)
+    elif sorter == 'kilosort':
+        sorting = st.sorters.kilosort(recording, by_property='group',
+                                      kilosort_path='/home/mikkel/apps/KiloSort',
+                                      npy_matlab_path='/home/mikkel/apps/npy-matlab/npy-matlab')
+    # extract waveforms
+
+    se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, sample_rate=recording.getSamplingFrequency())
