@@ -31,7 +31,8 @@ def attach_to_cli(cli):
         if user not in users:
             users.append(user)
         action.users = users
-        action.create_message(text=m, user=user, datetime=datetime.now())
+        if message:
+            action.create_message(text=m, user=user, datetime=datetime.now())
         action.tags.extend(tag)
 
     @cli.command('spikesort', short_help='Spikesort with klustakwik.')

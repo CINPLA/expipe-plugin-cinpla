@@ -33,7 +33,7 @@ def register_surgery(
     if surgery_key not in entity.modules:
         entity.modules[surgery_key] = {}
     entity.modules[surgery_key]['weight'] = weight
-    entity.tags.extend([surgery_key, project.id])
+    entity.tags.extend(['surgery-' + procedure])
     entity.users.append(user)
 
     register_templates(action, templates)
@@ -49,7 +49,8 @@ def register_surgery(
     action.entities = [entity_id]
     print('Registering user', user)
     action.users.append(user)
-    action.create_message(text=message, user=user, datetime=datetime.now())
+    if message:
+        action.create_message(text=message, user=user, datetime=datetime.now())
     for key, probe, x, y, z, unit in position:
         action.modules[key] = {}
         probe_key = 'probe_{}'.format(probe)
@@ -67,11 +68,15 @@ def register_surgery(
 
 
 def register_perfusion(project, entity_id, date, user, weight, overwrite,
-                       message, templates):
+                       message, templates, location):
     action_id = entity_id + '-perfusion'
     user = user or PAR.USERNAME
     if user is None:
         print('Missing option "user".')
+        return
+    location = location or PAR.LOCATION
+    if location is None:
+        print('Missing option "location".')
         return
     try:
         action = project.create_action(action_id)
@@ -87,10 +92,12 @@ def register_perfusion(project, entity_id, date, user, weight, overwrite,
         date = datetime.now()
     if isinstance(date, str):
         date = datetime.strftime(date, DTIME_FORMAT)
-    action.messages.create_message(
-        text=message, user=user, datetime= datetime.now())
+    if message:
+        action.messages.create_message(
+            text=message, user=user, datetime= datetime.now())
     action.datetime = date
-    action.location = 'Sterile surgery station'
+    print('Registering location', location)
+    action.location = location
     action.type = 'Surgery'
     action.tags = ['perfusion']
     action.entities = [entity_id]
@@ -100,4 +107,4 @@ def register_perfusion(project, entity_id, date, user, weight, overwrite,
         action.create_module(
             'perfusion', contents={'weight': pq.Quantity(weight[0], weight[1])})
     entity = project.entities[entity_id]
-    entity.tags.extend(['perfused', 'euthanised'])
+    entity.tags.extend(['perfused'])

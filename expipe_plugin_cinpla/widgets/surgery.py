@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import surgery
-from .utils import DatePicker, MultiInput, Templates, required_values_filled
+from .utils import DatePicker, MultiInput, Templates, required_values_filled, none_if_empty, split_tags
 
 
 def surgery_view(project):
@@ -13,7 +13,7 @@ def surgery_view(project):
         ipywidgets.Text(placeholder='*Weight', layout={'width': '60px'}),
         ipywidgets.Text(placeholder='*Unit', layout={'width': '60px'})])
     location = ipywidgets.Text(placeholder='*Location', value=PAR.LOCATION)
-    message = ipywidgets.Text(placeholder='Message')
+    message = ipywidgets.Text(placeholder='Message', value=None)
     tag = ipywidgets.Text(placeholder='Tags (; to separate)')
     position = MultiInput(['*Key', '*Probe', '*x', '*y', '*z', '*Unit'], 'Add position')
     angle = MultiInput(['*Key', '*Probe', '*Angle', '*Unit'], 'Add angle')
@@ -43,9 +43,9 @@ def surgery_view(project):
 
     def on_register(change):
         if not required_values_filled(
-            entity_id, user, location, procedure, date, *weight.children, *fields.children[5:7]):
+            entity_id, user, location, procedure, date, *weight.children, position, angle):
             return
-        tags = tag.value.split(';')
+        tags = split_tags(tag)
         weight_val = (weight.children[0].value, weight.children[1].value)
         surgery.register_surgery(
             project=project,
@@ -59,7 +59,7 @@ def surgery_view(project):
             templates=templates.value,
             position=position.value,
             angle=angle.value,
-            message=message.value,
+            message=none_if_empty(message.value),
             tag=tags)
 
     register.on_click(on_register)
@@ -67,9 +67,9 @@ def surgery_view(project):
 
 
 def perfuse_view(project):
-    entity_id = ipywidgets.Text(placeholder='Entity id')
+    entity_id = ipywidgets.Text(placeholder='*Entity id')
     date = DatePicker(disabled=False)
-    user = ipywidgets.Text(placeholder='User', value=PAR.USERNAME)
+    user = ipywidgets.Text(placeholder='*User', value=PAR.USERNAME)
     message = ipywidgets.Text(placeholder='Message')
     weight = ipywidgets.HBox([
         ipywidgets.Text(placeholder='*Weight', layout={'width': '60px'}),
@@ -92,6 +92,8 @@ def perfuse_view(project):
     ])
 
     def on_register(change):
+        if not required_values_filled(user, entity_id, *weight.children):
+            return
         weight_val = (weight.children[0].value, weight.children[1].value)
         surgery.register_perfusion(
             project=project,
@@ -101,7 +103,7 @@ def perfuse_view(project):
             templates=templates.value,
             date=date.datetime,
             weight=weight_val,
-            message=message.value)
+            message=none_if_empty(message.value))
 
     register.on_click(on_register)
     return main_box

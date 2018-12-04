@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.scripts import adjust
 from expipe_plugin_cinpla.imports import *
-from .utils import DateTimePicker, MultiInput, required_values_filled
+from .utils import DateTimePicker, MultiInput, required_values_filled, none_if_empty
 
 
 def adjustment_view(project):
@@ -36,6 +36,8 @@ def adjustment_view(project):
     depth_from_surgery.observe(on_manual_depth, names='value')
 
     def on_register(change):
+        if not required_values_filled(entity_id, user, adjustment):
+            return
         adjust.register_adjustment(
             project=project,
             entity_id=entity_id.value,
