@@ -14,7 +14,6 @@ def attach_to_cli(cli):
                     help='Add tags to action.',
                     )
     @click.option('--message', '-m',
-                  multiple=True,
                   type=click.STRING,
                   help='Add message, use "text here" for sentences.',
                   )
@@ -32,7 +31,7 @@ def attach_to_cli(cli):
         if user not in users:
             users.append(user)
         action.users = users
-        for m in message:
+        if message:
             action.create_message(text=m, user=user, datetime=datetime.now())
         action.tags.extend(tag)
 

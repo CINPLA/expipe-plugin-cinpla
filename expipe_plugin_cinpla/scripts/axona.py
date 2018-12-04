@@ -1,3 +1,4 @@
+from expipe_plugin_cinpla.imports import *
 from . import utils
 
 
@@ -14,8 +15,10 @@ def register_axona_recording(
         print('Missing option "location".')
         return
     if not axona_filename.endswith('.set'):
-        raise ValueError("Sorry, we need an Axona .set file not " +
+        print("Sorry, we need an Axona .set file not " +
               "'{}'.".format(axona_filename))
+        print('Aborting registration!')
+        return
     if len(cluster_group) == 0:
         cluster_group = None # TODO set proper default via callback
     entity_id = entity_id or axona_filename.split(os.sep)[-2]
@@ -28,7 +31,7 @@ def register_axona_recording(
         action_id = entity_id + '-' + session_dtime + '-' + session
     try:
         action = project.create_action(action_id)
-    except NameError as e:
+    except KeyError as e:
         if overwrite:
             project.delete_action(action_id)
             action = project.create_action(action_id)
@@ -46,8 +49,8 @@ def register_axona_recording(
     print('Registering location ' + location)
     action.location = location
     action.type = 'Recording'
-    for m in message:
-        action.create_message(text=m, user=user, datetime=datetime.now())
+    if message:
+        action.create_message(text=message, user=user, datetime=datetime.now())
     if register_depth:
         correct_depth = utils.register_depth(
             project=project, action=action, depth=depth,
@@ -64,7 +67,7 @@ def register_axona_recording(
     if not no_cut:
         axona.generate_units(exdir_path, axona_file,
                              cluster_group=cluster_group,
-                             set_zero_cluster_to_noise=set_zero_cluster_to_noise)
+                             set_noise=set_zero_cluster_to_noise)
         axona.generate_clusters(exdir_path, axona_file)
     if get_inp:
         axona.generate_inp(exdir_path, axona_file)

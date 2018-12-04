@@ -51,19 +51,26 @@ def attach_to_cli(cli):
                   help='The angle of implantation/injection.',
                   )
     @click.option('--message', '-m',
-                  multiple=True,
                   type=click.STRING,
                   help='Add message, use "text here" for sentences.',
+                  )
+    @click.option('-l', '--location',
+                  type=click.STRING,
+                  callback=utils.optional_choice,
+                  envvar=PAR.POSSIBLE_LOCATIONS,
+                  help='The location of the recording, i.e. "room-1-ibv".'
                   )
     @click.option('--templates',
                   multiple=True,
                   type=click.STRING,
                   help='Which templates to add',
                   )
-    def _register_surgery(entity_id, procedure, date, user, weight,
-                         overwrite, position, angle, message, tag, templates):
-        surgery.register_surgery(PAR.PROJECT, entity_id, procedure, date, user, weight,
-                             overwrite, position, angle, message, tag, templates)
+    def _register_surgery(
+        project, entity_id, procedure, date, user, weight, location,
+        overwrite, position, angle, message, tag, templates):
+        surgery.register_surgery(
+            PAR.PROJECT, entity_id, procedure, date, user, weight, location,
+            overwrite, position, angle, message, tag, templates)
 
 
     @cli.command('perfusion',
@@ -85,12 +92,17 @@ def attach_to_cli(cli):
                   default=(None, None),
                   help='The weight of the animal.',
                   )
+    @click.option('-l', '--location',
+                  type=click.STRING,
+                  callback=utils.optional_choice,
+                  envvar=PAR.POSSIBLE_LOCATIONS,
+                  help='The location of the recording, i.e. "room-1-ibv".'
+                  )
     @click.option('--overwrite',
                   is_flag=True,
                   help='Overwrite files and expipe action.',
                   )
     @click.option('--message', '-m',
-                  multiple=True,
                   type=click.STRING,
                   help='Add message, use "text here" for sentences.',
                   )
@@ -99,6 +111,7 @@ def attach_to_cli(cli):
                   type=click.STRING,
                   help='Which templates to add',
                   )
-    def _register_perfusion(entity_id, date, user, weight, overwrite, message, templates):
+    def _register_perfusion(entity_id, date, user, weight, overwrite, message, templates, location):
         surgery.register_perfusion(
-            PAR.PROJECT, entity_id, date, user, weight, overwrite, message, templates)
+            PAR.PROJECT, entity_id, date, user, weight, overwrite, message,
+            templates, location)

@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import openephys
-from .utils import SelectDirectoryButton, MultiInput, Templates, SelectFilesButton, required_values_filled
+from .utils import SelectDirectoryButton, MultiInput, Templates, SelectFileButton, required_values_filled, none_if_empty, split_tags
 
 
 def openephys_view(project):
@@ -68,20 +68,22 @@ def openephys_view(project):
 
 
     def on_register(change):
-        tags = tag.value.split(';')
+        if not required_values_filled(user, location):
+            return
+        tags = split_tags(tag)
         openephys.register_openephys_recording(
             templates=templates.value,
             project=project,
-            action_id=action_id.value,
+            action_id=none_if_empty(action_id.value),
             openephys_path=openephys_path.directory,
             depth=depth.value,
             overwrite=overwrite.value,
             register_depth=register_depth.value,
-            entity_id=entity_id.value,
+            entity_id=none_if_empty(entity_id.value),
             user=user.value,
             session=session.value,
             location=location.value,
-            message=[message.value],
+            message=none_if_empty(message.value),
             tag=tags,
             delete_raw_data=delete_raw_data.value,
             correct_depth_answer=True)
@@ -91,7 +93,7 @@ def openephys_view(project):
 
 #TODO add spike sorter specific params
 def process_view(project):
-    probe_path = SelectFilesButton()
+    probe_path = SelectFileButton('.prb')
     action_id = ipywidgets.Text(placeholder='Action id')
     templates = Templates(project)
     sorter = ipywidgets.Dropdown(

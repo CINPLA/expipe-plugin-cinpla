@@ -39,7 +39,6 @@ def attach_to_cli(cli):
                   help='The id number of the entity.',
                   )
     @click.option('-m', '--message',
-                  multiple=True,
                   type=click.STRING,
                   help='Add message, use "text here" for sentences.',
                   )

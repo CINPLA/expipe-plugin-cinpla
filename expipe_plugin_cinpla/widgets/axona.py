@@ -1,10 +1,10 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import axona
-from .utils import SelectFilesButton, MultiInput, Templates, required_values_filled
+from .utils import SelectFileButton, MultiInput, Templates, required_values_filled, none_if_empty, split_tags
 
 
 def axona_view(project):
-    axona_path = SelectFilesButton()
+    axona_path = SelectFileButton('.set')
     user = ipywidgets.Text(placeholder='*User', value=PAR.USERNAME)
     location = ipywidgets.Text(placeholder='*Location', value=PAR.LOCATION)
     action_id = ipywidgets.Text(placeholder='Action id')
@@ -67,21 +67,24 @@ def axona_view(project):
 
 
     def on_register(change):
-        tags = tag.value.split(';')
+        tags = split_tags(tag)
+        if not required_values_filled(user, location):
+            return
+        no_cut = not load_cut.value
         axona.register_axona_recording(
             project=project,
-            action_id=action_id.value,
-            axona_filename=axona_path.files,
+            action_id=none_if_empty(action_id.value),
+            axona_filename=axona_path.file,
             depth=depth.value,
             user=user.value,
             overwrite=overwrite.value,
             templates=templates.value,
-            entity_id=entity_id.value,
+            entity_id=none_if_empty(entity_id.value),
             location=location.value,
-            message=[message.value],
+            message=none_if_empty(message.value),
             tag=tags,
-            get_inp=get_inp.value,
-            no_cut=no_cut.value,
+            get_inp=load_input.value,
+            no_cut=no_cut,
             cluster_group=[],
             set_zero_cluster_to_noise=set_zero_cluster_to_noise.value,
             register_depth=register_depth.value,

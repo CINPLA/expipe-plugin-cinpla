@@ -20,6 +20,17 @@ def required_values_filled(*widgets):
     return all(filled)
 
 
+def none_if_empty(txt):
+    return txt if txt != '' else None
+
+
+def split_tags(tag):
+    if tag.value == '':
+        return ()
+    else:
+        return tag.value.split(';')
+
+
 class Templates(ipywidgets.VBox):
     def __init__(self, project, *args, **kwargs):
         super(Templates, self).__init__(*args, **kwargs)
@@ -120,24 +131,25 @@ class DatePicker(ipywidgets.DatePicker):
             return None
 
 
-class SelectFilesButton(ipywidgets.Button):
+class SelectFileButton(ipywidgets.Button):
     """A file widget that leverages tkinter.filedialog."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the SelectFilesButton class."""
-        super(SelectFilesButton, self).__init__(*args, **kwargs)
-        # Add the selected_files trait
+    def __init__(self, filetype=None, *args, **kwargs):
+        """Initialize the SelectFileButton class."""
+        super(SelectFileButton, self).__init__(*args, **kwargs)
+        # Add the selected_file trait
         import traitlets
-        self.add_traits(files=traitlets.traitlets.List())
+        self.add_traits(file=traitlets.traitlets.Unicode())
         # Create the button.
-        self.description = "Select Files"
+        self.description = "Select file"
         self.icon = "square-o"
         self.style.button_color = "orange"
         # Set on click behavior.
-        self.on_click(self.select_files)
+        self.on_click(self.select_file)
+        self.filetype = filetype
 
     @staticmethod
-    def select_files(self):
+    def select_file(self):
         from tkinter import Tk, filedialog
         """Generate instance of tkinter.filedialog.
         """
@@ -147,25 +159,34 @@ class SelectFilesButton(ipywidgets.Button):
         root.withdraw()
         # Raise the root to the top of all windows.
         root.call('wm', 'attributes', '.', '-topmost', True)
-        # List of selected fileswill be set to self.value
-        self.files = filedialog.askopenfilenames()
-
-        self.description = "Files Selected"
-        self.icon = "check-square-o"
-        self.style.button_color = "lightgreen"
+        # List of selected filewill be set to self.value
+        ft = self.filetype
+        if ft is not None:
+            if not ft.startswith('.'):
+                ft = '.' + ft
+            name = ft[1:].capitalize()
+            self.file = filedialog.askopenfilename(
+                defaultextension=ft,
+                filetypes=[('{} file'.format(name),'*{}'.format(ft)), ('All files','*.*')])
+        else:
+            self.file = filedialog.askopenfilename()
+        if len(self.file) > 0:
+            self.description = "File Selected"
+            self.icon = "check-square-o"
+            self.style.button_color = "lightgreen"
 
 
 class SelectDirectoryButton(ipywidgets.Button):
     """A file widget that leverages tkinter.filedialog."""
 
     def __init__(self, *args, **kwargs):
-        """Initialize the SelectFilesButton class."""
+        """Initialize the SelectDirectoryButton class."""
         super(SelectDirectoryButton, self).__init__(*args, **kwargs)
         # Add the selected_files trait
         import traitlets
         self.add_traits(directory=traitlets.traitlets.Unicode())
         # Create the button.
-        self.description = "Select Files"
+        self.description = "Select Directory"
         self.icon = "square-o"
         self.style.button_color = "orange"
         # Set on click behavior.
@@ -185,6 +206,7 @@ class SelectDirectoryButton(ipywidgets.Button):
         # List of selected fileswill be set to self.value
         self.directory = filedialog.askdirectory()
 
-        self.description = "Files Selected"
-        self.icon = "check-square-o"
-        self.style.button_color = "lightgreen"
+        if self.directory is not None:
+            self.description = "Directory Selected"
+            self.icon = "check-square-o"
+            self.style.button_color = "lightgreen"

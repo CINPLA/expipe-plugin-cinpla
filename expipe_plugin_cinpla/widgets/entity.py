@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.scripts import entity
 from expipe_plugin_cinpla.imports import *
-from .utils import DatePicker, Templates, required_values_filled
+from .utils import DatePicker, Templates, required_values_filled, none_if_empty, split_tags
 
 
 def entity_view(project):
@@ -32,14 +32,14 @@ def entity_view(project):
         ])
 
     def on_register(change):
-        tags = tag.value.split(';')
+        tags = split_tags(tag)
         if not required_values_filled(entity_id, user, location, birthday):
             return
         entity.register_entity(
             project=project,
             entity_id=entity_id.value,
             user=user.value,
-            message=[message.value],
+            message=none_if_empty(message.value),
             birthday=birthday.datetime,
             overwrite=overwrite,
             location=location.value,

@@ -15,9 +15,8 @@ def register_openephys_recording(
     if location is None:
         print('Missing option "location".')
         return
-
     openephys_path = pathlib.Path(openephys_path)
-    openephys_dirname = openephys_path.parent
+    openephys_dirname = openephys_path.stem
     openephys_file = pyopenephys.File(str(openephys_path))
     openephys_exp = openephys_file.experiments[0]
     openephys_rec = openephys_exp.recordings[0]
@@ -60,9 +59,8 @@ def register_openephys_recording(
             project.delete_action(action_id)
             return
     utils.register_templates(action, templates)
-
-    for m in message:
-        action.create_message(text=m, user=user, datetime=datetime.now())
+    if message:
+        action.create_message(text=message, user=user, datetime=datetime.now())
 
         # TODO update to messages
         # for idx, m in enumerate(openephys_rec.messages):
