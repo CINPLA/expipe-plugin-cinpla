@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import axona
-from .utils import SelectFilesButton, MultiInput, Templates
+from .utils import SelectFilesButton, MultiInput, Templates, required_values_filled
 
 
 def axona_view(project):

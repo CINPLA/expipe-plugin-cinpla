@@ -8,7 +8,7 @@ long_description = open("README.md").read()
 setup(
     name="expipe-plugin-cinpla",
     packages=find_packages(),
-    version='0.1'
+    version='0.1',
     include_package_data=True,
     author="CINPLA",
     author_email="",

@@ -1,5 +1,5 @@
 from expipe_plugin_cinpla.imports import *
-from .utils import register_templates, query_yes_no
+from . import utils
 
 
 def register_entity(project, entity_id, user, message, location, tag, overwrite,

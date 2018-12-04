@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.scripts import entity
 from expipe_plugin_cinpla.imports import *
-from .utils import DatePicker, Templates
+from .utils import DatePicker, Templates, required_values_filled
 
 
 def entity_view(project):

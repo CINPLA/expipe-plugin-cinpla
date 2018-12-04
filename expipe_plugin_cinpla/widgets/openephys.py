@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import openephys
-from .utils import SelectDirectoryButton, MultiInput, Templates, SelectFilesButton
+from .utils import SelectDirectoryButton, MultiInput, Templates, SelectFilesButton, required_values_filled
 
 
 def openephys_view(project):
