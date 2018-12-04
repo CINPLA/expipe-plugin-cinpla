@@ -89,13 +89,13 @@ def openephys_view(project):
     register.on_click(on_register)
     return main_box
 
-
+#TODO add spike sorter specific params
 def process_view(project):
     probe_path = SelectFilesButton()
     action_id = ipywidgets.Text(placeholder='Action id')
     templates = Templates(project)
     sorter = ipywidgets.Dropdown(
-        description='*Sorter', options=['klusta', 'mountain', 'kilosort'])
+        description='*Sorter', options=['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust'])
 
     run = ipywidgets.Button(description='Process')
 
@@ -109,12 +109,12 @@ def process_view(project):
             fields
         ])
 
-
     def on_run(change):
-        tags = tag.value.split(';')
         openephys.process_openephys(
             project=project,
-            action_id=action_id.value)
+            action_id=action_id.value,
+            probe_path=probe_path.files[0],
+            sorter=sorter.value)
 
     run.on_click(on_run)
     return main_box
