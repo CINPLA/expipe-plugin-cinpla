@@ -49,8 +49,7 @@ def register_surgery(
     action.entities = [entity_id]
     print('Registering user', user)
     action.users.append(user)
-    for m in message:
-        action.create_message(text=m, user=user, datetime=datetime.now())
+    action.create_message(text=message, user=user, datetime=datetime.now())
     for key, probe, x, y, z, unit in position:
         action.modules[key] = {}
         probe_key = 'probe_{}'.format(probe)
@@ -88,9 +87,8 @@ def register_perfusion(project, entity_id, date, user, weight, overwrite,
         date = datetime.now()
     if isinstance(date, str):
         date = datetime.strftime(date, DTIME_FORMAT)
-    for m in message:
-        action.messages.create_message(
-            text=m, user=user, datetime= datetime.now())
+    action.messages.create_message(
+        text=message, user=user, datetime= datetime.now())
     action.datetime = date
     action.location = 'Sterile surgery station'
     action.type = 'Surgery'

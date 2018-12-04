@@ -78,7 +78,7 @@ def axona_view(project):
             templates=templates.value,
             entity_id=entity_id.value,
             location=location.value,
-            message=[message.value],
+            message=message.value,
             tag=tags,
             get_inp=get_inp.value,
             no_cut=no_cut.value,

@@ -46,8 +46,7 @@ def register_axona_recording(
     print('Registering location ' + location)
     action.location = location
     action.type = 'Recording'
-    for m in message:
-        action.create_message(text=m, user=user, datetime=datetime.now())
+    action.create_message(text=message, user=user, datetime=datetime.now())
     if register_depth:
         correct_depth = utils.register_depth(
             project=project, action=action, depth=depth,

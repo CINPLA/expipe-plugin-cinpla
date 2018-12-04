@@ -51,7 +51,6 @@ def attach_to_cli(cli):
                   help='The angle of implantation/injection.',
                   )
     @click.option('--message', '-m',
-                  multiple=True,
                   type=click.STRING,
                   help='Add message, use "text here" for sentences.',
                   )
@@ -90,7 +89,6 @@ def attach_to_cli(cli):
                   help='Overwrite files and expipe action.',
                   )
     @click.option('--message', '-m',
-                  multiple=True,
                   type=click.STRING,
                   help='Add message, use "text here" for sentences.',
                   )

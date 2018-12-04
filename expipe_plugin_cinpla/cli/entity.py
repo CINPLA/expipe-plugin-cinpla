@@ -71,7 +71,6 @@ def attach_to_cli(cli):
                   help='The weight of the animal.',
                   )
     @click.option('--message', '-m',
-                  multiple=True,
                   type=click.STRING,
                   help='Add message, use "text here" for sentences.',
                   )

@@ -59,7 +59,7 @@ def surgery_view(project):
             templates=templates.value,
             position=position.value,
             angle=angle.value,
-            message=[message.value],
+            message=message.value,
             tag=tags)
 
     register.on_click(on_register)
@@ -101,7 +101,7 @@ def perfuse_view(project):
             templates=templates.value,
             date=date.datetime,
             weight=weight_val,
-            message=[message.value])
+            message=message.value)
 
     register.on_click(on_register)
     return main_box

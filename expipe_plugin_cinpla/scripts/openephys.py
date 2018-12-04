@@ -60,8 +60,7 @@ def register_openephys_recording(
             return
     utils.register_templates(action, templates)
 
-    for m in message:
-        action.create_message(text=m, user=user, datetime=datetime.now())
+    action.create_message(text=message, user=user, datetime=datetime.now())
 
         # TODO update to messages
         # for idx, m in enumerate(openephys_rec.messages):

@@ -31,8 +31,7 @@ def register_entity(project, entity_id, user, message, location, tag, overwrite,
     entity.location = location
     print('Registering user ' + user)
     entity.users = [user]
-    for m in message:
-        entity.create_message(text=m, user=user, datetime=datetime.now())
+    entity.create_message(text=message, user=user, datetime=datetime.now())
     for key, val in kwargs.items():
         if 'register' not in entity.modules:
             entity.modules['register'] = {}
