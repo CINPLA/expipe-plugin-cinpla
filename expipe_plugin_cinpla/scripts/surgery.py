@@ -33,7 +33,7 @@ def register_surgery(
     if surgery_key not in entity.modules:
         entity.modules[surgery_key] = {}
     entity.modules[surgery_key]['weight'] = weight
-    entity.tags.extend([surgery_key, PAR.PROJECT_ID])
+    entity.tags.extend([surgery_key, project.id])
     entity.users.append(user)
 
     register_templates(action, templates)

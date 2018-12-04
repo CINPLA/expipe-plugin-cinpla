@@ -81,7 +81,7 @@ def openephys_view(project):
             user=user.value,
             session=session.value,
             location=location.value,
-            message=message.value,
+            message=[message.value],
             tag=tags,
             delete_raw_data=delete_raw_data.value,
             correct_depth_answer=True)

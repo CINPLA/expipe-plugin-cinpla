@@ -39,7 +39,7 @@ def entity_view(project):
             project=project,
             entity_id=entity_id.value,
             user=user.value,
-            message=message.value,
+            message=[message.value],
             birthday=birthday.datetime,
             overwrite=overwrite,
             location=location.value,
