@@ -126,6 +126,7 @@ def register_depth(project, action, depth=None, answer=None):
 
 def _make_data_path(action, overwrite):
     action_path = action._backend.path
+    project_path = action_path.parent.parent
     data_path = action_path / 'data'
     data_path.mkdir(exist_ok=True)
     exdir_path = data_path / 'main.exdir'
@@ -136,14 +137,16 @@ def _make_data_path(action, overwrite):
             raise FileExistsError(
                 'The exdir path to this action "' + str(exdir_path) +
                 '" exists, optionally use "--overwrite"')
-    relpath = exdir_path.relative_to(PAR.PROJECT_ROOT)
+    relpath = exdir_path.relative_to(project_path)
     action.data['main'] = str(relpath)
     return exdir_path
 
 
 def _get_data_path(action):
-    action_path = action.data['main']
-    return PAR.PROJECT_ROOT / action_path
+    action_path = action._backend.path
+    project_path = action_path.parent.parent
+    data_path = action.data['main']
+    return project_path / data_path
 
 
 def register_templates(action, templates, overwrite=False):
