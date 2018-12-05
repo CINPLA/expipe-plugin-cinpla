@@ -4,19 +4,15 @@ from expipe_plugin_cinpla.imports import *
 def required_values_filled(*widgets):
     filled = []
     for w in widgets:
-        if isinstance(w, ipywidgets.Box):
-            filled.append(required_values_filled(*w.children))
-            continue
-        if isinstance(w, (ipywidgets.Button, ipywidgets.Output)):
-            continue
-        if w.value is None or w.value == '':
-            if isinstance(w, ipywidgets.Text):
-                assert w.placeholder[0] == '*'
-                print('Missing option ', w.placeholder[1:])
-            else:
-                assert w.description[0] == '*'
-                print('Missing option ', w.description[1:])
-            filled.append(False)
+        if hasattr(w, 'value'):
+            if w.value is None or w.value == '' or not w.value:
+                if isinstance(w, ipywidgets.Text):
+                    assert w.placeholder[0] == '*'
+                    print('Missing option ', w.placeholder[1:])
+                else:
+                    assert w.description[0] == '*'
+                    print('Missing option ', w.description[1:])
+                filled.append(False)
     return all(filled)
 
 
@@ -31,6 +27,7 @@ def split_tags(tag):
         return tag.value.split(';')
 
 
+# TODO generalize to SearchSelectMultiple
 class Templates(ipywidgets.VBox):
     def __init__(self, project, *args, **kwargs):
         super(Templates, self).__init__(*args, **kwargs)
@@ -40,6 +37,7 @@ class Templates(ipywidgets.VBox):
             disabled=False,
             layout={'height': '200px', 'width': '300px'}
         )
+        self.description = kwargs.get('description') or '' # TODO move into placeholder
         search_widget = ipywidgets.Text(
             placeholder='Templates', layout={'width': self.templates.layout.width})
         orig_list = list(self.templates.options)
@@ -56,11 +54,43 @@ class Templates(ipywidgets.VBox):
 
         search_widget.observe(on_text_change, names='value')
         self.children = [search_widget, self.templates]
-        # self.layout={'width': '310px'}
 
     @property
     def value(self):
         return self.templates.value
+
+
+# TODO generalize to SearchSelect
+class Actions(ipywidgets.VBox):
+    def __init__(self, project, *args, **kwargs):
+        super(Actions, self).__init__(*args, **kwargs)
+        self.actions = ipywidgets.Select(
+            options=project.actions,
+            value=None,
+            disabled=False,
+            layout={'height': '200px', 'width': '300px'}
+        )
+        self.description = kwargs.get('description') or ''
+        search_widget = ipywidgets.Text(
+            placeholder=self.description, layout={'width': self.actions.layout.width})
+        orig_list = list(self.actions.options)
+        # Wire the search field to the checkboxes
+        def on_text_change(change):
+            search_input = change['new']
+            if search_input == '':
+                # Reset search field
+                new_options = orig_list
+            else:
+                # Filter by search field.
+                new_options = [a for a in orig_list if search_input in a]
+            self.actions.options = new_options
+
+        search_widget.observe(on_text_change, names='value')
+        self.children = [search_widget, self.actions]
+
+    @property
+    def value(self):
+        return self.actions.value
 
 
 class MultiInput(ipywidgets.VBox):
@@ -141,12 +171,13 @@ class SelectFileButton(ipywidgets.Button):
         import traitlets
         self.add_traits(file=traitlets.traitlets.Unicode())
         # Create the button.
-        self.description = "Select file"
+        self.description = kwargs.get('description') or "Select file"
         self.icon = "square-o"
         self.style.button_color = "orange"
         # Set on click behavior.
         self.on_click(self.select_file)
         self.filetype = filetype
+        self.value = False
 
     @staticmethod
     def select_file(self):
@@ -165,15 +196,20 @@ class SelectFileButton(ipywidgets.Button):
             if not ft.startswith('.'):
                 ft = '.' + ft
             name = ft[1:].capitalize()
-            self.file = filedialog.askopenfilename(
+            result = filedialog.askopenfilename(
                 defaultextension=ft,
                 filetypes=[('{} file'.format(name),'*{}'.format(ft)), ('All files','*.*')])
+            self.file = result if len(result) > 0 else ''
         else:
-            self.file = filedialog.askopenfilename()
+            result = filedialog.askopenfilename()
+            self.file = result if len(result) > 0 else ''
         if len(self.file) > 0:
             self.description = "File Selected"
             self.icon = "check-square-o"
             self.style.button_color = "lightgreen"
+            self.value = True
+        else:
+            self.value = False
 
 
 class SelectDirectoryButton(ipywidgets.Button):
@@ -186,11 +222,12 @@ class SelectDirectoryButton(ipywidgets.Button):
         import traitlets
         self.add_traits(directory=traitlets.traitlets.Unicode())
         # Create the button.
-        self.description = "Select Directory"
+        self.description = kwargs.get('description') or "Select Directory"
         self.icon = "square-o"
         self.style.button_color = "orange"
         # Set on click behavior.
         self.on_click(self.select_directory)
+        self.value = False
 
     @staticmethod
     def select_directory(self):
@@ -210,3 +247,6 @@ class SelectDirectoryButton(ipywidgets.Button):
             self.description = "Directory Selected"
             self.icon = "check-square-o"
             self.style.button_color = "lightgreen"
+            self.value = True
+        else:
+            self.value = False

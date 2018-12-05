@@ -1,10 +1,10 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import openephys
-from .utils import SelectDirectoryButton, MultiInput, Templates, SelectFileButton, required_values_filled, none_if_empty, split_tags
+from .utils import SelectDirectoryButton, MultiInput, Templates, SelectFileButton, required_values_filled, none_if_empty, split_tags, Actions
 
 
 def openephys_view(project):
-    openephys_path = SelectDirectoryButton()
+    openephys_path = SelectDirectoryButton(description='*Select OpenEphys path')
     user = ipywidgets.Text(placeholder='*User', value=PAR.USERNAME)
     session = ipywidgets.Text(placeholder='Session')
     location = ipywidgets.Text(placeholder='*Location', value=PAR.LOCATION)
@@ -68,7 +68,7 @@ def openephys_view(project):
 
 
     def on_register(change):
-        if not required_values_filled(user, location):
+        if not required_values_filled(user, location, openephys_path):
             return
         tags = split_tags(tag)
         openephys.register_openephys_recording(
@@ -93,29 +93,29 @@ def openephys_view(project):
 
 #TODO add spike sorter specific params
 def process_view(project):
-    probe_path = SelectFileButton('.prb')
-    action_id = ipywidgets.Text(placeholder='Action id')
-    templates = Templates(project)
+    probe_path = SelectFileButton('.prb', description='*Select probe file')
+    action_id = Actions(project, description='*Action id')
     sorter = ipywidgets.Dropdown(
-        description='*Sorter', options=['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust'])
+        description='Sorter', options=['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust'])
 
     run = ipywidgets.Button(description='Process')
 
     fields = ipywidgets.VBox([
-        action_id,
         sorter,
         run
     ])
     main_box = ipywidgets.VBox([
             probe_path,
-            fields
+            ipywidgets.HBox([fields, action_id])
         ])
 
     def on_run(change):
+        if not required_values_filled(probe_path, action_id):
+            return
         openephys.process_openephys(
             project=project,
             action_id=action_id.value,
-            probe_path=probe_path.files[0],
+            probe_path=probe_path.file,
             sorter=sorter.value)
 
     run.on_click(on_run)
