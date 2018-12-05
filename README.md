@@ -104,4 +104,41 @@ browser.display('project_name')
 
 This will display an interactive widget to register actions (such as surgery, adjustment, perfusion, recordings, analysis), entities (such as animals) and process them, and saving them in `exdir` format.
 
+## Get started with spike sorting (SpikeInterface)
+
+In order to process extracellular data
+
+## Get started with Gitea
+
+Gitea allows to handle large file sizes (LFS). We use NIRD to store those files at https://gitea.expipe.sigma2.no/
+If you don't have an account contact Mikkel Lepperød.
+
+If you already created a project following the previous information, from the terminal go into the repository and type:
+```
+cd path-to-project
+git init
+```
+
+Then you have to create a repository on Gitea with **the same name** by `Add repository`. Once this is done, you have to tell Gitea that the repository you created needs to be connected to your local repository. Copy the gitea url of your repository (e.g. https://gitea.expipe.sigma2.no/your-user-name/your-project-name.git) and run:
+
+```
+git remote add origin https://gitea.expipe.sigma2.no/your-user-name/your-project-name.git
+```
+
+Then we have to add the files that expipe created (actions, templates, modules, etc.).
+
+```
+expipe init-lfs
+git add -A
+git commit -m "loading first files (or any other message)"
+git pull
+git branch --set-upstream-to=origin/master master
+git push
+```
+
+
+
+
+
+
 
