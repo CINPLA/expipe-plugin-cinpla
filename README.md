@@ -52,3 +52,31 @@ Then we can get all the python packages needed by:
 ```
 pip install -r requirements.txt
 ```
+
+Now run expipe:
+```
+expipe
+```
+
+(in Windows, if it fails, run:
+```
+pip uninstall numpy
+pip install numpy
+```
+and try again!)
+
+### Create a project
+
+The project will contain the data and relative information. You can make a folder called `data` or `projects`, for example, and create you projects there.
+
+First change directory to your projects directory
+```
+cd path-to-data (or path-to-projects)
+```
+
+Then create a new project:
+```
+expipe create project_name
+```
+
+
