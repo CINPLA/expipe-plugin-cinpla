@@ -1,5 +1,5 @@
 
-# Getitng started
+# Getting started
 
 - make a github user [github](https://github.com/)
 - download and install [Anaconda](https://www.anaconda.com/download/) version 3.7, command line version
@@ -65,6 +65,11 @@ pip install numpy
 ```
 and try again!)
 
+### Clone the templates
+
+Templates are used to create modules in expipe actions. Use github desktop to clone https://github.com/CINPLA/expipe-templates-cinpla.git.
+This is a collection of templates used by the group that can be loaded into each project's templates folder.
+
 ### Create a project
 
 The project will contain the data and relative information. You can make a folder called `data` or `projects`, for example, and create you projects there.
@@ -78,5 +83,25 @@ Then create a new project:
 ```
 expipe create project_name
 ```
+
+Now we can interact with the project by running:
+```
+jupyter notebook
+```
+
+This will open a browser window (e.g. in Chrome). To create a new notebook (used to write and run code) press `New`-->`Python 3`. This will create an ipython notebook file (`.ipynb`).
+
+In the first cell type and import the expipe packages:
+```
+from expipe_plugin_cinpla.widgets import browser
+import expipe
+```
+
+In the second cell type:
+```
+browser.display('project_name')
+```
+
+This will display an interactive widget to register actions (such as surgery, adjustment, perfusion, recordings, analysis), entities (such as animals) and process them, and saving them in `exdir` format.
 
 
