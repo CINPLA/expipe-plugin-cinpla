@@ -1,10 +1,10 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import surgery
-from .utils import DatePicker, MultiInput, Templates, required_values_filled, none_if_empty, split_tags
+from .utils import DatePicker, MultiInput, SearchSelectMultiple, required_values_filled, none_if_empty, split_tags, SearchSelect
 
 
 def surgery_view(project):
-    entity_id = ipywidgets.Text(placeholder='*Entity id')
+    entity_id = SearchSelect(options=project.entities, description='*Entities')
     procedure = ipywidgets.Dropdown(
         description='*Procedure', options=['implantation', 'injection'])
     date = DatePicker(description='*Date', disabled=False)
@@ -17,12 +17,11 @@ def surgery_view(project):
     tag = ipywidgets.Text(placeholder='Tags (; to separate)')
     position = MultiInput(['*Key', '*Probe', '*x', '*y', '*z', '*Unit'], 'Add position')
     angle = MultiInput(['*Key', '*Probe', '*Angle', '*Unit'], 'Add angle')
-    templates = Templates(project)
+    templates = SearchSelectMultiple(project.templates, description='Templates')
     overwrite = ipywidgets.Checkbox(description='Overwrite', value=False)
     register = ipywidgets.Button(description='Register')
 
     fields = ipywidgets.VBox([
-        entity_id,
         user,
         location,
         date,
@@ -36,7 +35,7 @@ def surgery_view(project):
     ])
     main_box = ipywidgets.VBox([
             overwrite,
-            ipywidgets.HBox([fields, templates])
+            ipywidgets.HBox([fields, ipywidgets.VBox([entity_id, templates])])
         ])
 
 
@@ -67,28 +66,27 @@ def surgery_view(project):
 
 
 def perfuse_view(project):
-    entity_id = ipywidgets.Text(placeholder='*Entity id')
+    entity_id = SearchSelect(options=project.entities, description='*Entities')
     date = DatePicker(disabled=False)
     user = ipywidgets.Text(placeholder='*User', value=PAR.USERNAME)
     message = ipywidgets.Text(placeholder='Message')
     weight = ipywidgets.HBox([
         ipywidgets.Text(placeholder='*Weight', layout={'width': '60px'}),
         ipywidgets.Text(placeholder='*Unit', layout={'width': '60px'})])
-    templates = Templates(project)
+    templates = SearchSelectMultiple(project.templates, description='Templates')
     overwrite = ipywidgets.Checkbox(description='Overwrite', value=False)
 
     register = ipywidgets.Button(description='Register')
     fields = ipywidgets.VBox([
-        entity_id,
-        date,
         user,
+        date,
         weight,
         message,
         register
     ])
     main_box = ipywidgets.VBox([
         overwrite,
-        ipywidgets.HBox([fields, templates])
+        ipywidgets.HBox([fields, entity_id, templates])
     ])
 
     def on_register(change):

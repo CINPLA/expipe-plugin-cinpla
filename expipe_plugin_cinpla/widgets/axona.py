@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import axona
-from .utils import SelectFileButton, MultiInput, Templates, required_values_filled, none_if_empty, split_tags
+from .utils import SelectFileButton, MultiInput, SearchSelectMultiple, required_values_filled, none_if_empty, split_tags
 
 
 def axona_view(project):
@@ -11,7 +11,7 @@ def axona_view(project):
     entity_id = ipywidgets.Text(placeholder='Entity id')
     message = ipywidgets.Text(placeholder='Message')
     tag = ipywidgets.Text(placeholder='Tags (; to separate)')
-    templates = Templates(project)
+    templates = SearchSelectMultiple(project.templates, description='Templates')
     depth = MultiInput(['Key', 'Probe', 'Depth', 'Unit'], 'Add depth')
     register_depth = ipywidgets.Checkbox(description='Register depth', value=False)
     register_depth_from_adjustment = ipywidgets.Checkbox(

@@ -1,10 +1,10 @@
 from expipe_plugin_cinpla.scripts import adjust
 from expipe_plugin_cinpla.imports import *
-from .utils import DateTimePicker, MultiInput, required_values_filled, none_if_empty
+from .utils import DateTimePicker, MultiInput, required_values_filled, none_if_empty, SearchSelect
 
 
 def adjustment_view(project):
-    entity_id = ipywidgets.Text(placeholder='*Entity id')
+    entity_id = SearchSelect(options=project.entities, description='*Entities')
     user = ipywidgets.Text(placeholder='*User', value=PAR.USERNAME)
     date = DateTimePicker()
     adjustment = MultiInput(['*Key', '*Probe', '*Adjustment', '*Unit'], 'Add adjustment')
@@ -12,13 +12,14 @@ def adjustment_view(project):
     depth_from_surgery = ipywidgets.Checkbox(description='Get depth from surgery', value=True)
     register = ipywidgets.Button(description='Register')
 
+    fields = ipywidgets.VBox([
+        user,
+        date,
+        adjustment,
+        register])
     main_box = ipywidgets.VBox([
             depth_from_surgery,
-            entity_id,
-            user,
-            date,
-            adjustment,
-            register
+            ipywidgets.HBox([fields, entity_id])
         ])
 
 

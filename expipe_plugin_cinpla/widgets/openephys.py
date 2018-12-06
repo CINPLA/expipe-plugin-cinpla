@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import openephys
-from .utils import SelectDirectoryButton, MultiInput, Templates, SelectFileButton, required_values_filled, none_if_empty, split_tags, Actions
+from .utils import SelectDirectoryButton, MultiInput, SearchSelectMultiple, SelectFileButton, required_values_filled, none_if_empty, split_tags, SearchSelect
 
 
 def openephys_view(project):
@@ -12,7 +12,7 @@ def openephys_view(project):
     entity_id = ipywidgets.Text(placeholder='Entity id')
     message = ipywidgets.Text(placeholder='Message')
     tag = ipywidgets.Text(placeholder='Tags (; to separate)')
-    templates = Templates(project)
+    templates = SearchSelectMultiple(project.templates, description='Templates')
     depth = MultiInput(['Key', 'Probe', 'Depth', 'Unit'], 'Add depth')
     register_depth = ipywidgets.Checkbox(description='Register depth', value=False)
     register_depth_from_adjustment = ipywidgets.Checkbox(
@@ -94,7 +94,7 @@ def openephys_view(project):
 #TODO add spike sorter specific params
 def process_view(project):
     probe_path = SelectFileButton('.prb', description='*Select probe file')
-    action_id = Actions(project, description='*Action id')
+    action_id = SearchSelect(project.actions, description='*Actions')
     sorter = ipywidgets.Dropdown(
         description='Sorter', options=['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust'])
 

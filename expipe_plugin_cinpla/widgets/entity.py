@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.scripts import entity
 from expipe_plugin_cinpla.imports import *
-from .utils import DatePicker, Templates, required_values_filled, none_if_empty, split_tags
+from .utils import DatePicker, SearchSelectMultiple, required_values_filled, none_if_empty, split_tags
 
 
 def entity_view(project):
@@ -10,7 +10,7 @@ def entity_view(project):
     location = ipywidgets.Text(placeholder='*Location')
     tag = ipywidgets.Text(placeholder='Tags (; to separate)')
     birthday = DatePicker(description='*Birthday', disabled=False)
-    templates = Templates(project)
+    templates = SearchSelectMultiple(project.templates, description='Templates')
 
     overwrite = ipywidgets.Checkbox(description='Overwrite', value=False)
 

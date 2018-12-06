@@ -27,20 +27,19 @@ def split_tags(tag):
         return tag.value.split(';')
 
 
-# TODO generalize to SearchSelectMultiple
-class Templates(ipywidgets.VBox):
-    def __init__(self, project, *args, **kwargs):
-        super(Templates, self).__init__(*args, **kwargs)
-        self.templates = ipywidgets.SelectMultiple(
-            options=project.templates,
+class SearchSelectMultiple(ipywidgets.VBox):
+    def __init__(self, options, *args, **kwargs):
+        super(SearchSelectMultiple, self).__init__(*args, **kwargs)
+        self.select_multiple = ipywidgets.SelectMultiple(
+            options=options,
             value=(),
             disabled=False,
             layout={'height': '200px', 'width': '300px'}
         )
         self.description = kwargs.get('description') or '' # TODO move into placeholder
         search_widget = ipywidgets.Text(
-            placeholder='Templates', layout={'width': self.templates.layout.width})
-        orig_list = list(self.templates.options)
+            placeholder=self.description, layout={'width': self.select_multiple.layout.width})
+        orig_list = list(self.select_multiple.options)
         # Wire the search field to the checkboxes
         def on_text_change(change):
             search_input = change['new']
@@ -50,30 +49,29 @@ class Templates(ipywidgets.VBox):
             else:
                 # Filter by search field.
                 new_options = [a for a in orig_list if search_input in a]
-            self.templates.options = new_options
+            self.select_multiple.options = new_options
 
         search_widget.observe(on_text_change, names='value')
-        self.children = [search_widget, self.templates]
+        self.children = [search_widget, self.select_multiple]
 
     @property
     def value(self):
-        return self.templates.value
+        return self.select_multiple.value
 
 
-# TODO generalize to SearchSelect
-class Actions(ipywidgets.VBox):
-    def __init__(self, project, *args, **kwargs):
-        super(Actions, self).__init__(*args, **kwargs)
-        self.actions = ipywidgets.Select(
-            options=project.actions,
+class SearchSelect(ipywidgets.VBox):
+    def __init__(self, options, *args, **kwargs):
+        super(SearchSelect, self).__init__(*args, **kwargs)
+        self.select = ipywidgets.Select(
+            options=options,
             value=None,
             disabled=False,
             layout={'height': '200px', 'width': '300px'}
         )
         self.description = kwargs.get('description') or ''
         search_widget = ipywidgets.Text(
-            placeholder=self.description, layout={'width': self.actions.layout.width})
-        orig_list = list(self.actions.options)
+            placeholder=self.description, layout={'width': self.select.layout.width})
+        orig_list = list(self.select.options)
         # Wire the search field to the checkboxes
         def on_text_change(change):
             search_input = change['new']
@@ -83,14 +81,14 @@ class Actions(ipywidgets.VBox):
             else:
                 # Filter by search field.
                 new_options = [a for a in orig_list if search_input in a]
-            self.actions.options = new_options
+            self.select.options = new_options
 
         search_widget.observe(on_text_change, names='value')
-        self.children = [search_widget, self.actions]
+        self.children = [search_widget, self.select]
 
     @property
     def value(self):
-        return self.actions.value
+        return self.select.value
 
 
 class MultiInput(ipywidgets.VBox):
