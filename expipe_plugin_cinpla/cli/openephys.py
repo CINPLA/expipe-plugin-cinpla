@@ -64,8 +64,7 @@ def attach_to_cli(cli):
                   )
     def _register_openephys_recording(
         action_id, openephys_path, depth, overwrite, templates,
-        entity_id, user, session, location, message, tag, delete_raw_data,
-        correct_depth_answer, register_depth):
+        entity_id, user, session, location, message, tag, register_depth):
         openephys.register_openephys_recording(
             project=PAR.PROJECT,
             action_id=action_id,
@@ -83,8 +82,6 @@ def attach_to_cli(cli):
             correct_depth_answer=None,
             register_depth=register_depth)
 
-
-def attach_to_cli(cli):
     @cli.command('process',
                  short_help='Generate a klusta .dat and .prm files from openephys directory.')
     @click.argument('action-id', type=click.STRING)

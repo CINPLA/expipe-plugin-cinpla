@@ -11,12 +11,6 @@ from . import surgery
 
 class CinplaPlugin(IPlugin):
     def attach_to_cli(self, cli):
-        @cli.group(short_help='Tools to select environment parameters pluss more helpful environment tools.')
-        @click.help_option('-h', '--help')
-        @click.pass_context
-        def env(ctx):
-            pass
-
         @cli.group(short_help='Tools for registering.')
         @click.help_option('-h', '--help')
         @click.pass_context
