@@ -1,6 +1,7 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
 from . import utils
+from pathlib import Path
 
 
 def register_openephys_recording(
@@ -110,8 +111,8 @@ def process_openephys(project, action_id, probe_path, sorter):
                                            adjacency_radius=10, detect_sign=-1)
     elif sorter == 'kilosort':
         sorting = st.sorters.kilosort(recording_cmr, by_property='group',
-                                      kilosort_path='/home/mikkel/apps/KiloSort',
-                                      npy_matlab_path='/home/mikkel/apps/npy-matlab/npy-matlab')
+                                      kilosort_path=Path(os.getenv('KILOSORT_PATH')),
+                                      npy_matlab_path=Path(os.getenv('NPY_MATLAB_PATH')))
     elif sorter == 'spyking-circus':
         sorting = st.sorters.spyking_circus(recording_cmr, by_property='group', merge_spikes=False)
     elif sorter == 'ironclust':
