@@ -109,9 +109,7 @@ def process_openephys(project, action_id, probe_path, sorter):
         sorting = st.sorters.mountainsort4(recording_cmr, by_property='group',
                                            adjacency_radius=10, detect_sign=-1)
     elif sorter == 'kilosort':
-        sorting = st.sorters.kilosort(recording_cmr, by_property='group',
-                                      kilosort_path='/home/mikkel/apps/KiloSort',
-                                      npy_matlab_path='/home/mikkel/apps/npy-matlab/npy-matlab')
+        sorting = st.sorters.kilosort(recording_cmr, by_property='group')
     elif sorter == 'spyking-circus':
         sorting = st.sorters.spyking_circus(recording_cmr, by_property='group', merge_spikes=False)
     elif sorter == 'ironclust':
