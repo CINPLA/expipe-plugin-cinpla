@@ -117,9 +117,11 @@ def process_openephys(project, action_id, probe_path, sorter):
     else:
         raise NotImplementedError("sorter is not implemented")
 
+    print('Found ', len(sorting.getUnitIds()), ' units!')
+
     # extract waveforms
-    # print('Computing waveforms')
-    # wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group', verbose=True)
+    print('Computing waveforms')
+    wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group', verbose=True)
     print('Saving to exdir format')
     # save spike times and waveforms to exdir
     se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
