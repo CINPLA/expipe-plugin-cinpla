@@ -2,6 +2,7 @@ from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
 from . import utils
 from pathlib import Path
+import os
 
 
 def register_openephys_recording(
@@ -119,12 +120,25 @@ def process_openephys(project, action_id, probe_path, sorter):
 
     print('Found ', len(sorting.getUnitIds()), ' units!')
 
+    print('Writing filtered and common referenced data')
+    filt_filename = 'filt.dat'
+    se.RawRecordingExtractor.writeRecording(recording_cmr, save_path=filt_filename)
+    recording_filt = se.RawRecordingExtractor(filt_filename, samplerate=recording_cmr.getSamplingFrequency(),
+                                              numchan=len(recording_cmr.getChannelIds()))
+    recording_filt = se.loadProbeFile(recording_filt, probe_path)
+    lfp_filename = 'lfp.dat'
+    se.RawRecordingExtractor.writeRecording(recording_lfp, save_path=lfp_filename)
+    recording_lfp = se.RawRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
+                                              numchan=len(recording_lfp.getChannelIds()))
+    recording_lfp = se.loadProbeFile(recording_lfp, probe_path)
     # extract waveforms
     print('Computing waveforms')
-    wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group', verbose=True)
-    print('Saving to exdir format')
-    # save spike times and waveforms to exdir
+    wf = st.postprocessing.getUnitWaveforms(recording_filt, sorting, by_property='group', verbose=True)
+    print('Saving sorting output to exdir format')
     se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
-    # save LFP to exdir
+    print('Saving LFP to exdir format')
     se.ExdirRecordingExtractor.writeRecording(recording_lfp, exdir_path, lfp=True)
+    print('Cleanup')
+    os.remove(filt_filename)
+    os.remove(lfp_filename)
     print('Saved to exdir: ', exdir_path)
