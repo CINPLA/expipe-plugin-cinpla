@@ -91,18 +91,17 @@ def process_openephys(project, action_id, probe_path, sorter):
         raise ValueError('No Open Ephys aquisition system ' +
                          'related to this action')
     openephys_session = acquisition.attrs["openephys_session"]
-    openephys_path = os.path.join(str(acquisition.directory), openephys_session)
+    openephys_path = Path(acquisition.directory) / openephys_session
     probe_path = probe_path or project.config.get('probe')
 
-    print(probe_path)
+    recording = se.OpenEphysRecordingExtractor(str(openephys_path))
+    recording = se.loadProbeFile(recording, probe_path)
 
-    recording = se.OpenEphysRecordingExtractor(openephys_path)
-    se.loadProbeFile(recording, probe_path)
-    # apply cmr
-    recording_cmr = st.preprocessing.common_reference(recording)
+    # apply filtering and cmr
+    recording_hp = st.preprocessing.bandpass_filter(recording, freq_min=300, freq_max=6000)
+    recording_cmr = st.preprocessing.common_reference(recording_hp)
     recording_lfp = st.preprocessing.bandpass_filter(recording, freq_min=1, freq_max=300)
-    recording_lfp = st.preprocessing.resample(recording, 1000)
-    recording_hp = st.preprocessing.bandpass_filter(recording_cmr, freq_min=300, freq_max=6000)
+    recording_lfp = st.preprocessing.resample(recording_lfp, 1000)
 
     if sorter == 'klusta':
         sorting = st.sorters.klusta(recording_cmr, by_property='group')
@@ -110,9 +109,7 @@ def process_openephys(project, action_id, probe_path, sorter):
         sorting = st.sorters.mountainsort4(recording_cmr, by_property='group',
                                            adjacency_radius=10, detect_sign=-1)
     elif sorter == 'kilosort':
-        sorting = st.sorters.kilosort(recording_cmr, by_property='group',
-                                      kilosort_path=Path(os.getenv('KILOSORT_PATH')),
-                                      npy_matlab_path=Path(os.getenv('NPY_MATLAB_PATH')))
+        sorting = st.sorters.kilosort(recording_cmr, by_property='group')
     elif sorter == 'spyking-circus':
         sorting = st.sorters.spyking_circus(recording_cmr, by_property='group', merge_spikes=False)
     elif sorter == 'ironclust':
@@ -121,10 +118,11 @@ def process_openephys(project, action_id, probe_path, sorter):
         raise NotImplementedError("sorter is not implemented")
 
     # extract waveforms
-    print('Computing waveforms')
-    wf = st.postprocessing.getUnitWaveforms(recording_hp, sorting, by_property='group', verbose=True)
+    # print('Computing waveforms')
+    # wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group', verbose=True)
     print('Saving to exdir format')
     # save spike times and waveforms to exdir
     se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
     # save LFP to exdir
     se.ExdirRecordingExtractor.writeRecording(recording_lfp, exdir_path, lfp=True)
+    print('Saved to exdir: ', exdir_path)
