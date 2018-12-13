@@ -91,7 +91,7 @@ def attach_to_cli(cli):
                   )
     @click.option('--sorter',
                   default='klusta',
-                  type=click.Choice(['klusta', 'mountain', 'kilosort']),
+                  type=click.Choice(['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust']),
                   help='',
                   )
     def _process_openephys(action_id, probe_path, sorter):

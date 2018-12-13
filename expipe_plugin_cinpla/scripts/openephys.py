@@ -1,6 +1,8 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
 from . import utils
+from pathlib import Path
+import os
 
 
 def register_openephys_recording(
@@ -90,18 +92,36 @@ def process_openephys(project, action_id, probe_path, sorter):
         raise ValueError('No Open Ephys aquisition system ' +
                          'related to this action')
     openephys_session = acquisition.attrs["openephys_session"]
-    openephys_path = os.path.join(str(acquisition.directory), openephys_session)
+    openephys_path = Path(acquisition.directory) / openephys_session
     probe_path = probe_path or project.config.get('probe')
 
-    print(probe_path)
+    recording = se.OpenEphysRecordingExtractor(str(openephys_path))
 
-    recording = se.OpenEphysRecordingExtractor(openephys_path)
-    se.loadProbeFile(recording, probe_path)
-    # apply cmr
-    recording_cmr = st.preprocessing.common_reference(recording)
+    # apply filtering and cmr
+    print('Writing filtered and common referenced data')
+    recording_hp = st.preprocessing.bandpass_filter(recording, freq_min=300, freq_max=6000)
+    recording_cmr = st.preprocessing.common_reference(recording_hp)
     recording_lfp = st.preprocessing.bandpass_filter(recording, freq_min=1, freq_max=300)
-    recording_lfp = st.preprocessing.resample(recording, 1000)
-    recording_hp = st.preprocessing.bandpass_filter(recording_cmr, freq_min=300, freq_max=6000)
+    recording_lfp = st.preprocessing.resample(recording_lfp, 1000)
+    recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_cmr), 1000)
+    print('HP')
+    filt_filename = 'filt.dat'
+    se.RawRecordingExtractor.writeRecording(recording_cmr, save_path=filt_filename)
+    print('LFP')
+    lfp_filename = 'lfp.dat'
+    se.RawRecordingExtractor.writeRecording(recording_lfp, save_path=lfp_filename)
+    print('MUA')
+    mua_filename = 'mua.dat'
+    se.RawRecordingExtractor.writeRecording(recording_mua, save_path=mua_filename)
+    recording_cmr = se.RawRecordingExtractor(filt_filename, samplerate=recording_cmr.getSamplingFrequency(),
+                                              numchan=len(recording_cmr.getChannelIds()))
+    recording_cmr = se.loadProbeFile(recording_cmr, probe_path)
+    recording_lfp = se.RawRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
+                                             numchan=len(recording_lfp.getChannelIds()))
+    recording_lfp = se.loadProbeFile(recording_lfp, probe_path)
+    recording_mua = se.RawRecordingExtractor(mua_filename, samplerate=recording_mua.getSamplingFrequency(),
+                                             numchan=len(recording_mua.getChannelIds()))
+    recording_mua = se.loadProbeFile(recording_mua, probe_path)
 
     if sorter == 'klusta':
         sorting = st.sorters.klusta(recording_cmr, by_property='group')
@@ -109,9 +129,7 @@ def process_openephys(project, action_id, probe_path, sorter):
         sorting = st.sorters.mountainsort4(recording_cmr, by_property='group',
                                            adjacency_radius=10, detect_sign=-1)
     elif sorter == 'kilosort':
-        sorting = st.sorters.kilosort(recording_cmr, by_property='group',
-                                      kilosort_path='/home/mikkel/apps/KiloSort',
-                                      npy_matlab_path='/home/mikkel/apps/npy-matlab/npy-matlab')
+        sorting = st.sorters.kilosort(recording_cmr, by_property='group')
     elif sorter == 'spyking-circus':
         sorting = st.sorters.spyking_circus(recording_cmr, by_property='group', merge_spikes=False)
     elif sorter == 'ironclust':
@@ -119,11 +137,19 @@ def process_openephys(project, action_id, probe_path, sorter):
     else:
         raise NotImplementedError("sorter is not implemented")
 
+    print('Found ', len(sorting.getUnitIds()), ' units!')
+
     # extract waveforms
     print('Computing waveforms')
-    wf = st.postprocessing.getUnitWaveforms(recording_hp, sorting, by_property='group', verbose=True)
-    print('Saving to exdir format')
-    # save spike times and waveforms to exdir
+    wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group', verbose=True)
+    print('Saving sorting output to exdir format')
     se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
-    # save LFP to exdir
+    print('Saving LFP to exdir format')
     se.ExdirRecordingExtractor.writeRecording(recording_lfp, exdir_path, lfp=True)
+    print('Saving MUA to exdir format')
+    se.ExdirRecordingExtractor.writeRecording(recording_mua, exdir_path, mua=True)
+    print('Cleanup')
+    os.remove(filt_filename)
+    os.remove(lfp_filename)
+    os.remove(mua_filename)
+    print('Saved to exdir: ', exdir_path)
