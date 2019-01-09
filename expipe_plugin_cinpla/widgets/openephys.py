@@ -97,6 +97,14 @@ def process_view(project):
     action_id = SearchSelect(project.actions, description='*Actions')
     sorter = ipywidgets.Dropdown(
         description='Sorter', options=['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust'])
+    compute_lfp = ipywidgets.Checkbox(
+        description='Compute LFP', value=True)
+    compute_mua = ipywidgets.Checkbox(
+        description='Compute MUA', value=False)
+    spikesort = ipywidgets.Checkbox(
+        description='Spike sort', value=True)
+
+    check_boxes = ipywidgets.VBox([spikesort, compute_lfp, compute_mua])
 
     run = ipywidgets.Button(description='Process')
 
@@ -106,7 +114,7 @@ def process_view(project):
     ])
     main_box = ipywidgets.VBox([
             probe_path,
-            ipywidgets.HBox([fields, action_id])
+            ipywidgets.HBox([fields, action_id, check_boxes])
         ])
 
     def on_run(change):
@@ -116,7 +124,10 @@ def process_view(project):
             project=project,
             action_id=action_id.value,
             probe_path=probe_path.file,
-            sorter=sorter.value)
+            sorter=sorter.value,
+            spikesort=spikesort.value,
+            compute_lfp=compute_lfp.value,
+            compute_mua=compute_mua.value)
 
     run.on_click(on_run)
     return main_box
