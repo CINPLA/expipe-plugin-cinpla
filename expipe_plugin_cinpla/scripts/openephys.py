@@ -84,7 +84,7 @@ def register_openephys_recording(
 
 
 def process_openephys(project, action_id, probe_path, sorter, spikesort=True, compute_lfp=True, compute_mua=False,
-                      **kwargs):
+                      spikesorter_params={}, **kwargs):
     import spikeextractors as se
     import spiketoolkit as st
     action = project.actions[action_id]
@@ -137,20 +137,19 @@ def process_openephys(project, action_id, probe_path, sorter, spikesort=True, co
     if spikesort:
         try:
             if sorter == 'klusta':
-                sorting = st.sorters.klusta(recording_cmr, by_property='group')
+                sorting = st.sorters.klusta(recording_cmr, by_property='group', **spikesorter_params)
             elif sorter == 'mountain':
-                sorting = st.sorters.mountainsort4(recording_cmr, by_property='group',
-                                                   adjacency_radius=10, detect_sign=-1)
+                sorting = st.sorters.mountainsort4(recording_cmr, by_property='group', **spikesorter_params)
             elif sorter == 'kilosort':
-                sorting = st.sorters.kilosort(recording_cmr, by_property='group')
+                sorting = st.sorters.kilosort(recording_cmr, by_property='group', **spikesorter_params)
             elif sorter == 'spyking-circus':
-                sorting = st.sorters.spyking_circus(recording_cmr, by_property='group', merge_spikes=False)
+                sorting = st.sorters.spyking_circus(recording_cmr, by_property='group', **spikesorter_params)
             elif sorter == 'ironclust':
-                sorting = st.sorters.ironclust(recording_cmr, by_property='group', parallel=True)
+                sorting = st.sorters.ironclust(recording_cmr, by_property='group', **spikesorter_params)
             else:
                 raise NotImplementedError("sorter is not implemented")
         except Exception as e:
-            # shutil.rmtree(tmpdir)
+            shutil.rmtree(tmpdir)
             print(e)
             raise Exception("Spike sorting failed")
         print('Found ', len(sorting.getUnitIds()), ' units!')
