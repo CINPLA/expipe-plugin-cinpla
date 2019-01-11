@@ -5,7 +5,7 @@ from . import utils
 from pathlib import Path
 import shutil
 import os
-import tempfile
+import tempfile, stat
 
 
 def register_openephys_recording(
@@ -174,6 +174,9 @@ def process_openephys(project, action_id, probe_path, sorter, spikesort=True, co
         generate_tracking(exdir_path, oe_recording)
 
     print('Cleanup')
+    if not os.access(tmpdir, os.W_OK):
+        # Is the error an access error ?
+        os.chmod(tmpdir, stat.S_IWUSR)
     shutil.rmtree(str(tmpdir))
 
     print('Saved to exdir: ', exdir_path)
