@@ -92,7 +92,6 @@ def openephys_view(project):
     register.on_click(on_register)
     return main_box
 
-#TODO add spike sorter specific params
 def process_view(project):
     import spiketoolkit as st
 
@@ -104,6 +103,13 @@ def process_view(project):
     )
     params = st.sorters.klusta_default_params()
     sorter_param = ParameterSelectList(description='Spike sorting options', param_dict=params, layout={'width': '100%'})
+    config = expipe.config._load_config_by_name(None)
+    current_servers = config.get('servers') or []
+    server_list = ['local'] + [s['host'] for s in current_servers]
+    servers = ipywidgets.Dropdown(
+        description='Server', options=server_list
+    )
+    sorter_param = ParameterSelectList(description='Spike sorting options', param_dict=params, layout={'width': '100%'})
     compute_lfp = ipywidgets.Checkbox(
         description='Compute LFP', value=True, style={'description_width': 'initial'})
     compute_mua = ipywidgets.Checkbox(
@@ -112,7 +118,7 @@ def process_view(project):
         description='Spike sort', value=True, style={'description_width': 'initial'})
 
     check_boxes = ipywidgets.VBox([ipywidgets.Label('Processing options', style={'description_width': 'initial'}),
-                                   spikesort, compute_lfp, compute_mua],
+                                   spikesort, compute_lfp, compute_mua, servers],
                                   layout={'width': '30%'})
 
     run = ipywidgets.Button(description='Process', layout={'width': '100%', 'height': '100px'})
@@ -161,7 +167,8 @@ def process_view(project):
             spikesort=spikesort.value,
             compute_lfp=compute_lfp.value,
             compute_mua=compute_mua.value,
-            spikesorter_params=spikesorter_params)
+            spikesorter_params=spikesorter_params,
+            server=servers.value)
 
     sorter.observe(on_change)
     run.on_click(on_run)

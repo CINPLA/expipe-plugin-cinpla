@@ -4,8 +4,10 @@ from expipe_io_neuro.openephys.openephys import generate_tracking
 from . import utils
 from pathlib import Path
 import shutil
+import time
 import os
-import tempfile, stat
+import tempfile
+import stat
 
 
 def register_openephys_recording(
@@ -84,99 +86,179 @@ def register_openephys_recording(
 
 
 def process_openephys(project, action_id, probe_path, sorter, spikesort=True, compute_lfp=True, compute_mua=False,
-                      spikesorter_params={}, **kwargs):
+                      spikesorter_params=None, server=None, **kwargs):
     import spikeextractors as se
     import spiketoolkit as st
-    action = project.actions[action_id]
-    # if exdir_path is None:
-    exdir_path = _get_data_path(action)
-    exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
-    acquisition = exdir_file["acquisition"]
-    if acquisition.attrs['acquisition_system'] is None:
-        raise ValueError('No Open Ephys aquisition system ' +
-                         'related to this action')
-    openephys_session = acquisition.attrs["openephys_session"]
-    openephys_path = Path(acquisition.directory) / openephys_session
-    probe_path = probe_path or project.config.get('probe')
 
-    recording = se.OpenEphysRecordingExtractor(str(openephys_path))
+    if server is None or server == 'local':
+        action = project.actions[action_id]
+        # if exdir_path is None:
+        exdir_path = _get_data_path(action)
+        exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+        acquisition = exdir_file["acquisition"]
+        if acquisition.attrs['acquisition_system'] is None:
+            raise ValueError('No Open Ephys aquisition system ' +
+                             'related to this action')
+        openephys_session = acquisition.attrs["openephys_session"]
+        openephys_path = Path(acquisition.directory) / openephys_session
+        probe_path = probe_path or project.config.get('probe')
 
-    # apply filtering and cmr
-    print('Writing filtered and common referenced data')
-    recording_hp = st.preprocessing.bandpass_filter(recording, freq_min=300, freq_max=6000)
-    recording_cmr = st.preprocessing.common_reference(recording_hp)
-    recording_lfp = st.preprocessing.bandpass_filter(recording, freq_min=1, freq_max=300)
-    recording_lfp = st.preprocessing.resample(recording_lfp, 1000)
-    recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_cmr), 1000)
-    tmpdir = Path(tempfile.mkdtemp(dir=os.getcwd()))
-    print(tmpdir)
+        recording = se.OpenEphysRecordingExtractor(str(openephys_path))
 
-    if spikesort:
-        print('Bandpass filter')
-        filt_filename = Path(tmpdir) / 'filt.dat'
-        se.BinDatRecordingExtractor.writeRecording(recording_cmr, save_path=filt_filename)
-        recording_cmr = se.BinDatRecordingExtractor(filt_filename, samplerate=recording_cmr.getSamplingFrequency(),
-                                                 numchan=len(recording_cmr.getChannelIds()))
-    if compute_lfp:
-        print('Computing LFP')
-        lfp_filename =  Path(tmpdir) / 'lfp.dat'
-        se.BinDatRecordingExtractor.writeRecording(recording_lfp, save_path=lfp_filename)
-        recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
-                                                 numchan=len(recording_lfp.getChannelIds()))
-    if compute_mua:
-        print('Computing MUA')
-        mua_filename =  Path(tmpdir) / 'mua.dat'
-        se.BinDatRecordingExtractor.writeRecording(recording_mua, save_path=mua_filename)
-        recording_mua = se.BinDatRecordingExtractor(mua_filename, samplerate=recording_mua.getSamplingFrequency(),
-                                                 numchan=len(recording_mua.getChannelIds()))
+        # apply filtering and cmr
+        print('Writing filtered and common referenced data')
+        recording_hp = st.preprocessing.bandpass_filter(recording, freq_min=300, freq_max=6000)
+        recording_cmr = st.preprocessing.common_reference(recording_hp)
+        recording_lfp = st.preprocessing.bandpass_filter(recording, freq_min=1, freq_max=300)
+        recording_lfp = st.preprocessing.resample(recording_lfp, 1000)
+        recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_cmr), 1000)
+        tmpdir = Path(tempfile.mkdtemp(dir=os.getcwd()))
+        print(tmpdir)
 
-    recording_cmr = se.loadProbeFile(recording_cmr, probe_path)
-    recording_lfp = se.loadProbeFile(recording_lfp, probe_path)
-    recording_mua = se.loadProbeFile(recording_mua, probe_path)
+        if spikesort:
+            print('Bandpass filter')
+            t_start = time.time()
 
-    if spikesort:
+            filt_filename = Path(tmpdir) / 'filt.dat'
+            se.BinDatRecordingExtractor.writeRecording(recording_cmr, save_path=filt_filename)
+            recording_cmr = se.BinDatRecordingExtractor(filt_filename, samplerate=recording_cmr.getSamplingFrequency(),
+                                                     numchan=len(recording_cmr.getChannelIds()))
+            print('Filter time: ', time.time() -t_start)
+        if compute_lfp:
+            print('Computing LFP')
+            t_start = time.time()
+            lfp_filename = Path(tmpdir) / 'lfp.dat'
+            se.BinDatRecordingExtractor.writeRecording(recording_lfp, save_path=lfp_filename)
+            recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
+                                                     numchan=len(recording_lfp.getChannelIds()))
+            print('Filter time: ', time.time() -t_start)
+
+        if compute_mua:
+            print('Computing MUA')
+            t_start = time.time()
+            mua_filename =  Path(tmpdir) / 'mua.dat'
+            se.BinDatRecordingExtractor.writeRecording(recording_mua, save_path=mua_filename)
+            recording_mua = se.BinDatRecordingExtractor(mua_filename, samplerate=recording_mua.getSamplingFrequency(),
+                                                     numchan=len(recording_mua.getChannelIds()))
+            print('Filter time: ', time.time() -t_start)
+
+        recording_cmr = se.loadProbeFile(recording_cmr, probe_path)
+        recording_lfp = se.loadProbeFile(recording_lfp, probe_path)
+        recording_mua = se.loadProbeFile(recording_mua, probe_path)
+
+        if spikesort:
+            try:
+                if sorter == 'klusta':
+                    sorting = st.sorters.klusta(recording_cmr, by_property='group', **spikesorter_params)
+                elif sorter == 'mountain':
+                    sorting = st.sorters.mountainsort4(recording_cmr, by_property='group', **spikesorter_params)
+                elif sorter == 'kilosort':
+                    sorting = st.sorters.kilosort(recording_cmr, by_property='group', **spikesorter_params)
+                elif sorter == 'spyking-circus':
+                    sorting = st.sorters.spyking_circus(recording_cmr, by_property='group', **spikesorter_params)
+                elif sorter == 'ironclust':
+                    sorting = st.sorters.ironclust(recording_cmr, by_property='group', **spikesorter_params)
+                else:
+                    raise NotImplementedError("sorter is not implemented")
+            except Exception as e:
+                shutil.rmtree(tmpdir)
+                print(e)
+                raise Exception("Spike sorting failed")
+            print('Found ', len(sorting.getUnitIds()), ' units!')
+
+        # extract waveforms
+        if spikesort:
+            print('Computing waveforms')
+            wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group', verbose=True, ms_before=1, ms_after=1)
+            print('Saving sorting output to exdir format')
+            se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
+        if compute_lfp:
+            print('Saving LFP to exdir format')
+            se.ExdirRecordingExtractor.writeRecording(recording_lfp, exdir_path, lfp=True)
+        if compute_mua:
+            print('Saving MUA to exdir format')
+            se.ExdirRecordingExtractor.writeRecording(recording_mua, exdir_path, mua=True)
+
+        # check for tracking
+        oe_recording = pyopenephys.File(str(openephys_path)).experiments[0].recordings[0]
+        if len(oe_recording.tracking) > 0:
+            print('Saving ', len(oe_recording.tracking), ' tracking sources')
+            generate_tracking(exdir_path, oe_recording)
+
+        print('Cleanup')
+        if not os.access(str(tmpdir), os.W_OK):
+            # Is the error an access error ?
+            os.chmod(str(tmpdir), stat.S_IWUSR)
+        shutil.rmtree(str(tmpdir))
+
+        print('Saved to exdir: ', exdir_path)
+    else:
+        config = expipe.config._load_config_by_name(None)
+        assert server in [s['host'] for s in config.get('servers')]
+        server_dict = [s for s in config.get('servers') if s['host'] == server][0]
+        host = server_dict['host']
+        user = server_dict['user']
+        password = server_dict['password']
+        port = 22
+
+        # host, user, pas, port = utils.get_login(
+        #     hostname=hostname, username=username, port=port, password=password)
+        ssh, scp_client, sftp_client, pbar = utils.login(
+            hostname=host, username=user, password=password, port=port)
+
+        #TODO find
+
+        ########################## SEND  #######################################
+        action = project.actions[action_id]
+        exdir_path = str(_get_data_path(action))
+        print('Initializing transfer of "' + exdir_path + '" to "' +
+              host + '"')
+        try:  # make directory for untaring
+            sftp_client.mkdir('process')
+        except IOError:
+            pass
+        print('Packing tar archive')
+        filename = shutil.make_archive(exdir_path, 'tar', exdir_path)
+        print(filename)
+        scp_client.put(
+            filename, os.path.join('process', action_id + '.tar'), recursive=False)
+
         try:
-            if sorter == 'klusta':
-                sorting = st.sorters.klusta(recording_cmr, by_property='group', **spikesorter_params)
-            elif sorter == 'mountain':
-                sorting = st.sorters.mountainsort4(recording_cmr, by_property='group', **spikesorter_params)
-            elif sorter == 'kilosort':
-                sorting = st.sorters.kilosort(recording_cmr, by_property='group', **spikesorter_params)
-            elif sorter == 'spyking-circus':
-                sorting = st.sorters.spyking_circus(recording_cmr, by_property='group', **spikesorter_params)
-            elif sorter == 'ironclust':
-                sorting = st.sorters.ironclust(recording_cmr, by_property='group', **spikesorter_params)
-            else:
-                raise NotImplementedError("sorter is not implemented")
-        except Exception as e:
-            shutil.rmtree(tmpdir)
-            print(e)
-            raise Exception("Spike sorting failed")
-        print('Found ', len(sorting.getUnitIds()), ' units!')
+            pbar[0].close()
+        except Exception:
+            pass
 
-    # extract waveforms
-    if spikesort:
-        print('Computing waveforms')
-        wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group', verbose=True)
-        print('Saving sorting output to exdir format')
-        se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
-    if compute_lfp:
-        print('Saving LFP to exdir format')
-        se.ExdirRecordingExtractor.writeRecording(recording_lfp, exdir_path, lfp=True)
-    if compute_mua:
-        print('Saving MUA to exdir format')
-        se.ExdirRecordingExtractor.writeRecording(recording_mua, exdir_path, mua=True)
+        print('Unpacking tar archive')
+        cmd = "tar -C" + os.path.join('process', 'main.exdir') + "-xf " + os.path.join('process', action_id + '.tar')
+        utils.ssh_execute(ssh, cmd)
 
-    # check for tracking
-    oe_recording = pyopenephys.File(str(openephys_path)).experiments[0].recordings[0]
-    if len(oe_recording.tracking) > 0:
-        print('Saving ', len(oe_recording.tracking), ' tracking sources')
-        generate_tracking(exdir_path, oe_recording)
+        # print('Deleting tar archives')
+        # sftp_client.remove(action_dir + '.tar')
+        # os.remove(local_data + '.tar')
+        # ###################### PROCESS #######################################
+        # print('Processing on server')
+        # ssh_execute(ssh, "expipe openephys process {}".format(action_id), get_pty=True, timeout=None)
+        # ####################### RETURN PROCESSED DATA #######################
+        # print('Initializing transfer of "' + server_data + '" to "' +
+        #       local_data + '"')
+        # print('Packing tar archive')
+        # exclude_statement = ""
+        # ssh_execute(ssh, "tar --exclude=acquisition -cf " +
+        #             server_data + '.tar ' + server_data)
+        # scp_client.get(server_data + '.tar', local_data + '.tar',
+        #                recursive=False)
+        # try:
+        #     pbar[0].close()
+        # except Exception:
+        #     pass
+        # print('Unpacking tar archive')
+        # untar(local_data + '.tar', server_data)  # TODO merge with existing
+        # print('Deleting tar archives')
+        # os.remove(local_data + '.tar')
+        # sftp_client.remove(server_data + '.tar')
+        ##################### CLOSE UP #############################
+        ssh.close()
+        sftp_client.close()
+        scp_client.close()
 
-    print('Cleanup')
-    if not os.access(tmpdir, os.W_OK):
-        # Is the error an access error ?
-        os.chmod(tmpdir, stat.S_IWUSR)
-    shutil.rmtree(str(tmpdir))
 
-    print('Saved to exdir: ', exdir_path)
