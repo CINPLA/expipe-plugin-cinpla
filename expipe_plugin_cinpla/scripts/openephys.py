@@ -175,7 +175,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         # extract waveforms
         if spikesort:
             print('Computing waveforms')
-            wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group', verbose=True)
+            wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group',
+                                                    ms_before=1, ms_after=2, verbose=True)
             print('Saving sorting output to exdir format')
             se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
         if compute_lfp:
@@ -195,7 +196,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if not os.access(str(tmpdir), os.W_OK):
             # Is the error an access error ?
             os.chmod(str(tmpdir), stat.S_IWUSR)
-        shutil.rmtree(str(tmpdir))
+        shutil.rmtree(str(tmpdir), ignore_errors=True)
 
         print('Saved to exdir: ', exdir_path)
     else:
@@ -212,7 +213,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         ssh, scp_client, sftp_client, pbar = utils.login(
             hostname=host, username=user, password=password, port=port)
 
-        #TODO find
 
         ########################## SEND  #######################################
         action = project.actions[action_id]
@@ -247,6 +247,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             probe_path, remote_probe, recursive=False)
 
         remote_exdir = os.path.join('process', 'main.exdir')
+        remote_proc = os.path.join('process', 'main.exdir', 'processing')
+        remote_proc_tar = os.path.join('process', 'processing.tar')
+        local_proc = str(exdir_path / 'processing')
+        local_proc_tar = local_proc + '.tar'
 
         # transfer spike params
         if spikesorter_params is not None:
@@ -279,28 +283,30 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         print('Processing on server')
         utils.ssh_execute(ssh, "source ~/.bashrc; source activate expipe; expipe", get_pty=True,
                           timeout=None)
-        # utils.ssh_execute(ssh, "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  "
-        #                        "--acquisition {} --exdir-path {}".format(action_id, remote_probe, sorter, remote_yaml,
-        #                                                                  remote_acq, remote_exdir), get_pty=True,
-        #                   timeout=None)
-        # ####################### RETURN PROCESSED DATA #######################
-        # print('Initializing transfer of "' + server_data + '" to "' +
-        #       local_data + '"')
-        # print('Packing tar archive')
-        # exclude_statement = ""
-        # ssh_execute(ssh, "tar --exclude=acquisition -cf " +
-        #             server_data + '.tar ' + server_data)
-        # scp_client.get(server_data + '.tar', local_data + '.tar',
-        #                recursive=False)
-        # try:
-        #     pbar[0].close()
-        # except Exception:
-        #     pass
-        # print('Unpacking tar archive')
-        # untar(local_data + '.tar', server_data)  # TODO merge with existing
-        # print('Deleting tar archives')
-        # os.remove(local_data + '.tar')
-        # sftp_client.remove(server_data + '.tar')
+        utils.ssh_execute(ssh, "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  "
+                               "--acquisition {} --exdir-path {}".format(action_id, remote_probe, sorter, remote_yaml,
+                                                                         remote_acq, remote_exdir), get_pty=True,
+                          timeout=None)
+
+        ####################### RETURN PROCESSED DATA #######################
+        print('Initializing transfer of "' + remote_proc + '" to "' +
+              local_proc + '"')
+        print('Packing tar archive')
+        utils.ssh_execute(ssh, "tar -cf " + remote_proc_tar + ' ' + remote_proc)
+
+        scp_client.get(remote_proc_tar, local_proc,
+                       recursive=False)
+        try:
+            pbar[0].close()
+        except Exception:
+            pass
+
+        print('Unpacking tar archive')
+        utils.untar(local_proc + '.tar', local_proc)  # TODO merge with existing
+        print('Deleting tar archives')
+        os.remove(local_proc + '.tar')
+        sftp_client.remove(remote_proc_tar)
+
         #################### CLOSE UP #############################
         ssh.close()
         sftp_client.close()
