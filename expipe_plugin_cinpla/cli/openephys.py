@@ -146,7 +146,7 @@ def attach_to_process(cli):
             spike_params = pathlib.Path(spike_params)
             if spike_params.is_file():
                 with spike_params.open() as f:
-                    params = yaml.load(spike_params)
+                    params = yaml.load(f)
             else:
                 params = None
         else:
