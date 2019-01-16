@@ -17,9 +17,16 @@ class CinplaPlugin(IPlugin):
         def register(ctx):
             pass
 
+        @cli.group(short_help='Tools for processing.')
+        @click.help_option('-h', '--help')
+        @click.pass_context
+        def process(ctx):
+            pass
+
         misc.attach_to_cli(cli)
         adjust.attach_to_cli(cli)
         surgery.attach_to_cli(register)
         entity.attach_to_cli(register)
-        OE.attach_to_cli(register)
+        OE.attach_to_register(register)
+        OE.attach_to_process(process)
         AX.attach_to_cli(register)

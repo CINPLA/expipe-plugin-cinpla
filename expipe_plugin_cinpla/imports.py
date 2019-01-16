@@ -37,6 +37,11 @@ def pyopenephys():
     return pyopenephys
 
 @lazy_import
+def yaml():
+    import yaml
+    return yaml
+
+@lazy_import
 def openephys_io():
     from expipe_io_neuro import openephys as openephys_io
     return openephys_io

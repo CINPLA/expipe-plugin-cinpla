@@ -95,39 +95,83 @@ def openephys_view(project):
 def process_view(project):
     import spiketoolkit as st
 
-    probe_path = SelectFileButton('.prb', description='*Select probe file', style={'description_width': 'initial'})
+    probe_path = SelectFileButton('.prb', description='*Select probe file', style={'description_width': 'initial'},
+                                  layout={'width': 'initial'})
     action_id = SearchSelect(project.actions, description='*Actions')
     sorter = ipywidgets.Dropdown(
         description='Sorter', options=['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust'],
-        style={'description_width': 'initial'}
+        style={'description_width': 'initial'}, layout={'width': 'initial'}
     )
+
     params = st.sorters.klusta_default_params()
-    sorter_param = ParameterSelectList(description='Spike sorting options', param_dict=params, layout={'width': '100%'})
+    sorter_param = ParameterSelectList(description='Spike sorting options', param_dict=params,
+                                       layout={'width': 'initial'})
+    sorter_param.update_params(params)
+    sorter_param.layout.visibility = 'hidden'
+
     config = expipe.config._load_config_by_name(None)
     current_servers = config.get('servers') or []
     server_list = ['local'] + [s['host'] for s in current_servers]
     servers = ipywidgets.Dropdown(
-        description='Server', options=server_list
+        description='Server', options=server_list, style={'description_width': 'initial'}, layout={'width': 'initial'}
     )
-    sorter_param = ParameterSelectList(description='Spike sorting options', param_dict=params, layout={'width': '100%'})
-    compute_lfp = ipywidgets.Checkbox(
-        description='Compute LFP', value=True, style={'description_width': 'initial'})
-    compute_mua = ipywidgets.Checkbox(
-        description='Compute MUA', value=False, style={'description_width': 'initial'})
-    spikesort = ipywidgets.Checkbox(
-        description='Spike sort', value=True, style={'description_width': 'initial'})
 
-    check_boxes = ipywidgets.VBox([ipywidgets.Label('Processing options', style={'description_width': 'initial'}),
+    compute_lfp = ipywidgets.ToggleButton(
+        value=True,
+        description='Compute LFP',
+        disabled=False,
+        button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+        tooltip='Compute LFP',
+        icon='check',
+        layout={'width': 'initial'}
+    )
+    compute_mua = ipywidgets.ToggleButton(
+        value=False,
+        description='Compute MUA',
+        disabled=False,
+        button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+        tooltip='Compute MUA',
+        icon='check',
+        layout={'width': 'initial'}
+    )
+    spikesort = ipywidgets.ToggleButton(
+        value=True,
+        description='Spikesort',
+        disabled=False,
+        button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+        tooltip='Spike sort data',
+        icon='check',
+        layout={'width': 'initial'}
+    )
+
+    show_params = ipywidgets.ToggleButton(
+        value=False,
+        description='params',
+        disabled=False,
+        button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+        tooltip='Show spike sorting specific params',
+        icon='edit',
+        layout={'width': 'initial'}
+    )
+    # compute_lfp = ipywidgets.Checkbox(
+    #     description='Compute LFP', value=True, style={'description_width': 'initial'})
+    # compute_mua = ipywidgets.Checkbox(
+    #     description='Compute MUA', value=False, style={'description_width': 'initial'})
+    # spikesort = ipywidgets.Checkbox(
+    #     description='Spike sort', value=True, style={'description_width': 'initial'})
+
+    check_boxes = ipywidgets.VBox([ipywidgets.Label('Processing options', style={'description_width': 'initial'},
+                                                    layout={'width': 'initial'}),
                                    spikesort, compute_lfp, compute_mua, servers],
-                                  layout={'width': '30%'})
+                                  layout={'width': 'initial'})
 
     run = ipywidgets.Button(description='Process', layout={'width': '100%', 'height': '100px'})
-    run.style.font_weight = '100px'
     run.style.button_color = 'pink'
 
     fields = ipywidgets.VBox([
         probe_path,
         sorter,
+        show_params,
         sorter_param
     ])
 
@@ -170,6 +214,14 @@ def process_view(project):
             spikesorter_params=spikesorter_params,
             server=servers.value)
 
+    def on_show(change):
+        if change['type'] == 'change' and change['name'] == 'value':
+            if show_params.value:
+                sorter_param.layout.visibility = 'visible'
+            else:
+                sorter_param.layout.visibility = 'hidden'
+
     sorter.observe(on_change)
     run.on_click(on_run)
+    show_params.observe(on_show)
     return main_box

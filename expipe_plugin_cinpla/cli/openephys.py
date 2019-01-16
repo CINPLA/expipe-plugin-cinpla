@@ -3,7 +3,7 @@ from expipe_plugin_cinpla.scripts import openephys
 from . import utils
 
 
-def attach_to_cli(cli):
+def attach_to_register(cli):
     @cli.command('openephys',
                  short_help='Register an open-ephys recording-action to database.')
     @click.argument('openephys-path', type=click.Path(exists=True))
@@ -82,8 +82,10 @@ def attach_to_cli(cli):
             correct_depth_answer=None,
             register_depth=register_depth)
 
-    @cli.command('process',
-                 short_help='Generate a klusta .dat and .prm files from openephys directory.')
+
+def attach_to_process(cli):
+    @cli.command('openephys',
+                 short_help='Process open ephys recordings.')
     @click.argument('action-id', type=click.STRING)
     @click.option('--probe-path',
                   type=click.STRING,
@@ -92,7 +94,65 @@ def attach_to_cli(cli):
     @click.option('--sorter',
                   default='klusta',
                   type=click.Choice(['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust']),
-                  help='',
+                  help='Spike sorter software to be used.',
                   )
-    def _process_openephys(action_id, probe_path, sorter):
-        openephys.process_openephys(PAR.PROJECT, action_id, probe_path, sorter)
+    @click.option('--acquisition',
+                  default=None,
+                  type=click.STRING,
+                  help='(optional) Open ephys cquisition folder.',
+                  )
+    @click.option('--exdir-path',
+                  default=None,
+                  type=click.STRING,
+                  help='(optional) Exdir file path.',
+                  )
+    @click.option('--no-sorting',
+                  is_flag=True,
+                  help='if True spikesorting is not performed.',
+                  )
+    @click.option('--no-lfp',
+                  is_flag=True,
+                  help='if True LFP are not extracted.',
+                  )
+    @click.option('--no-mua',
+                  is_flag=True,
+                  help='if True MUA are not extracted.',
+                  )
+    @click.option('--spike-params',
+                  type=click.STRING,
+                  default=None,
+                  help='Path to spike sorting params yml file.',
+                  )
+    @click.option('--server',
+                  type=click.STRING,
+                  default=None,
+                  help="'local' or name of expipe server.",
+                  )
+    def _process_openephys(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp,
+                           spike_params, server, acquisition, exdir_path):
+        if no_sorting:
+            spikesort = False
+        else:
+            spikesort = True
+        if no_lfp:
+            compute_lfp = False
+        else:
+            compute_lfp = True
+        if no_mua:
+            compute_mua = False
+        else:
+            compute_mua = True
+        if spike_params is not None:
+            spike_params = pathlib.Path(spike_params)
+            if spike_params.is_file():
+                with spike_params.open() as f:
+                    params = yaml.load(spike_params)
+            else:
+                params = None
+        else:
+            params = None
+
+        openephys.process_openephys(project=PAR.PROJECT, action_id=action_id, probe_path=probe_path, sorter=sorter,
+                                    spikesort=spikesort, compute_lfp=compute_lfp, compute_mua=compute_mua,
+                                    spikesorter_params=params, server=server, acquisition_folder=acquisition,
+                                    exdir_file_path=exdir_path)

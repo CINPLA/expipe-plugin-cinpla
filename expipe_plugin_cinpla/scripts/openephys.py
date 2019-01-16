@@ -85,24 +85,30 @@ def register_openephys_recording(
         shutil.rmtree(openephys_path)
 
 
-def process_openephys(project, action_id, probe_path, sorter, spikesort=True, compute_lfp=True, compute_mua=False,
-                      spikesorter_params=None, server=None, **kwargs):
+def process_openephys(project, action_id, probe_path, sorter, acquisition_folder=None,
+                      exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False,
+                      spikesorter_params=None, server=None):
     import spikeextractors as se
     import spiketoolkit as st
 
     if server is None or server == 'local':
-        action = project.actions[action_id]
-        # if exdir_path is None:
-        exdir_path = _get_data_path(action)
-        exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
-        acquisition = exdir_file["acquisition"]
-        if acquisition.attrs['acquisition_system'] is None:
-            raise ValueError('No Open Ephys aquisition system ' +
-                             'related to this action')
-        openephys_session = acquisition.attrs["openephys_session"]
-        openephys_path = Path(acquisition.directory) / openephys_session
-        probe_path = probe_path or project.config.get('probe')
+        if acquisition_folder is None:
+            action = project.actions[action_id]
+            # if exdir_path is None:
+            exdir_path = _get_data_path(action)
+            exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+            acquisition = exdir_file["acquisition"]
+            if acquisition.attrs['acquisition_system'] is None:
+                raise ValueError('No Open Ephys aquisition system ' +
+                                 'related to this action')
+            openephys_session = acquisition.attrs["openephys_session"]
+            openephys_path = Path(acquisition.directory) / openephys_session
+        else:
+            openephys_path = Path(acquisition_folder)
+            assert exdir_file_path is not None
+            exdir_path = Path(exdir_file_path)
 
+        probe_path = probe_path or project.config.get('probe')
         recording = se.OpenEphysRecordingExtractor(str(openephys_path))
 
         # apply filtering and cmr
@@ -169,7 +175,7 @@ def process_openephys(project, action_id, probe_path, sorter, spikesort=True, co
         # extract waveforms
         if spikesort:
             print('Computing waveforms')
-            wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group', verbose=True, ms_before=1, ms_after=1)
+            wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group', verbose=True)
             print('Saving sorting output to exdir format')
             se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
         if compute_lfp:
@@ -196,7 +202,7 @@ def process_openephys(project, action_id, probe_path, sorter, spikesort=True, co
         config = expipe.config._load_config_by_name(None)
         assert server in [s['host'] for s in config.get('servers')]
         server_dict = [s for s in config.get('servers') if s['host'] == server][0]
-        host = server_dict['host']
+        host = server_dict['domain']
         user = server_dict['user']
         password = server_dict['password']
         port = 22
@@ -210,34 +216,73 @@ def process_openephys(project, action_id, probe_path, sorter, spikesort=True, co
 
         ########################## SEND  #######################################
         action = project.actions[action_id]
-        exdir_path = str(_get_data_path(action))
-        print('Initializing transfer of "' + exdir_path + '" to "' +
+        # if exdir_path is None:
+        exdir_path = _get_data_path(action)
+        exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+        acquisition = exdir_file["acquisition"]
+        if acquisition.attrs['acquisition_system'] is None:
+            raise ValueError('No Open Ephys aquisition system ' +
+                             'related to this action')
+        openephys_session = acquisition.attrs["openephys_session"]
+        openephys_path = Path(acquisition.directory) / openephys_session
+        print('Initializing transfer of "' + str(openephys_path) + '" to "' +
               host + '"')
         try:  # make directory for untaring
             sftp_client.mkdir('process')
         except IOError:
             pass
         print('Packing tar archive')
-        filename = shutil.make_archive(exdir_path, 'tar', exdir_path)
-        print(filename)
+        remote_acq = os.path.join('process', 'acquisition')
+        remote_tar = os.path.join('process', 'acquisition.tar')
+
+        # transfer acquisition folder
+        local_tar = shutil.make_archive(str(openephys_path), 'tar', str(openephys_path))
+        print(local_tar)
         scp_client.put(
-            filename, os.path.join('process', action_id + '.tar'), recursive=False)
+            local_tar, remote_tar, recursive=False)
+
+        # transfer probe_file
+        remote_probe = os.path.join('process', 'probe.prb')
+        scp_client.put(
+            probe_path, remote_probe, recursive=False)
+
+        remote_exdir = os.path.join('process', 'main.exdir')
+
+        # transfer spike params
+        if spikesorter_params is not None:
+            spike_params_file = 'spike_params.yaml'
+            with open(spike_params_file, 'w') as f:
+                yaml.dump(spikesorter_params, f)
+            remote_yaml = os.path.join('process', spike_params_file)
+            scp_client.put(
+                spike_params_file, remote_yaml, recursive=False)
+        else:
+            remote_yaml = 'none'
 
         try:
             pbar[0].close()
         except Exception:
             pass
 
+        print('Making acquisition folder')
+        utils.ssh_execute(ssh, "mkdir " + remote_acq)
+
         print('Unpacking tar archive')
-        cmd = "tar -C" + os.path.join('process', 'main.exdir') + "-xf " + os.path.join('process', action_id + '.tar')
+        cmd = "tar -xf " + remote_tar + " --directory " + remote_acq
         utils.ssh_execute(ssh, cmd)
 
-        # print('Deleting tar archives')
-        # sftp_client.remove(action_dir + '.tar')
-        # os.remove(local_data + '.tar')
-        # ###################### PROCESS #######################################
-        # print('Processing on server')
-        # ssh_execute(ssh, "expipe openephys process {}".format(action_id), get_pty=True, timeout=None)
+        print('Deleting tar archives')
+        sftp_client.remove(remote_tar)
+        os.remove(local_tar)
+
+        ###################### PROCESS #######################################
+        print('Processing on server')
+        utils.ssh_execute(ssh, "source ~/.bashrc; source activate expipe; expipe", get_pty=True,
+                          timeout=None)
+        # utils.ssh_execute(ssh, "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  "
+        #                        "--acquisition {} --exdir-path {}".format(action_id, remote_probe, sorter, remote_yaml,
+        #                                                                  remote_acq, remote_exdir), get_pty=True,
+        #                   timeout=None)
         # ####################### RETURN PROCESSED DATA #######################
         # print('Initializing transfer of "' + server_data + '" to "' +
         #       local_data + '"')
@@ -256,7 +301,7 @@ def process_openephys(project, action_id, probe_path, sorter, spikesort=True, co
         # print('Deleting tar archives')
         # os.remove(local_data + '.tar')
         # sftp_client.remove(server_data + '.tar')
-        ##################### CLOSE UP #############################
+        #################### CLOSE UP #############################
         ssh.close()
         sftp_client.close()
         scp_client.close()
