@@ -91,6 +91,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
     import spikeextractors as se
     import spiketoolkit as st
 
+    proc_start = time.time()
+
     if server is None or server == 'local':
         if acquisition_folder is None:
             action = project.actions[action_id]
@@ -128,7 +130,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             filt_filename = Path(tmpdir) / 'filt.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_cmr, save_path=filt_filename)
             recording_cmr = se.BinDatRecordingExtractor(filt_filename, samplerate=recording_cmr.getSamplingFrequency(),
-                                                     numchan=len(recording_cmr.getChannelIds()))
+                                                        numchan=len(recording_cmr.getChannelIds()))
             print('Filter time: ', time.time() -t_start)
         if compute_lfp:
             print('Computing LFP')
@@ -136,7 +138,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             lfp_filename = Path(tmpdir) / 'lfp.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_lfp, save_path=lfp_filename)
             recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
-                                                     numchan=len(recording_lfp.getChannelIds()))
+                                                         numchan=len(recording_lfp.getChannelIds()))
             print('Filter time: ', time.time() -t_start)
 
         if compute_mua:
@@ -145,7 +147,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             mua_filename =  Path(tmpdir) / 'mua.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_mua, save_path=mua_filename)
             recording_mua = se.BinDatRecordingExtractor(mua_filename, samplerate=recording_mua.getSamplingFrequency(),
-                                                     numchan=len(recording_mua.getChannelIds()))
+                                                        numchan=len(recording_mua.getChannelIds()))
             print('Filter time: ', time.time() -t_start)
 
         recording_cmr = se.loadProbeFile(recording_cmr, probe_path)
@@ -260,8 +262,17 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             remote_yaml = os.path.join('process', spike_params_file)
             scp_client.put(
                 spike_params_file, remote_yaml, recursive=False)
+            os.remove(spike_params_file)
         else:
             remote_yaml = 'none'
+
+        extra_args = ""
+        if not compute_lfp:
+            extra_args = extra_args + '--no-lfp'
+        if not compute_mua:
+            extra_args = extra_args + '--no-mua'
+        if not spikesort:
+            extra_args = extra_args + '--no-sorting'
 
         try:
             pbar[0].close()
@@ -281,20 +292,18 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         ###################### PROCESS #######################################
         print('Processing on server')
-        utils.ssh_execute(ssh, "source ~/.bashrc; source activate expipe; expipe", get_pty=True,
-                          timeout=None)
-        utils.ssh_execute(ssh, "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  "
-                               "--acquisition {} --exdir-path {}".format(action_id, remote_probe, sorter, remote_yaml,
-                                                                         remote_acq, remote_exdir), get_pty=True,
-                          timeout=None)
+        utils.ssh_execute(ssh, "source ~/.bashrc; source activate expipe; expipe process openephys {} "
+                               "--probe-path {} --sorter {} --spike-params {}  "
+                               "--acquisition {} --exdir-path {} {}".format(action_id, remote_probe, sorter,
+                                                                            remote_yaml, remote_acq, remote_exdir,
+                                                                            extra_args), get_pty=True, timeout=None)
 
         ####################### RETURN PROCESSED DATA #######################
         print('Initializing transfer of "' + remote_proc + '" to "' +
               local_proc + '"')
         print('Packing tar archive')
-        utils.ssh_execute(ssh, "tar -cf " + remote_proc_tar + ' ' + remote_proc)
-
-        scp_client.get(remote_proc_tar, local_proc,
+        utils.ssh_execute(ssh, "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing')
+        scp_client.get(remote_proc_tar, local_proc_tar,
                        recursive=False)
         try:
             pbar[0].close()
@@ -302,14 +311,19 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             pass
 
         print('Unpacking tar archive')
-        utils.untar(local_proc + '.tar', local_proc)  # TODO merge with existing
-        print('Deleting tar archives')
-        os.remove(local_proc + '.tar')
-        sftp_client.remove(remote_proc_tar)
+        tar = tarfile.open(local_proc_tar)
+        tar.extractall(str(exdir_path))
+        # print('Deleting tar archives')
+        os.remove(local_proc_tar)
+        # sftp_client.remove(remote_proc_tar)
+        print('Deleting remote process folder')
+        utils.ssh_execute(ssh, "rm -r process")
 
         #################### CLOSE UP #############################
         ssh.close()
         sftp_client.close()
         scp_client.close()
+
+    print("Total elapsed time: ", time.time() - proc_start)
 
 

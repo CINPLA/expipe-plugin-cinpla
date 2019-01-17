@@ -92,12 +92,14 @@ def openephys_view(project):
     register.on_click(on_register)
     return main_box
 
+
 def process_view(project):
     import spiketoolkit as st
 
     probe_path = SelectFileButton('.prb', description='*Select probe file', style={'description_width': 'initial'},
                                   layout={'width': 'initial'})
     action_id = SearchSelect(project.actions, description='*Actions')
+
     sorter = ipywidgets.Dropdown(
         description='Sorter', options=['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust'],
         style={'description_width': 'initial'}, layout={'width': 'initial'}
@@ -153,12 +155,7 @@ def process_view(project):
         icon='edit',
         layout={'width': 'initial'}
     )
-    # compute_lfp = ipywidgets.Checkbox(
-    #     description='Compute LFP', value=True, style={'description_width': 'initial'})
-    # compute_mua = ipywidgets.Checkbox(
-    #     description='Compute MUA', value=False, style={'description_width': 'initial'})
-    # spikesort = ipywidgets.Checkbox(
-    #     description='Spike sort', value=True, style={'description_width': 'initial'})
+
 
     check_boxes = ipywidgets.VBox([ipywidgets.Label('Processing options', style={'description_width': 'initial'},
                                                     layout={'width': 'initial'}),
