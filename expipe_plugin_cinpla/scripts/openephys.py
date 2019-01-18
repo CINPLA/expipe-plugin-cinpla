@@ -268,8 +268,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         except IOError:
             pass
         print('Packing tar archive')
-        remote_acq = os.path.join('process', 'acquisition')
-        remote_tar = os.path.join('process', 'acquisition.tar')
+        remote_acq = 'process/acquisition'
+        remote_tar = 'process/acquisition.tar'
 
         # transfer acquisition folder
         local_tar = shutil.make_archive(str(openephys_path), 'tar', str(openephys_path))
@@ -278,13 +278,13 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             local_tar, remote_tar, recursive=False)
 
         # transfer probe_file
-        remote_probe = os.path.join('process', 'probe.prb')
+        remote_probe = 'process/probe.prb'
         scp_client.put(
             probe_path, remote_probe, recursive=False)
 
-        remote_exdir = os.path.join('process', 'main.exdir')
-        remote_proc = os.path.join('process', 'main.exdir', 'processing')
-        remote_proc_tar = os.path.join('process', 'processing.tar')
+        remote_exdir = 'process/main.exdir'
+        remote_proc = 'process/main.exdir/processing'
+        remote_proc_tar = 'process/processing.tar'
         local_proc = str(exdir_path / 'processing')
         local_proc_tar = local_proc + '.tar'
 
@@ -293,7 +293,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             spike_params_file = 'spike_params.yaml'
             with open(spike_params_file, 'w') as f:
                 yaml.dump(spikesorter_params, f)
-            remote_yaml = os.path.join('process', spike_params_file)
+            remote_yaml = 'process/' + spike_params_file
             scp_client.put(
                 spike_params_file, remote_yaml, recursive=False)
             os.remove(spike_params_file)
@@ -330,8 +330,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         ###################### PROCESS #######################################
         print('Processing on server')
-        cmd = "expipe"
-        stdin, stdout, stderr = remote_shell.execute(cmd)
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
               "--acquisition {} --exdir-path {} {}".format(action_id, remote_probe, sorter,
                                                                             remote_yaml, remote_acq, remote_exdir,
@@ -345,7 +343,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         print('Packing tar archive')
         cmd = "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing'
         stdin, stdout, stderr = remote_shell.execute(cmd)
-        print(''.join(stdout))
         # utils.ssh_execute(ssh, "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing')
         scp_client.get(remote_proc_tar, local_proc_tar,
                        recursive=False)
@@ -362,7 +359,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         # sftp_client.remove(remote_proc_tar)
         print('Deleting remote process folder')
         cmd = "rm -r process"
-        utils.ssh_execute(ssh, "rm -r process")
+        stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 
         #################### CLOSE UP #############################
         ssh.close()
