@@ -2,6 +2,7 @@ from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import openephys
 from .utils import SelectDirectoryButton, MultiInput, SearchSelectMultiple, SelectFileButton, \
     required_values_filled, none_if_empty, split_tags, SearchSelect, ParameterSelectList
+import ast
 
 
 def openephys_view(project):
@@ -98,7 +99,7 @@ def process_view(project):
 
     probe_path = SelectFileButton('.prb', description='*Select probe file', style={'description_width': 'initial'},
                                   layout={'width': 'initial'})
-    action_id = SearchSelect(project.actions, description='*Actions')
+    action_id = SearchSelect(project.actions, description='*Actions', layout={'width': 'initial'})
 
     sorter = ipywidgets.Dropdown(
         description='Sorter', options=['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust'],
@@ -148,7 +149,7 @@ def process_view(project):
 
     show_params = ipywidgets.ToggleButton(
         value=False,
-        description='params',
+        description='Params',
         disabled=False,
         button_style='',  # 'success', 'info', 'warning', 'danger' or ''
         tooltip='Show spike sorting specific params',
@@ -156,11 +157,50 @@ def process_view(project):
         layout={'width': 'initial'}
     )
 
+    other_settings = ipywidgets.ToggleButton(
+        value=False,
+        description='Other setting',
+        disabled=False,
+        button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+        tooltip='Modify other processing settings',
+        icon='edit',
+        layout={'width': 'initial'}
+    )
 
-    check_boxes = ipywidgets.VBox([ipywidgets.Label('Processing options', style={'description_width': 'initial'},
-                                                    layout={'width': 'initial'}),
-                                   spikesort, compute_lfp, compute_mua, servers],
-                                  layout={'width': 'initial'})
+    reference = ipywidgets.ToggleButtons(
+        options=['CMR', 'CAR', 'NO'],
+        description='Reference:',
+        disabled=False,
+        button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+        tooltips=['Common Median Reference', 'Common Average Reference', 'No re-referencing'],
+        orientation='vertical'
+        #     icons=['check'] * 3
+    )
+    reference.layout.visibility = 'hidden'
+
+    split_group = ipywidgets.ToggleButtons(
+        options=['all', 'half', 'custom'],
+        description='Ref channels:',
+        disabled=False,
+        button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+        tooltips=['all channels are used to re-reference', 'channels are split in half and re-referenced separately',
+                  'custom decided split'],
+        orientation='vertical'
+    )
+    split_group.layout.visibility = 'hidden'
+
+    custom_split = ipywidgets.Text(description='Split', value='', placeholder='(e.g. [[1,2,3,...], [4,5,6,...]])',
+                                   style={'description_width': 'initial'})
+    custom_split.layout.visibility = 'hidden'
+
+    bad_channels = ipywidgets.Text(description='Bad channels', value='', placeholder='(e.g. 5, 8, 12)',
+                                   style={'description_width': 'initial'})
+    bad_channels.layout.visibility = 'hidden'
+
+    rightbox = ipywidgets.VBox([ipywidgets.Label('Processing options', style={'description_width': 'initial'},
+                                                 layout={'width': 'initial'}),
+                                spikesort, compute_lfp, compute_mua, servers, other_settings,
+                                bad_channels, reference, split_group, custom_split], layout={'width': 'initial'})
 
     run = ipywidgets.Button(description='Process', layout={'width': '100%', 'height': '100px'})
     run.style.button_color = 'pink'
@@ -173,7 +213,7 @@ def process_view(project):
     ])
 
     main_box = ipywidgets.VBox([
-            ipywidgets.HBox([fields, action_id, check_boxes]), run
+            ipywidgets.HBox([fields, action_id, rightbox]), run
         ], layout={'width': '100%'})
     main_box.layout.display = 'flex'
 
@@ -200,6 +240,21 @@ def process_view(project):
         for (k, v) in spikesorter_params.items():
             if v == 'None':
                 spikesorter_params[k] = None
+
+        if bad_channels.value is not '':
+            bad_chans = [int(b) for b in bad_channels.value.split(',')]
+        else:
+            bad_chans = []
+        if reference.value is not 'NO':
+            ref = reference.value
+        else:
+            ref = None
+        if split_group is not 'custom':
+            split = split_group.value
+        elif split_group == 'custom':
+            split = ast.literal_eval(split_group.value)
+        else:
+            split = 'all'
         openephys.process_openephys(
             project=project,
             action_id=action_id.value,
@@ -209,7 +264,10 @@ def process_view(project):
             compute_lfp=compute_lfp.value,
             compute_mua=compute_mua.value,
             spikesorter_params=spikesorter_params,
-            server=servers.value)
+            server=servers.value,
+            ground=bad_chans,
+            ref=ref,
+            split=split)
 
     def on_show(change):
         if change['type'] == 'change' and change['name'] == 'value':
@@ -218,7 +276,28 @@ def process_view(project):
             else:
                 sorter_param.layout.visibility = 'hidden'
 
+    def on_other(change):
+        if change['type'] == 'change' and change['name'] == 'value':
+            if other_settings.value:
+                bad_channels.layout.visibility = 'visible'
+                reference.layout.visibility = 'visible'
+                split_group.layout.visibility = 'visible'
+            else:
+                bad_channels.layout.visibility = 'hidden'
+                reference.layout.visibility = 'hidden'
+                split_group.layout.visibility = 'hidden'
+
+    def on_split(change):
+        if change['type'] == 'change' and change['name'] == 'value':
+            if reference.value is not 'NO':
+                if split_group.value == 'custom':
+                    custom_split.layout.visibility = 'visible'
+                else:
+                    custom_split.layout.visibility = 'hidden'
+
     sorter.observe(on_change)
     run.on_click(on_run)
     show_params.observe(on_show)
+    other_settings.observe(on_other)
+    split_group.observe(on_split)
     return main_box

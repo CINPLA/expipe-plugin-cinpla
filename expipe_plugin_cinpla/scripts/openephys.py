@@ -87,7 +87,7 @@ def register_openephys_recording(
 
 def process_openephys(project, action_id, probe_path, sorter, acquisition_folder=None,
                       exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False,
-                      spikesorter_params=None, server=None):
+                      spikesorter_params=None, server=None, ground=None, ref='CMR', split=None):
     import spikeextractors as se
     import spiketoolkit as st
 
@@ -112,12 +112,42 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         probe_path = probe_path or project.config.get('probe')
         recording = se.OpenEphysRecordingExtractor(str(openephys_path))
+        if ground is not None:
+            active_channels = []
+            for chan in recording.getChannelIds():
+                if chan not in ground:
+                    active_channels.append(chan)
+            recording_active = se.SubRecordingExtractor(recording, channel_ids=active_channels)
+        else:
+            recording_active = recording
+
+        print("Active channels: ", len(recording_active.getChannelIds()))
 
         # apply filtering and cmr
         print('Writing filtered and common referenced data')
-        recording_hp = st.preprocessing.bandpass_filter(recording, freq_min=300, freq_max=6000)
-        recording_cmr = st.preprocessing.common_reference(recording_hp)
-        recording_lfp = st.preprocessing.bandpass_filter(recording, freq_min=1, freq_max=300)
+        recording_hp = st.preprocessing.bandpass_filter(recording_active, freq_min=300, freq_max=6000)
+        if ref is not None:
+            if ref.lower() == 'cmr':
+                reference = 'median'
+            elif ref.lower() == 'car':
+                reference = 'average'
+            else:
+                raise Exception("'reference' can be either 'cmr' or 'car'")
+            if split is 'all':
+                recording_cmr = st.preprocessing.common_reference(recording_hp, reference=reference)
+            elif split is 'half':
+                groups = [recording.getChannelIds()[:int(len(recording.getChannelIds()) / 2)],
+                          recording.getChannelIds()[int(len(recording.getChannelIds()) / 2):]]
+                recording_cmr = st.preprocessing.common_reference(recording_hp, groups=groups, reference=reference)
+            else:
+                if isinstance(split, list):
+                    recording_cmr = st.preprocessing.common_reference(recording_hp, groups=split, reference=reference)
+                else:
+                    raise Exception("'split' must be a list of lists")
+        else:
+            recording_cmr = recording
+
+        recording_lfp = st.preprocessing.bandpass_filter(recording_active, freq_min=1, freq_max=300)
         recording_lfp = st.preprocessing.resample(recording_lfp, 1000)
         recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_cmr), 1000)
         tmpdir = Path(tempfile.mkdtemp(dir=os.getcwd()))
