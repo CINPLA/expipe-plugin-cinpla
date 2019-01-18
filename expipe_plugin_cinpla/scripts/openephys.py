@@ -244,7 +244,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         #     hostname=hostname, username=username, port=port, password=password)
         ssh, scp_client, sftp_client, pbar = utils.login(
             hostname=host, username=user, password=password, port=port)
-
+        print('Invoking remote shell')
+        remote_shell = utils.ShellHandler(ssh)
 
         ########################## SEND  #######################################
         action = project.actions[action_id]
@@ -259,8 +260,11 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         openephys_path = Path(acquisition.directory) / openephys_session
         print('Initializing transfer of "' + str(openephys_path) + '" to "' +
               host + '"')
+
+
         try:  # make directory for untaring
-            sftp_client.mkdir('process')
+            stdin, stdout, stderr = remote_shell.execute('mkdir process')
+            print(''.join(stdout))
         except IOError:
             pass
         print('Packing tar archive')
@@ -298,11 +302,11 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         extra_args = ""
         if not compute_lfp:
-            extra_args = extra_args + '--no-lfp'
+            extra_args = extra_args + ' --no-lfp'
         if not compute_mua:
-            extra_args = extra_args + '--no-mua'
+            extra_args = extra_args + ' --no-mua'
         if not spikesort:
-            extra_args = extra_args + '--no-sorting'
+            extra_args = extra_args + ' --no-sorting'
 
         try:
             pbar[0].close()
@@ -310,11 +314,15 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             pass
 
         print('Making acquisition folder')
-        utils.ssh_execute(ssh, "mkdir " + remote_acq)
+        cmd = "mkdir " + remote_acq
+        print('Shell: ', cmd)
+        stdin, stdout, stderr = remote_shell.execute("mkdir " + remote_acq)
+        # utils.ssh_execute(ssh, "mkdir " + remote_acq)
 
         print('Unpacking tar archive')
         cmd = "tar -xf " + remote_tar + " --directory " + remote_acq
-        utils.ssh_execute(ssh, cmd)
+        stdin, stdout, stderr = remote_shell.execute(cmd)
+        # utils.ssh_execute(ssh, cmd)
 
         print('Deleting tar archives')
         sftp_client.remove(remote_tar)
@@ -322,17 +330,23 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         ###################### PROCESS #######################################
         print('Processing on server')
-        utils.ssh_execute(ssh, "source ~/.bashrc; source activate expipe; expipe process openephys {} "
-                               "--probe-path {} --sorter {} --spike-params {}  "
-                               "--acquisition {} --exdir-path {} {}".format(action_id, remote_probe, sorter,
+        cmd = "expipe"
+        stdin, stdout, stderr = remote_shell.execute(cmd)
+        cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
+              "--acquisition {} --exdir-path {} {}".format(action_id, remote_probe, sorter,
                                                                             remote_yaml, remote_acq, remote_exdir,
-                                                                            extra_args), get_pty=True, timeout=None)
+                                                                            extra_args)
 
+
+        stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
         ####################### RETURN PROCESSED DATA #######################
         print('Initializing transfer of "' + remote_proc + '" to "' +
               local_proc + '"')
         print('Packing tar archive')
-        utils.ssh_execute(ssh, "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing')
+        cmd = "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing'
+        stdin, stdout, stderr = remote_shell.execute(cmd)
+        print(''.join(stdout))
+        # utils.ssh_execute(ssh, "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing')
         scp_client.get(remote_proc_tar, local_proc_tar,
                        recursive=False)
         try:
@@ -347,6 +361,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         os.remove(local_proc_tar)
         # sftp_client.remove(remote_proc_tar)
         print('Deleting remote process folder')
+        cmd = "rm -r process"
         utils.ssh_execute(ssh, "rm -r process")
 
         #################### CLOSE UP #############################
