@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
-from expipe_io_neuro.openephys.openephys import generate_tracking
+from expipe_io_neuro.openephys.openephys import generate_tracking, generate_events
 from . import utils
 from pathlib import Path
 import shutil
@@ -35,7 +35,7 @@ def register_openephys_recording(
         print('Missing option "session".')
         return
     if action_id is None:
-        session_dtime = datetime.strftime(openephys_exp.datetime, '%d%m%y')
+        session_dtime = datetime.datetime.strftime(openephys_exp.datetime, '%d%m%y')
         action_id = entity_id + '-' + session_dtime + '-' + session
     print('Generating action', action_id)
     try:
@@ -67,16 +67,15 @@ def register_openephys_recording(
             return
     utils.register_templates(action, templates)
     if message:
-        action.create_message(text=message, user=user, datetime=datetime.now())
+        action.create_message(text=message, user=user, datetime=datetime.datetime.now())
 
-        # TODO update to messages
-        # for idx, m in enumerate(openephys_rec.messages):
-        #     secs = float(m['time'].rescale('s').magnitude)
-        #     dtime = openephys_file.datetime + timedelta(secs)
-        #     action.create_message(text=m['message'], user=user, datetime=dtime)
+    for idx, m in enumerate(openephys_rec.messages):
+        print('OpenEphys message: ', m.text)
+        secs = float(m.time.rescale('s').magnitude)
+        dtime = openephys_rec.datetime + datetime.timedelta(seconds=secs)
+        action.create_message(text=m.text, user=user, datetime=dtime)
 
     exdir_path = utils._make_data_path(action, overwrite)
-    # TODO change to alessio stuff
     openephys_io.convert(
         openephys_rec, exdir_path=exdir_path, session=session)
     if utils.query_yes_no(
@@ -221,8 +220,14 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         # check for tracking
         oe_recording = pyopenephys.File(str(openephys_path)).experiments[0].recordings[0]
         if len(oe_recording.tracking) > 0:
-            print('Saving ', len(oe_recording.tracking), ' tracking sources')
+            print('Saving ', len(oe_recording.tracking), ' Open Ephys tracking sources')
             generate_tracking(exdir_path, oe_recording)
+
+        if len(oe_recording.events) > 0:
+            print('Saving ', len(oe_recording.events), ' Open Ephys event sources')
+            generate_events(exdir_path, oe_recording)
+
+
 
         print('Cleanup')
         if not os.access(str(tmpdir), os.W_OK):
@@ -326,12 +331,16 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         print('Deleting tar archives')
         sftp_client.remove(remote_tar)
+        if not os.access(str(local_tar), os.W_OK):
+            # Is the error an access error ?
+            os.chmod(str(local_tar), stat.S_IWUSR)
         os.remove(local_tar)
 
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe"
         stdin, stdout, stderr = remote_shell.execute(cmd)
+        print(extra_args)
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
               "--acquisition {} --exdir-path {} {}".format(action_id, remote_probe, sorter,
                                                                             remote_yaml, remote_acq, remote_exdir,
@@ -358,6 +367,9 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         tar = tarfile.open(local_proc_tar)
         tar.extractall(str(exdir_path))
         # print('Deleting tar archives')
+        if not os.access(str(local_proc_tar), os.W_OK):
+            # Is the error an access error ?
+            os.chmod(str(local_proc_tar), stat.S_IWUSR)
         os.remove(local_proc_tar)
         # sftp_client.remove(remote_proc_tar)
         print('Deleting remote process folder')

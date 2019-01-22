@@ -236,6 +236,7 @@ def process_view(project):
     def on_run(change):
         if not required_values_filled(probe_path, action_id):
             return
+
         spikesorter_params = sorter_param.value
         for (k, v) in spikesorter_params.items():
             if v == 'None':

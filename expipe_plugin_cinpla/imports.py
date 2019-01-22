@@ -83,13 +83,8 @@ def shutil():
 
 @lazy_import
 def datetime():
-    from datetime import datetime
+    import datetime
     return datetime
-
-@lazy_import
-def timedelta():
-    from datetime import timedelta
-    return timedelta
 
 @lazy_import
 def subprocess():

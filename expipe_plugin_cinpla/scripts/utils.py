@@ -85,7 +85,7 @@ def get_depth_from_adjustment(project, action, entity_id):
     adjusts = {}
     for adjust in adjustments.modules.values():
         values = adjust.contents
-        adjusts[datetime.strptime(values['date'], DTIME_FORMAT)] = adjust
+        adjusts[datetime.datetime.strptime(values['date'], DTIME_FORMAT)] = adjust
 
     regdate = action.datetime
     adjustdates = adjusts.keys()
@@ -146,7 +146,8 @@ def _make_data_path(action, overwrite):
 def _get_data_path(action):
     action_path = action._backend.path
     project_path = action_path.parent.parent
-    data_path = action.data['main']
+    # data_path = action.data['main']
+    data_path = str(pathlib.Path(pathlib.PureWindowsPath(action.data['main'])))
     return project_path / data_path
 
 
