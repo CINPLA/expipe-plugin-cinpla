@@ -141,7 +141,7 @@ def attach_to_process(cli):
                   )
     @click.option('--split-channels',
                   default='all',
-                  type=click.String,
+                  type=click.STRING,
                   help="It can be 'all', 'half', or list of channels used for custom split e.g. [[0,1,2,3,4], [5,6,7,8,9]]"
                   )
     def _process_openephys(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp,
