@@ -313,6 +313,19 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if not spikesort:
             extra_args = extra_args + ' --no-sorting'
 
+        ground_cmd = ''
+        if ground is not None:
+            for g in ground:
+                ground_cmd = ground_cmd + ' -g ' + str(g)
+
+        ref_cmd = ''
+        if ref is not None:
+            ref_cmd = ' --ref ' + ref
+
+        split_cmd = ''
+        if split is not None:
+            split_cmd = ' --split-channels ' + str(split)
+
         try:
             pbar[0].close()
         except Exception:
@@ -339,10 +352,9 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {}".format(action_id, remote_probe, sorter,
-                                                                            remote_yaml, remote_acq, remote_exdir,
-                                                                            extra_args)
-
+              "--acquisition {} --exdir-path {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
+                                                                    remote_acq, remote_exdir, ground_cmd, ref_cmd,
+                                                                    split_cmd, extra_args)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
         ####################### RETURN PROCESSED DATA #######################

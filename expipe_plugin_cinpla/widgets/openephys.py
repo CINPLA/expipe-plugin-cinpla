@@ -167,25 +167,25 @@ def process_view(project):
         layout={'width': 'initial'}
     )
 
-    reference = ipywidgets.ToggleButtons(
+    reference = ipywidgets.RadioButtons(
         options=['CMR', 'CAR', 'NO'],
         description='Reference:',
         disabled=False,
-        button_style='',  # 'success', 'info', 'warning', 'danger' or ''
         tooltips=['Common Median Reference', 'Common Average Reference', 'No re-referencing'],
-        orientation='vertical'
+        orientation='vertical',
+        layout={'width': 'initial'}
         #     icons=['check'] * 3
     )
     reference.layout.visibility = 'hidden'
 
-    split_group = ipywidgets.ToggleButtons(
+    split_group = ipywidgets.RadioButtons(
         options=['all', 'half', 'custom'],
         description='Ref channels:',
         disabled=False,
-        button_style='',  # 'success', 'info', 'warning', 'danger' or ''
         tooltips=['all channels are used to re-reference', 'channels are split in half and re-referenced separately',
                   'custom decided split'],
-        orientation='vertical'
+        orientation='vertical',
+        layout={'width': 'initial'}
     )
     split_group.layout.visibility = 'hidden'
 
