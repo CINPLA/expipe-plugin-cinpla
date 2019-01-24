@@ -124,6 +124,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         # apply filtering and cmr
         print('Writing filtered and common referenced data')
+
         recording_hp = st.preprocessing.bandpass_filter(recording_active, freq_min=300, freq_max=6000)
         if ref is not None:
             if ref.lower() == 'cmr':
@@ -132,9 +133,9 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 reference = 'average'
             else:
                 raise Exception("'reference' can be either 'cmr' or 'car'")
-            if split is 'all':
+            if split == 'all':
                 recording_cmr = st.preprocessing.common_reference(recording_hp, reference=reference)
-            elif split is 'half':
+            elif split == 'half':
                 groups = [recording.getChannelIds()[:int(len(recording.getChannelIds()) / 2)],
                           recording.getChannelIds()[int(len(recording.getChannelIds()) / 2):]]
                 recording_cmr = st.preprocessing.common_reference(recording_hp, groups=groups, reference=reference)
@@ -320,7 +321,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         ref_cmd = ''
         if ref is not None:
-            ref_cmd = ' --ref ' + ref
+            ref_cmd = ' --ref ' + ref.lower()
 
         split_cmd = ''
         if split is not None:
