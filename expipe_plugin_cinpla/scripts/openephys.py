@@ -314,10 +314,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if not spikesort:
             extra_args = extra_args + ' --no-sorting'
 
-        if ref is not None:
+        if ref is not None and isinstance(ref, str):
             ref = ref.lower()
-        if ground is not None:
-            ground = ground.lower()
         if split is not None and isinstance(split, str):
             split = split.lower()
 
