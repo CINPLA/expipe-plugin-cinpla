@@ -168,7 +168,7 @@ def process_view(project):
     )
 
     reference = ipywidgets.RadioButtons(
-        options=['CMR', 'CAR', 'NO'],
+        options=['cmr', 'car', 'none'],
         description='Reference:',
         disabled=False,
         tooltips=['Common Median Reference', 'Common Average Reference', 'No re-referencing'],
@@ -246,7 +246,7 @@ def process_view(project):
             bad_chans = [int(b) for b in bad_channels.value.split(',')]
         else:
             bad_chans = []
-        if reference.value is not 'NO':
+        if reference.value is not 'none':
             ref = reference.value
         else:
             ref = None
@@ -290,7 +290,7 @@ def process_view(project):
 
     def on_split(change):
         if change['type'] == 'change' and change['name'] == 'value':
-            if reference.value is not 'NO':
+            if reference.value is not 'none':
                 if split_group.value == 'custom':
                     custom_split.layout.visibility = 'visible'
                 else:

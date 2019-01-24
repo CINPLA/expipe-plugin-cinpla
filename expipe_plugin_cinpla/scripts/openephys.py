@@ -86,7 +86,7 @@ def register_openephys_recording(
 
 def process_openephys(project, action_id, probe_path, sorter, acquisition_folder=None,
                       exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False,
-                      spikesorter_params=None, server=None, ground=None, ref='CMR', split=None):
+                      spikesorter_params=None, server=None, ground=None, ref=None, split=None):
     import spikeextractors as se
     import spiketoolkit as st
 
@@ -312,6 +312,13 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             extra_args = extra_args + ' --no-mua'
         if not spikesort:
             extra_args = extra_args + ' --no-sorting'
+
+        if ref is not None:
+            ref = ref.lower()
+        if ground is not None:
+            ground = ground.lower()
+        if split is not None and isinstance(split, str):
+            split = split.lower()
 
         ground_cmd = ''
         if ground is not None:
