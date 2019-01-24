@@ -167,11 +167,13 @@ def attach_to_process(cli):
                 params = None
         else:
             params = None
+
         if split_channels == 'custom':
             import ast
             split_channels = ast.literal_eval(split_channels)
             assert isinstance(split_channels, list), 'With custom reference the list of channels has to be provided ' \
                                                      'with the --split-channels argument'
+
         openephys.process_openephys(project=PAR.PROJECT, action_id=action_id, probe_path=probe_path, sorter=sorter,
                                     spikesort=spikesort, compute_lfp=compute_lfp, compute_mua=compute_mua,
                                     spikesorter_params=params, server=server, acquisition_folder=acquisition,

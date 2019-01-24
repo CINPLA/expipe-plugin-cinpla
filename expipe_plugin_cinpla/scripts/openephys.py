@@ -320,7 +320,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         ref_cmd = ''
         if ref is not None:
-            ref_cmd = ' --ref ' + ref
+            ref_cmd = ' --ref ' + ref.lower()
 
         split_cmd = ''
         if split is not None:
