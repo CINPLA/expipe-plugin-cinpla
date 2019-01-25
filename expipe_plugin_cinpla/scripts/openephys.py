@@ -151,7 +151,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         recording_lfp = st.preprocessing.resample(recording_lfp, 1000)
         recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_cmr), 1000)
         tmpdir = Path(tempfile.mkdtemp(dir=os.getcwd()))
-        print(tmpdir)
 
         if spikesort:
             print('Bandpass filter')
@@ -234,9 +233,11 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if not os.access(str(tmpdir), os.W_OK):
             # Is the error an access error ?
             os.chmod(str(tmpdir), stat.S_IWUSR)
-        shutil.rmtree(str(tmpdir), ignore_errors=True)
+        try:
+            shutil.rmtree(str(tmpdir), ignore_errors=True)
+        except:
+            print('Could not remove ', tmpdir)
 
-        print('Saved to exdir: ', exdir_path)
     else:
         config = expipe.config._load_config_by_name(None)
         assert server in [s['host'] for s in config.get('servers')]
@@ -384,7 +385,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if not os.access(str(local_proc_tar), os.W_OK):
             # Is the error an access error ?
             os.chmod(str(local_proc_tar), stat.S_IWUSR)
-        os.remove(local_proc_tar)
+        try:
+            os.remove(local_proc_tar)
+        except:
+            print('Could not remove: ', local_proc_tar)
         # sftp_client.remove(remote_proc_tar)
         print('Deleting remote process folder')
         cmd = "rm -r process"
@@ -395,6 +399,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         sftp_client.close()
         scp_client.close()
 
+    print('Saved to exdir: ', exdir_path)
     print("Total elapsed time: ", time.time() - proc_start)
 
 
