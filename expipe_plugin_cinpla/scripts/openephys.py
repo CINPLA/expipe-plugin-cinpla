@@ -271,8 +271,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         try:  # make directory for untaring
             process_folder = 'process_' + str(np.random.randint(10000000))
-            stdin, stdout, stderr = remote_shell.execute('mkdir' + process_folder)
-            print(''.join(stdout))
+            stdin, stdout, stderr = remote_shell.execute('mkdir ' + process_folder)
         except IOError:
             pass
         print('Packing tar archive')
