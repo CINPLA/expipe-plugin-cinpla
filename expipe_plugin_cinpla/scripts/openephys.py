@@ -270,13 +270,14 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
 
         try:  # make directory for untaring
-            stdin, stdout, stderr = remote_shell.execute('mkdir process')
+            process_folder = 'process_' + str(np.rand.randint(10000000))
+            stdin, stdout, stderr = remote_shell.execute('mkdir' + process_folder)
             print(''.join(stdout))
         except IOError:
             pass
         print('Packing tar archive')
-        remote_acq = 'process/acquisition'
-        remote_tar = 'process/acquisition.tar'
+        remote_acq = process_folder + '/acquisition'
+        remote_tar = process_folder + '/acquisition.tar'
 
         # transfer acquisition folder
         local_tar = shutil.make_archive(str(openephys_path), 'tar', str(openephys_path))
@@ -285,13 +286,13 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             local_tar, remote_tar, recursive=False)
 
         # transfer probe_file
-        remote_probe = 'process/probe.prb'
+        remote_probe = process_folder + '/probe.prb'
         scp_client.put(
             probe_path, remote_probe, recursive=False)
 
-        remote_exdir = 'process/main.exdir'
-        remote_proc = 'process/main.exdir/processing'
-        remote_proc_tar = 'process/processing.tar'
+        remote_exdir = process_folder + '/main.exdir'
+        remote_proc = process_folder + '/main.exdir/processing'
+        remote_proc_tar = process_folder + '/processing.tar'
         local_proc = str(exdir_path / 'processing')
         local_proc_tar = local_proc + '.tar'
 
@@ -300,10 +301,13 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             spike_params_file = 'spike_params.yaml'
             with open(spike_params_file, 'w') as f:
                 yaml.dump(spikesorter_params, f)
-            remote_yaml = 'process/' + spike_params_file
+            remote_yaml = process_folder + '/' + spike_params_file
             scp_client.put(
                 spike_params_file, remote_yaml, recursive=False)
-            os.remove(spike_params_file)
+            try:
+                os.remove(spike_params_file)
+            except:
+                print('Could not remove: ', spike_params_file)
         else:
             remote_yaml = 'none'
 
@@ -354,7 +358,11 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if not os.access(str(local_tar), os.W_OK):
             # Is the error an access error ?
             os.chmod(str(local_tar), stat.S_IWUSR)
-        os.remove(local_tar)
+        try:
+            os.remove(local_tar)
+        except:
+            print('Could not remove: ', local_tar)
+
 
         ###################### PROCESS #######################################
         print('Processing on server')
@@ -391,7 +399,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             print('Could not remove: ', local_proc_tar)
         # sftp_client.remove(remote_proc_tar)
         print('Deleting remote process folder')
-        cmd = "rm -r process"
+        cmd = "rm -r " + process_folder
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 
         #################### CLOSE UP #############################
