@@ -239,8 +239,9 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
             se.ExdirRecordingExtractor.writeRecording(recording_mua, exdir_path, mua=True)
 
         intan_recording = pyintan.File(str(intan_path))
-        if len(intan_recording.digital_in) + len(intan_recording.digital_out) > 0:
-            print('Saving ', len(intan_recording.digital_in) + len(intan_recording.digital_out), ' Intan event sources')
+        if len(intan_recording.digital_in_events) + len(intan_recording.digital_out_events) > 0:
+            print('Saving ', len(intan_recording.digital_in_events) + len(intan_recording.digital_out_events),
+                  ' Intan event sources')
             generate_events(exdir_path, intan_recording)
 
         print('Cleanup')
