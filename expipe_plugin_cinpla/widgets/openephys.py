@@ -19,6 +19,7 @@ def openephys_view(project):
     register_depth = ipywidgets.Checkbox(description='Register depth', value=False)
     register_depth_from_adjustment = ipywidgets.Checkbox(
         description='Find adjustments', value=True)
+    psychopy_visual = ipywidgets.Checkbox(description='Visual for psychopy', value=False)
 
     overwrite = ipywidgets.Checkbox(description='Overwrite', value=False)
     delete_raw_data = ipywidgets.Checkbox(
@@ -35,7 +36,7 @@ def openephys_view(project):
         tag,
         register
     ])
-    checks = ipywidgets.HBox([openephys_path, register_depth, overwrite, delete_raw_data])
+    checks = ipywidgets.HBox([openephys_path, register_depth, overwrite, psychopy_visual, delete_raw_data])
     main_box = ipywidgets.VBox([
             checks,
             ipywidgets.HBox([fields, templates])
@@ -80,6 +81,7 @@ def openephys_view(project):
             openephys_path=openephys_path.directory,
             depth=depth.value,
             overwrite=overwrite.value,
+            psychopy_visual=psychopy_visual.value,
             register_depth=register_depth.value,
             entity_id=none_if_empty(entity_id.value),
             user=user.value,

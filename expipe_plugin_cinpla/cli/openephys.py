@@ -62,8 +62,14 @@ def attach_to_register(cli):
                   type=click.STRING,
                   help='Which templates to add',
                   )
+    @click.option('-p', '--psychopy',
+                  multiple=True,
+                  type=click.STRING,
+                  help='Psyschopy for visual analysis files are present.',
+                  )
+
     def _register_openephys_recording(
-        action_id, openephys_path, depth, overwrite, templates,
+        action_id, openephys_path, depth, overwrite, templates, psychopy,
         entity_id, user, session, location, message, tag, register_depth):
         openephys.register_openephys_recording(
             project=PAR.PROJECT,
@@ -71,6 +77,7 @@ def attach_to_register(cli):
             openephys_path=openephys_path,
             depth=depth,
             overwrite=overwrite,
+            psychopy=psychopy,
             templates=templates,
             entity_id=entity_id,
             user=user,
