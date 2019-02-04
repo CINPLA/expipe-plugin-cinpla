@@ -86,7 +86,8 @@ def register_openephys_recording(
 
 def process_openephys(project, action_id, probe_path, sorter, acquisition_folder=None,
                       exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False,
-                      spikesorter_params=None, server=None, ground=None, ref=None, split=None):
+                      spikesorter_params=None, server=None, ground=None, ref=None, split=None,
+                      ms_before_wf=1, ms_after_wf=2,):
     import spikeextractors as se
     import spiketoolkit as st
 
@@ -167,7 +168,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             lfp_filename = Path(tmpdir) / 'lfp.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_lfp, save_path=lfp_filename)
             recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
-                                                         numchan=len(recording_lfp.getChannelIds()))
+                                                        numchan=len(recording_lfp.getChannelIds()))
             print('Filter time: ', time.time() -t_start)
 
         if compute_mua:
@@ -207,7 +208,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if spikesort:
             print('Computing waveforms')
             wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group',
-                                                    ms_before=1, ms_after=2, verbose=True)
+                                                    ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
             print('Saving sorting output to exdir format')
             se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
         if compute_lfp:
@@ -226,7 +227,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if len(oe_recording.events) > 0:
             print('Saving ', len(oe_recording.events), ' Open Ephys event sources')
             generate_events(exdir_path, oe_recording)
-
 
         print('Cleanup')
         if not os.access(str(tmpdir), os.W_OK):
@@ -335,6 +335,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if split is not None:
             split_cmd = ' --split-channels ' + str(split)
 
+        wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf)
+
         try:
             pbar[0].close()
         except Exception:
@@ -365,9 +367,9 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
-                                                                    remote_acq, remote_exdir, ground_cmd, ref_cmd,
-                                                                    split_cmd, extra_args)
+              "--acquisition {} --exdir-path {} {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
+                                                                       remote_acq, remote_exdir, ground_cmd, ref_cmd,
+                                                                       split_cmd, wf_cmd, extra_args)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
         ####################### RETURN PROCESSED DATA #######################
