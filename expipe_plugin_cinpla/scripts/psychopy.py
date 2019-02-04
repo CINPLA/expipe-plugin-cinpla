@@ -1,9 +1,11 @@
+from expipe_plugin_cinpla.scripts.utils import _get_data_path
 from expipe_plugin_cinpla.imports import *
+from warnings import warn
 import os
 import json
 
 
-def _process_psychopy(action, action_id, jsonpath):
+def process_psychopy(project, action_id, jsonpath):
     '''
     keys = ["image", "sparsenoise", "grating", "sparsenoise", "movie"]
     valuekeys = ["duration", "image", "phase", "spatial_frequency", "frequency", "orientation", "movie"]
@@ -26,7 +28,7 @@ def _process_psychopy(action, action_id, jsonpath):
             try:
                 json_data.append(json.loads(json_line))
             except json.JSONDecodeError:
-                print("Skipping line. The line is not in json format:\n{}".format(line))
+                warn("Skipping line. The line is not in json format:\n{}".format(line))
 
     # Define exdir project
     action = project.actions[action_id]
@@ -36,18 +38,16 @@ def _process_psychopy(action, action_id, jsonpath):
     psychopy = epochs.require_group("psychopy")
 
     # Get epoch dataset from json
-    keys = json_data.keys()
-    data_type_setsize = len(set(keys))
-    if data_type_setsize == 1:
-        key = keys()[0]
-        psychopy.require_dataset('timestamp', data=time[key])
-        psychopy.require_dataset('duration', data=duration[key])
-        psychopy.require_dataset('orrientation', data=orrientation[key])
+    key = list(json_data[0].keys())[0]
+    for event in json_data:
+        new_key = list(event.keys())[0]
+        if key != new_key:
+            warn("Different experiment design in session; {} =/= {}".format(key, new_key))
+        key = new_key
 
-    elif data_type_setsize > 1:
-        for key in json_data.keys():
-            psychopy.require_dataset('timestamp', data=time[key])
-            psychopy.require_dataset('duration', data=duration[key])
-            psychopy.require_dataset('orrientation', data=orrientation[key])
+        # Add dataset to exdir
+        psychopy.require_dataset('timestamp', data=event[key]["time"])
+        psychopy.require_dataset('duration', data=event[key]["duration"])
+        psychopy.require_dataset('orrientation', data=event[key]["orrientation"])
 
-    print("Done. The data is located in {}".format(exdir_path))
+        print("Done. The data is located in {}".format(exdir_path))

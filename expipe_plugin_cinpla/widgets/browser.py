@@ -1,6 +1,7 @@
 from expipe_plugin_cinpla.imports import *
 import IPython.display as ipd
 from .openephys import openephys_view, process_view
+from .psychopy import process_psychopy_view
 from .entity import entity_view
 from .adjust import adjustment_view
 from .surgery import perfuse_view, surgery_view
@@ -38,10 +39,12 @@ def display(project_path=None):
         register_tab.set_title(i, title)
 
     process_tab_tab_titles = [
-        'OpenEphys',]
+        'OpenEphys',
+        'Psychopy']
     process_tab = ipywidgets.Tab()
     process_tab.children = [
-        process_view(project)
+        process_view(project),
+        process_psychopy_view(project),
     ]
     for i, title in enumerate(process_tab_tab_titles):
         process_tab.set_title(i, title)

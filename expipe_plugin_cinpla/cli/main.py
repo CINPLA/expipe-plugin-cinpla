@@ -7,6 +7,7 @@ from . import misc
 from . import openephys as OE
 from . import entity
 from . import surgery
+from . import psychopy as PS
 
 
 class CinplaPlugin(IPlugin):
@@ -29,4 +30,5 @@ class CinplaPlugin(IPlugin):
         entity.attach_to_cli(register)
         OE.attach_to_register(register)
         OE.attach_to_process(process)
+        PS.attach_to_process(process)
         AX.attach_to_cli(register)
