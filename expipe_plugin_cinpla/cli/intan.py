@@ -97,7 +97,7 @@ def attach_to_process(cli):
     @click.option('--acquisition',
                   default=None,
                   type=click.STRING,
-                  help='(optional) Intan acquisition file.',
+                  help='(optional) Intan acquisition folder.',
                   )
     @click.option('--exdir-path',
                   default=None,
@@ -200,7 +200,7 @@ def attach_to_process(cli):
 
         intan.process_intan(project=PAR.PROJECT, action_id=action_id, probe_path=probe_path, sorter=sorter,
                             spikesort=spikesort, compute_lfp=compute_lfp, compute_mua=compute_mua,
-                            spikesorter_params=params, server=server, acquisition_file=acquisition,
+                            spikesorter_params=params, server=server, acquisition_folder=acquisition,
                             exdir_file_path=exdir_path, ground=ground, ref=ref, split=split_channels,
                             remove_artifact_channel=rm_art_channel, ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf,
                             ms_before_stim=ms_before_stim, ms_after_stim=ms_after_stim)

@@ -10,6 +10,7 @@ import os
 import tempfile
 import stat
 
+
 def register_intan_recording(
     project, action_id, intan_path, depth, overwrite, templates,
     entity_id, user, session, location, message, tag, delete_raw_data,
@@ -79,7 +80,7 @@ def register_intan_recording(
             print('Could not remove ', str(intan_path))
 
 
-def process_intan(project, action_id, probe_path, sorter, acquisition_file=None, remove_artifact_channel=None,
+def process_intan(project, action_id, probe_path, sorter, acquisition_folder=None, remove_artifact_channel=None,
                   exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False,
                   ms_before_wf=0.5, ms_after_wf=2, ms_before_stim=0.5, ms_after_stim=2,
                   spikesorter_params=None, server=None, ground=None, ref=None, split=None):
@@ -89,7 +90,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
     proc_start = time.time()
 
     if server is None or server == 'local':
-        if acquisition_file is None:
+        if acquisition_folder is None:
             action = project.actions[action_id]
             # if exdir_path is None:
             exdir_path = _get_data_path(action)
@@ -107,7 +108,13 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
                 intan_path = intan_files[0]
                 print('More than one intan file in the acquisition folder: using the first one.')
         else:
-            intan_path = Path(acquisition_file)
+            intan_folder = Path(acquisition_folder)
+            intan_files = list(intan_folder.glob('*.rh*'))
+            if len(intan_files) == 1:
+                intan_path = intan_files[0]
+            else:
+                intan_path = intan_files[0]
+                print('More than one intan file in the acquisition folder: using the first one.')
             assert exdir_file_path is not None
             exdir_path = Path(exdir_file_path)
 
@@ -354,7 +361,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
 
         remove_art_cmd = ''
         if remove_artifact_channel is not None:
-            remove_art_cmd = ' --remove-artifact-channel ' + str(remove_artifact_channel)
+            remove_art_cmd = ' --rm-art-channel ' + str(remove_artifact_channel)
 
         wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf) + \
                  ' --ms-before-stim ' + str(ms_before_stim) + ' --ms-after-stim ' + str(ms_after_stim)
@@ -390,7 +397,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
         cmd = "expipe process intan {} --probe-path {} --sorter {} --spike-params {}  " \
               "--acquisition {} --exdir-path {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
                                                                           remote_acq, remote_exdir, ground_cmd, ref_cmd,
-                                                                          split_cmd, remove_artifact_channel,
+                                                                          split_cmd, remove_art_cmd,
                                                                           wf_cmd, extra_args)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)

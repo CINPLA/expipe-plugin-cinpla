@@ -6,8 +6,6 @@ import ast
 
 
 def process_tracking_view(project):
-    import spiketoolkit as st
-
     openephys_path = SelectDirectoryButton(description='*Select OpenEphys path')
     action_id = SearchSelect(project.actions, description='*Actions', layout={'width': 'initial'})
     run = ipywidgets.Button(description='Process', layout={'width': '100%', 'height': '100px'})
