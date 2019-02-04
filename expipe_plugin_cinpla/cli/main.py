@@ -3,10 +3,11 @@ from expipecli.utils.plugin import IPlugin
 from expipe_plugin_cinpla.imports import *
 from . import adjust
 from . import axona as AX
-from . import misc
 from . import openephys as OE
+from . import intan as IN
 from . import entity
 from . import surgery
+from . import misc
 
 
 class CinplaPlugin(IPlugin):
@@ -29,4 +30,6 @@ class CinplaPlugin(IPlugin):
         entity.attach_to_cli(register)
         OE.attach_to_register(register)
         OE.attach_to_process(process)
+        IN.attach_to_register(register)
+        IN.attach_to_process(process)
         AX.attach_to_cli(register)

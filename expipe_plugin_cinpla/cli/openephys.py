@@ -62,25 +62,24 @@ def attach_to_register(cli):
                   type=click.STRING,
                   help='Which templates to add',
                   )
-    def _register_openephys_recording(
-        action_id, openephys_path, depth, overwrite, templates,
-        entity_id, user, session, location, message, tag, register_depth):
-        openephys.register_openephys_recording(
-            project=PAR.PROJECT,
-            action_id=action_id,
-            openephys_path=openephys_path,
-            depth=depth,
-            overwrite=overwrite,
-            templates=templates,
-            entity_id=entity_id,
-            user=user,
-            session=session,
-            location=location,
-            message=message,
-            tag=tag,
-            delete_raw_data=None,
-            correct_depth_answer=None,
-            register_depth=register_depth)
+    def _register_openephys_recording(action_id, openephys_path, depth, overwrite, templates,
+                                      entity_id, user, session, location, message, tag, register_depth):
+
+        openephys.register_openephys_recording(project=PAR.PROJECT,
+                                               action_id=action_id,
+                                               openephys_path=openephys_path,
+                                               depth=depth,
+                                               overwrite=overwrite,
+                                               templates=templates,
+                                               entity_id=entity_id,
+                                               user=user,
+                                               session=session,
+                                               location=location,
+                                               message=message,
+                                               tag=tag,
+                                               delete_raw_data=None,
+                                               correct_depth_answer=None,
+                                               register_depth=register_depth)
 
 
 def attach_to_process(cli):
@@ -99,7 +98,7 @@ def attach_to_process(cli):
     @click.option('--acquisition',
                   default=None,
                   type=click.STRING,
-                  help='(optional) Open ephys cquisition folder.',
+                  help='(optional) Open ephys acquisition folder.',
                   )
     @click.option('--exdir-path',
                   default=None,
@@ -144,7 +143,17 @@ def attach_to_process(cli):
                   type=click.STRING,
                   help="It can be 'all', 'half', or list of channels used for custom split e.g. [[0,1,2,3,4], [5,6,7,8,9]]"
                   )
-    def _process_openephys(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp,
+    @click.option('--ms-before-wf',
+                  default=1,
+                  type=click.FLOAT,
+                  help="ms to clip before waveform peak"
+                  )
+    @click.option('--ms-after-wf',
+                  default=2,
+                  type=click.FLOAT,
+                  help="ms to clip after waveform peak"
+                  )
+    def _process_openephys(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp, ms_before_wf, ms_after_wf,
                            spike_params, server, acquisition, exdir_path, ground, ref, split_channels):
         if no_sorting:
             spikesort = False
@@ -177,4 +186,5 @@ def attach_to_process(cli):
         openephys.process_openephys(project=PAR.PROJECT, action_id=action_id, probe_path=probe_path, sorter=sorter,
                                     spikesort=spikesort, compute_lfp=compute_lfp, compute_mua=compute_mua,
                                     spikesorter_params=params, server=server, acquisition_folder=acquisition,
-                                    exdir_file_path=exdir_path, ground=ground, ref=ref, split=split_channels)
+                                    exdir_file_path=exdir_path, ground=ground, ref=ref, split=split_channels,
+                                    ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf)

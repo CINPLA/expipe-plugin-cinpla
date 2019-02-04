@@ -26,7 +26,7 @@ def register_intan_recording(
     intan_dirname = intan_path.stem
     intan_rec = pyintan.File(str(intan_path))
     entity_id = entity_id or str(intan_dirname).split('_')[0]
-    # session = session or str(intan_dirname).split('_')[-1]
+    session = session or 1
     if session.isdigit():
         pass
     else:
@@ -80,7 +80,8 @@ def register_intan_recording(
 
 
 def process_intan(project, action_id, probe_path, sorter, acquisition_file=None, remove_artifact_channel=None,
-                  exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, ms_before=2, ms_after=3,
+                  exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False,
+                  ms_before_wf=0.5, ms_after_wf=2, ms_before_stim=0.5, ms_after_stim=2,
                   spikesorter_params=None, server=None, ground=None, ref=None, split=None):
     import spikeextractors as se
     import spiketoolkit as st
@@ -159,7 +160,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
                                 * intan_rec.sample_rate).magnitude.astype(int)
             if trigger_channel is not None:
                 recording_rm_art = st.preprocessing.remove_artifacts(recording_cmr, triggers=triggers,
-                                                                     ms_before=ms_before, ms_after=ms_after)
+                                                                     ms_before=ms_before_stim, ms_after=ms_after_stim)
                 print('Removing artifacts channel: ', remove_artifact_channel)
             else:
                 recording_rm_art = recording_cmr
@@ -180,7 +181,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
             filt_filename = Path(tmpdir) / 'filt.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_rm_art, save_path=filt_filename)
             recording_rm_art = se.BinDatRecordingExtractor(filt_filename, samplerate=recording_rm_art.getSamplingFrequency(),
-                                                        numchan=len(recording_rm_art.getChannelIds()))
+                                                           numchan=len(recording_rm_art.getChannelIds()))
             print('Filter time: ', time.time() -t_start)
         if compute_lfp:
             print('Computing LFP')
@@ -188,7 +189,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
             lfp_filename = Path(tmpdir) / 'lfp.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_lfp, save_path=lfp_filename)
             recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
-                                                         numchan=len(recording_lfp.getChannelIds()))
+                                                        numchan=len(recording_lfp.getChannelIds()))
             print('Filter time: ', time.time() -t_start)
 
         if compute_mua:
@@ -228,7 +229,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
         if spikesort:
             print('Computing waveforms')
             wf = st.postprocessing.getUnitWaveforms(recording_rm_art, sorting, by_property='group',
-                                                    ms_before=1, ms_after=2, verbose=True)
+                                                    ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
             print('Saving sorting output to exdir format')
             se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
         if compute_lfp:
@@ -353,7 +354,10 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
 
         remove_art_cmd = ''
         if remove_artifact_channel is not None:
-            split_cmd = ' --remove-artifact-channel ' + str(remove_artifact_channel)
+            remove_art_cmd = ' --remove-artifact-channel ' + str(remove_artifact_channel)
+
+        wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf) + \
+                 ' --ms-before-stim ' + str(ms_before_stim) + ' --ms-after-stim ' + str(ms_after_stim)
 
         try:
             pbar[0].close()
@@ -381,13 +385,13 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_file=None,
         except:
             print('Could not remove: ', local_tar)
 
-
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process intan {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
-                                                                       remote_acq, remote_exdir, ground_cmd, ref_cmd,
-                                                                       split_cmd, remove_artifact_channel, extra_args)
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
+                                                                          remote_acq, remote_exdir, ground_cmd, ref_cmd,
+                                                                          split_cmd, remove_artifact_channel,
+                                                                          wf_cmd, extra_args)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
         ####################### RETURN PROCESSED DATA #######################
