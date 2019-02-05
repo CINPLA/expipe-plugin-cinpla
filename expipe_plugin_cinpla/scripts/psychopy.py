@@ -1,7 +1,7 @@
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
 from expipe_plugin_cinpla.imports import *
 from warnings import warn
-import os
+import quantities as pq
 import json
 
 
@@ -16,7 +16,6 @@ def process_psychopy(project, action_id, jsonpath):
     {"grating": {"phase": "f*t", "duration": 2.0, "spatial_frequency": 0.04, "frequency": 4, "orientation": 225}}
     {"grayscreen" : {"duration": 300.}}
     '''
-
 
     print("Converting PsychoPy data to exdir format")
 
@@ -36,8 +35,13 @@ def process_psychopy(project, action_id, jsonpath):
     exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
     epochs = exdir_file.require_group("epochs")
     psychopy = epochs.require_group("psychopy")
+    psychopy.attrs['provenance'] = 'psychopy'
 
     # Get epoch dataset from json
+    ts = []
+    ori = []
+    dur = []
+
     key = list(json_data[0].keys())[0]
     for event in json_data:
         new_key = list(event.keys())[0]
@@ -46,8 +50,17 @@ def process_psychopy(project, action_id, jsonpath):
         key = new_key
 
         # Add dataset to exdir
-        psychopy.require_dataset('timestamp', data=event[key]["time"])
-        psychopy.require_dataset('duration', data=event[key]["duration"])
-        psychopy.require_dataset('orrientation', data=event[key]["orrientation"])
+        ts.append(event[key]["time"])
+        dur.append(event[key]["duration"])
+        ori.append(event[key]["orientation"])
 
-        print("Done. The data is located in {}".format(exdir_path))
+    timestamps = np.array(ts)*pq.s
+    durations = np.array(dur)*pq.s
+    orientations = np.array(ori)*pq.deg
+
+    psychopy.require_dataset('timestamps', data=timestamps)
+    psychopy.require_dataset('durations', data=durations)
+    data = psychopy.require_dataset('data', data=orientations)
+    data.attrs['type'] = key
+
+    print("Done. The data is located in {}".format(exdir_path))

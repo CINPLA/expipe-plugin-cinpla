@@ -1,12 +1,12 @@
 from expipe_plugin_cinpla.imports import *
-from expipe_plugin_cinpla.scripts import openephys
+from expipe_plugin_cinpla.scripts import intan
 from . import utils
 
 
 def attach_to_register(cli):
-    @cli.command('openephys',
-                 short_help='Register an open-ephys recording-action to database.')
-    @click.argument('openephys-path', type=click.Path(exists=True))
+    @cli.command('intan',
+                 short_help='Register an Intan recording-action to database.')
+    @click.argument('intan-path', type=click.Path(exists=True))
     @click.option('-u', '--user',
                   type=click.STRING,
                   help='The experimenter performing the recording.',
@@ -27,7 +27,7 @@ def attach_to_register(cli):
                   )
     @click.option('--session',
                   type=click.STRING,
-                  help='Session number, assumed to be in end of filename by default',
+                  help='Session number, assumed to be 1 if not specified',
                   )
     @click.option('--action-id',
                   type=click.STRING,
@@ -62,29 +62,28 @@ def attach_to_register(cli):
                   type=click.STRING,
                   help='Which templates to add',
                   )
-    def _register_openephys_recording(action_id, openephys_path, depth, overwrite, templates,
+    def _register_openephys_recording(action_id, intan_path, depth, overwrite, templates,
                                       entity_id, user, session, location, message, tag, register_depth):
 
-        openephys.register_openephys_recording(project=PAR.PROJECT,
-                                               action_id=action_id,
-                                               openephys_path=openephys_path,
-                                               depth=depth,
-                                               overwrite=overwrite,
-                                               templates=templates,
-                                               entity_id=entity_id,
-                                               user=user,
-                                               session=session,
-                                               location=location,
-                                               message=message,
-                                               tag=tag,
-                                               delete_raw_data=None,
-                                               correct_depth_answer=None,
-                                               register_depth=register_depth)
-
-
+        intan.register_intan_recording(
+            project=PAR.PROJECT,
+            action_id=action_id,
+            intan_path=intan_path,
+            depth=depth,
+            overwrite=overwrite,
+            templates=templates,
+            entity_id=entity_id,
+            user=user,
+            session=session,
+            location=location,
+            message=message,
+            tag=tag,
+            delete_raw_data=None,
+            correct_depth_answer=None,
+            register_depth=register_depth)
 def attach_to_process(cli):
-    @cli.command('openephys',
-                 short_help='Process open ephys recordings.')
+    @cli.command('intan',
+                 short_help='Process intan recordings.')
     @click.argument('action-id', type=click.STRING)
     @click.option('--probe-path',
                   type=click.STRING,
@@ -98,7 +97,7 @@ def attach_to_process(cli):
     @click.option('--acquisition',
                   default=None,
                   type=click.STRING,
-                  help='(optional) Open ephys acquisition folder.',
+                  help='(optional) Intan acquisition folder.',
                   )
     @click.option('--exdir-path',
                   default=None,
@@ -143,6 +142,11 @@ def attach_to_process(cli):
                   type=click.STRING,
                   help="It can be 'all', 'half', or list of channels used for custom split e.g. [[0,1,2,3,4], [5,6,7,8,9]]"
                   )
+    @click.option('--rm-art-channel',
+                  default=-1,
+                  type=click.INT,
+                  help="Digital input trigger to remove artifacts"
+                  )
     @click.option('--ms-before-wf',
                   default=1,
                   type=click.FLOAT,
@@ -153,7 +157,18 @@ def attach_to_process(cli):
                   type=click.FLOAT,
                   help="ms to clip after waveform peak"
                   )
-    def _process_openephys(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp, ms_before_wf, ms_after_wf,
+    @click.option('--ms-before-stim',
+                  default=2,
+                  type=click.FLOAT,
+                  help="ms to clip before stimulation trigger"
+                  )
+    @click.option('--ms-after-stim',
+                  default=3,
+                  type=click.FLOAT,
+                  help="ms to clip before stimulation trigger"
+                  )
+    def _process_openephys(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp, rm_art_channel,
+                           ms_before_wf, ms_after_wf, ms_before_stim, ms_after_stim,
                            spike_params, server, acquisition, exdir_path, ground, ref, split_channels):
         if no_sorting:
             spikesort = False
@@ -183,8 +198,9 @@ def attach_to_process(cli):
             assert isinstance(split_channels, list), 'With custom reference the list of channels has to be provided ' \
                                                      'with the --split-channels argument'
 
-        openephys.process_openephys(project=PAR.PROJECT, action_id=action_id, probe_path=probe_path, sorter=sorter,
-                                    spikesort=spikesort, compute_lfp=compute_lfp, compute_mua=compute_mua,
-                                    spikesorter_params=params, server=server, acquisition_folder=acquisition,
-                                    exdir_file_path=exdir_path, ground=ground, ref=ref, split=split_channels,
-                                    ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf)
+        intan.process_intan(project=PAR.PROJECT, action_id=action_id, probe_path=probe_path, sorter=sorter,
+                            spikesort=spikesort, compute_lfp=compute_lfp, compute_mua=compute_mua,
+                            spikesorter_params=params, server=server, acquisition_folder=acquisition,
+                            exdir_file_path=exdir_path, ground=ground, ref=ref, split=split_channels,
+                            remove_artifact_channel=rm_art_channel, ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf,
+                            ms_before_stim=ms_before_stim, ms_after_stim=ms_after_stim)

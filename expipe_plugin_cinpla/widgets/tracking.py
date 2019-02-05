@@ -4,28 +4,26 @@ from .utils import SelectDirectoryButton, MultiInput, SearchSelectMultiple, Sele
     required_values_filled, none_if_empty, split_tags, SearchSelect, ParameterSelectList
 import ast
 
-from expipe_plugin_cinpla.scripts.psychopy import process_psychopy
 
-
-def process_psychopy_view(project):
-    json_path = SelectFileButton(description='*Select JSON path')
+def process_tracking_view(project):
+    openephys_path = SelectDirectoryButton(description='*Select OpenEphys path')
     action_id = SearchSelect(project.actions, description='*Actions', layout={'width': 'initial'})
     run = ipywidgets.Button(description='Process', layout={'width': '100%', 'height': '100px'})
     run.style.button_color = 'pink'
 
     main_box = ipywidgets.VBox([
-            ipywidgets.HBox([json_path, action_id]), run
+            ipywidgets.HBox([openephys_path, action_id]), run
         ], layout={'width': '100%'})
     main_box.layout.display = 'flex'
 
     def on_run(change):
-        if not required_values_filled(json_path, action_id):
+        if not required_values_filled(openephys_path, action_id):
             return
 
-        process_psychopy(
+        tracking.process_tracking(
             project=project,
             action_id=action_id.value,
-            jsonpath=json_path.file)
+            openephys_path=openephys_path.directory)
 
     run.on_click(on_run)
     return main_box
