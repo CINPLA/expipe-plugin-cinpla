@@ -189,7 +189,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 if sorter == 'klusta':
                     sorting = st.sorters.klusta(recording_cmr, by_property='group', **spikesorter_params)
                 elif sorter == 'mountain':
-                    sorting = st.sorters.mountainsort4(recording_cmr, by_property='group', **spikesorter_params)
+                    sorting = st.sorters.mountainsort4(recording_cmr, by_property='group', **spikesorter_params) # by_property='group',
                 elif sorter == 'kilosort':
                     sorting = st.sorters.kilosort(recording_cmr, by_property='group', **spikesorter_params)
                 elif sorter == 'spyking-circus':
@@ -409,5 +409,3 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
     print('Saved to exdir: ', exdir_path)
     print("Total elapsed time: ", time.time() - proc_start)
-
-
