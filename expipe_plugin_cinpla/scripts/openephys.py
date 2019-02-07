@@ -372,12 +372,14 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                                                                        split_cmd, wf_cmd, extra_args)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
+
+        print('Finished remote processing')
         ####################### RETURN PROCESSED DATA #######################
         print('Initializing transfer of "' + remote_proc + '" to "' +
               local_proc + '"')
         print('Packing tar archive')
         cmd = "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing'
-        stdin, stdout, stderr = remote_shell.execute(cmd)
+        stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
         # utils.ssh_execute(ssh, "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing')
         scp_client.get(remote_proc_tar, local_proc_tar,
                        recursive=False)
@@ -400,7 +402,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         # sftp_client.remove(remote_proc_tar)
         print('Deleting remote process folder')
         cmd = "rm -r " + process_folder
-        stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
+        stdin, stdout, stderr = remote_shell.execute(cmd)
 
         #################### CLOSE UP #############################
         ssh.close()
