@@ -218,16 +218,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             print('Saving MUA to exdir format')
             se.ExdirRecordingExtractor.writeRecording(recording_mua, exdir_path, mua=True)
 
-        # check for tracking
-        oe_recording = pyopenephys.File(str(openephys_path)).experiments[0].recordings[0]
-        if len(oe_recording.tracking) > 0:
-            print('Saving ', len(oe_recording.tracking), ' Open Ephys tracking sources')
-            generate_tracking(exdir_path, oe_recording)
-
-        if len(oe_recording.events) > 0:
-            print('Saving ', len(oe_recording.events), ' Open Ephys event sources')
-            generate_events(exdir_path, oe_recording)
-
         print('Cleanup')
         if not os.access(str(tmpdir), os.W_OK):
             # Is the error an access error ?
@@ -402,10 +392,21 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         cmd = "rm -r " + process_folder
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 
+
         #################### CLOSE UP #############################
         ssh.close()
         sftp_client.close()
         scp_client.close()
+
+    # check for tracking and events (always locally)
+    oe_recording = pyopenephys.File(str(openephys_path)).experiments[0].recordings[0]
+    if len(oe_recording.tracking) > 0:
+        print('Saving ', len(oe_recording.tracking), ' Open Ephys tracking sources')
+        generate_tracking(exdir_path, oe_recording)
+
+    if len(oe_recording.events) > 0:
+        print('Saving ', len(oe_recording.events), ' Open Ephys event sources')
+        generate_events(exdir_path, oe_recording)
 
     print('Saved to exdir: ', exdir_path)
     print("Total elapsed time: ", time.time() - proc_start)
