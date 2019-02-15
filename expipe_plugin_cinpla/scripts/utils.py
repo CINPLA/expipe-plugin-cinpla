@@ -210,7 +210,7 @@ class ShellHandler:
             if str(line).startswith(cmd) or str(line).startswith(echo_cmd):
                 # up for now filled with shell junk from stdin
                 shout = []
-            elif str(line).startswith(finish):
+            elif finish in str(line):
                 # our finish command ends with the exit status
                 exit_status = int(str(line).rsplit(maxsplit=1)[1])
                 if exit_status:
@@ -218,6 +218,8 @@ class ShellHandler:
                     # thus, swap sherr with shout in a case of failure.
                     sherr = shout
                     shout = []
+                if print_lines:
+                    print('finish command: break')
                 break
             else:
                 if print_lines:
@@ -225,6 +227,11 @@ class ShellHandler:
                 # get rid of 'coloring and formatting' special characters
                 shout.append(re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]').sub('', line).
                              replace('\b', '').replace('\r', ''))
+
+                if finish in str(line):
+                    if print_lines:
+                        print('finish command: break!!!!')
+                    break
 
         # first and last lines of shout/sherr contain a prompt
         if shout and echo_cmd in shout[-1]:
