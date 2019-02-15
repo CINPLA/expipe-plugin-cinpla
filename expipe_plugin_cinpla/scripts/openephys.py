@@ -160,7 +160,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             filt_filename = Path(tmpdir) / 'filt.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_cmr, save_path=filt_filename, dtype=np.float32)
             recording_cmr = se.BinDatRecordingExtractor(filt_filename, samplerate=recording_cmr.getSamplingFrequency(),
-                                                        numchan=len(recording_cmr.getChannelIds(), dtype=np.float32))
+                                                        numchan=len(recording_cmr.getChannelIds()), dtype=np.float32)
             print('Filter time: ', time.time() -t_start)
         if compute_lfp:
             print('Computing LFP')
@@ -177,7 +177,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             mua_filename =  Path(tmpdir) / 'mua.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_mua, save_path=mua_filename, dtype=np.float32)
             recording_mua = se.BinDatRecordingExtractor(mua_filename, samplerate=recording_mua.getSamplingFrequency(),
-                                                        numchan=len(recording_mua.getChannelIds()), dtype=np.float32    )
+                                                        numchan=len(recording_mua.getChannelIds()), dtype=np.float32)
             print('Filter time: ', time.time() -t_start)
 
         recording_cmr = se.loadProbeFile(recording_cmr, probe_path)
