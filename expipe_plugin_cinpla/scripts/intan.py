@@ -283,6 +283,12 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                              'related to this action')
         intan_session = acquisition.attrs["session"]
         intan_folder = Path(acquisition.directory) / intan_session
+        intan_files = list(intan_folder.glob('*.rh*'))
+        if len(intan_files) == 1:
+            intan_path = intan_files[0]
+        else:
+            intan_path = intan_files[0]
+            print('More than one intan file in the acquisition folder: using the first one.')
 
         print('Initializing transfer of "' + str(intan_folder) + '" to "' +
               host + '"')
