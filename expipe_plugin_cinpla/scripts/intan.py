@@ -186,9 +186,10 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             t_start = time.time()
 
             filt_filename = Path(tmpdir) / 'filt.dat'
-            se.BinDatRecordingExtractor.writeRecording(recording_cmr, save_path=filt_filename, dtype=np.float32)
-            recording_cmr = se.BinDatRecordingExtractor(filt_filename, samplerate=recording_cmr.getSamplingFrequency(),
-                                                        numchan=len(recording_cmr.getChannelIds()), dtype=np.float32)
+            se.BinDatRecordingExtractor.writeRecording(recording_rm_art, save_path=filt_filename, dtype=np.float32)
+            recording_rm_art = se.BinDatRecordingExtractor(filt_filename,
+                                                           samplerate=recording_rm_art.getSamplingFrequency(),
+                                                           numchan=len(recording_cmr.getChannelIds()), dtype=np.float32)
             print('Filter time: ', time.time() -t_start)
         if compute_lfp:
             print('Computing LFP')
@@ -238,19 +239,13 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             wf = st.postprocessing.getUnitWaveforms(recording_rm_art, sorting, by_property='group',
                                                     ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
             print('Saving sorting output to exdir format')
-            se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
+            se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_rm_art)
         if compute_lfp:
             print('Saving LFP to exdir format')
             se.ExdirRecordingExtractor.writeRecording(recording_lfp, exdir_path, lfp=True)
         if compute_mua:
             print('Saving MUA to exdir format')
             se.ExdirRecordingExtractor.writeRecording(recording_mua, exdir_path, mua=True)
-
-        intan_recording = pyintan.File(str(intan_path))
-        if len(intan_recording.digital_in_events) + len(intan_recording.digital_out_events) > 0:
-            print('Saving ', len(intan_recording.digital_in_events) + len(intan_recording.digital_out_events),
-                  ' Intan event sources')
-            generate_events(exdir_path, intan_recording)
 
         print('Cleanup')
         if not os.access(str(tmpdir), os.W_OK):
@@ -435,6 +430,12 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         ssh.close()
         sftp_client.close()
         scp_client.close()
+
+    intan_recording = pyintan.File(str(intan_path))
+    if len(intan_recording.digital_in_events) + len(intan_recording.digital_out_events) > 0:
+        print('Saving ', len(intan_recording.digital_in_events) + len(intan_recording.digital_out_events),
+              ' Intan event sources')
+        generate_events(exdir_path, intan_recording)
 
     print('Saved to exdir: ', exdir_path)
     print("Total elapsed time: ", time.time() - proc_start)
