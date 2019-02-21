@@ -134,7 +134,9 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         # apply filtering and cmr
         print('Writing filtered and common referenced data')
 
-        recording_hp = st.preprocessing.bandpass_filter(recording_active, freq_min=300, freq_max=6000)
+        recording_hp = st.preprocessing.bandpass_filter(recording_active,
+                                                        freq_min=300,
+                                                        freq_max=3000)
         if ref is not None:
             if ref.lower() == 'cmr':
                 reference = 'median'
