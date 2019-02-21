@@ -136,7 +136,12 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
 
         recording_hp = st.preprocessing.bandpass_filter(recording_active,
                                                         freq_min=300,
-                                                        freq_max=3000)
+                                                        freq_max=6000,
+                                                        type='butter',
+                                                        order=5)
+        recording_hp = st.preprocessing.notch_filter(recording_hp,
+                                                     freq=3050,
+                                                     q=30)
         if ref is not None:
             if ref.lower() == 'cmr':
                 reference = 'median'
