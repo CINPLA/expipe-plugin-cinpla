@@ -196,7 +196,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             se.BinDatRecordingExtractor.writeRecording(recording_rm_art, save_path=filt_filename, dtype=np.float32)
             recording_rm_art = se.BinDatRecordingExtractor(filt_filename,
                                                            samplerate=recording_rm_art.getSamplingFrequency(),
-                                                           numchan=len(recording_cmr.getChannelIds()), dtype=np.float32)
+                                                           numchan=len(recording_cmr.getChannelIds()), dtype=np.float32,
+                                                        recording_channels=recording_active.getChannelIds())
             print('Filter time: ', time.time() -t_start)
         if compute_lfp:
             print('Computing LFP')
@@ -204,7 +205,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             lfp_filename = Path(tmpdir) / 'lfp.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_lfp, save_path=lfp_filename, dtype=np.float32)
             recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
-                                                        numchan=len(recording_lfp.getChannelIds()), dtype=np.float32)
+                                                        numchan=len(recording_lfp.getChannelIds()), dtype=np.float32,
+                                                        recording_channels=recording_active.getChannelIds())
             print('Filter time: ', time.time() -t_start)
 
         if compute_mua:
@@ -213,7 +215,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             mua_filename =  Path(tmpdir) / 'mua.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_mua, save_path=mua_filename, dtype=np.float32)
             recording_mua = se.BinDatRecordingExtractor(mua_filename, samplerate=recording_mua.getSamplingFrequency(),
-                                                        numchan=len(recording_mua.getChannelIds()), dtype=np.float32)
+                                                        numchan=len(recording_mua.getChannelIds()), dtype=np.float32,
+                                                        recording_channels=recording_active.getChannelIds())
             print('Filter time: ', time.time() -t_start)
 
         recording_rm_art = se.loadProbeFile(recording_rm_art, probe_path)
