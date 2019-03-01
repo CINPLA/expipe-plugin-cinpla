@@ -138,14 +138,18 @@ class ParameterSelectList(ipywidgets.VBox):
                 wid = ipywidgets.ToggleButton(description=k, value=v, disabled=False, button_style='',
                                               tooltip='Description',
                                               icon='check', style={'description_width': 'initial'})
+                children.append(wid)
             elif isinstance(v, (int, np.integer)):
                 wid = ipywidgets.IntText(description=k, value=v, style={'description_width': 'initial'})
+                children.append(wid)
             elif isinstance(v, (float, np.float)):
                 wid = ipywidgets.FloatText(description=k, value=v, style={'description_width': 'initial'})
-            else:
+                children.append(wid)
+            elif not isinstance(v, dict):
                 wid = ipywidgets.Text(description=k, value=str(v), style={'description_width': 'initial'})
-
-            children.append(wid)
+                children.append(wid)
+            else:
+                print('not showing dictionary')
         self.children = children
 
     @property

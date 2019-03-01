@@ -99,15 +99,17 @@ def process_openephys_view(project):
     action_id = SearchSelect(project.actions, description='*Actions', layout={'width': 'initial'})
 
     sorter = ipywidgets.Dropdown(
-        description='Sorter', options=['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust'],
+        description='Sorter', options=[s.sorter_name for s in st.sorters.sorter_full_list],
         style={'description_width': 'initial'}, layout={'width': 'initial'}
     )
 
-    params = st.sorters.klusta_default_params()
-    sorter_param = ParameterSelectList(description='Spike sorting options', param_dict=params,
+    sorter_param = ParameterSelectList(description='Spike sorting options', param_dict={},
                                        layout={'width': 'initial'})
-    sorter_param.update_params(params)
     sorter_param.layout.visibility = 'hidden'
+    parallel_box = ipywidgets.Checkbox(description='Parallel', layout={'width': 'initial'})
+    parallel_box.layout.visibility = 'hidden'
+    sort_by = ipywidgets.Text(description='sort_by', value='group', placeholder='group', layout={'width': 'initial'})
+    sort_by.layout.visibility = 'hidden'
 
     config = expipe.config._load_config_by_name(None)
     current_servers = config.get('servers') or []
@@ -206,7 +208,9 @@ def process_openephys_view(project):
         probe_path,
         sorter,
         show_params,
-        sorter_param
+        sorter_param,
+        parallel_box,
+        sort_by
     ])
 
     main_box = ipywidgets.VBox([
@@ -216,18 +220,9 @@ def process_openephys_view(project):
 
     def on_change(change):
         if change['type'] == 'change' and change['name'] == 'value':
-            if sorter.value == 'klusta':
-                params = st.sorters.klusta_default_params()
-            elif sorter.value == 'mountain':
-                params = st.sorters.mountainsort4_default_params()
-            elif sorter.value == 'kilosort':
-                params = st.sorters.kilosort_default_params()
-            elif sorter.value == 'spyking-circus':
-                params = st.sorters.spyking_circus_default_params()
-            elif sorter.value == 'ironclust':
-                params = st.sorters.ironclust_default_params()
-            else:
-                raise NotImplementedError("sorter is not implemented")
+            for s in st.sorters.sorter_full_list:
+                if s.sorter_name == sorter.value:
+                    params = s.default_params()
             sorter_param.update_params(params)
 
     def on_run(change):
@@ -253,6 +248,10 @@ def process_openephys_view(project):
             split = ast.literal_eval(split_group.value)
         else:
             split = 'all'
+        if sort_by.value == '' or sort_by.value.lower() == 'none':
+            sort_by_val = None
+        else:
+            sort_by_val = sort_by.value
         openephys.process_openephys(
             project=project,
             action_id=action_id.value,
@@ -261,18 +260,28 @@ def process_openephys_view(project):
             spikesort=spikesort.value,
             compute_lfp=compute_lfp.value,
             compute_mua=compute_mua.value,
+            parallel=parallel_box.value,
             spikesorter_params=spikesorter_params,
             server=servers.value,
             ground=bad_chans,
             ref=ref,
-            split=split)
+            split=split,
+            sort_by=sort_by_val)
 
     def on_show(change):
         if change['type'] == 'change' and change['name'] == 'value':
+            for s in st.sorters.sorter_full_list:
+                if s.sorter_name == sorter.value:
+                    params = s.default_params()
+            sorter_param.update_params(params)
             if show_params.value:
                 sorter_param.layout.visibility = 'visible'
+                parallel_box.layout.visibility = 'visible'
+                sort_by.layout.visibility = 'visible'
             else:
                 sorter_param.layout.visibility = 'hidden'
+                parallel_box.layout.visibility = 'hidden'
+                sort_by.layout.visibility = 'hidden'
 
     def on_other(change):
         if change['type'] == 'change' and change['name'] == 'value':

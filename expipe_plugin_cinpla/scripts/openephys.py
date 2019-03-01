@@ -85,11 +85,12 @@ def register_openephys_recording(
 
 
 def process_openephys(project, action_id, probe_path, sorter, acquisition_folder=None,
-                      exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False,
-                      spikesorter_params=None, server=None, ground=None, ref=None, split=None,
+                      exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
+                      spikesorter_params=None, server=None, ground=None, ref=None, split=None, sort_by=None,
                       ms_before_wf=1, ms_after_wf=2,):
     import spikeextractors as se
     import spiketoolkit as st
+    import pprint
 
     proc_start = time.time()
 
@@ -126,7 +127,18 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         # apply filtering and cmr
         print('Writing filtered and common referenced data')
 
-        recording_hp = st.preprocessing.bandpass_filter(recording_active, freq_min=300, freq_max=6000)
+        freq_min_hp = 300
+        freq_max_hp = 3000
+        freq_min_lfp = 1
+        freq_max_lfp = 300
+        freq_resample_lfp = 1000
+        freq_resample_mua = 1000
+        type_hp = 'butter'
+        order_hp = 5
+
+        recording_hp = st.preprocessing.bandpass_filter(recording_active, freq_min=freq_min_hp, freq_max=freq_max_hp,
+                                                        type=type_hp,
+                                                        order=order_hp)
         if ref is not None:
             if ref.lower() == 'cmr':
                 reference = 'median'
@@ -148,9 +160,9 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         else:
             recording_cmr = recording
 
-        recording_lfp = st.preprocessing.bandpass_filter(recording_active, freq_min=1, freq_max=300)
-        recording_lfp = st.preprocessing.resample(recording_lfp, 1000)
-        recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_cmr), 1000)
+        recording_lfp = st.preprocessing.bandpass_filter(recording_active, freq_min=freq_min_lfp, freq_max=freq_max_lfp)
+        recording_lfp = st.preprocessing.resample(recording_lfp, freq_resample_lfp)
+        recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_cmr), freq_resample_mua)
         tmpdir = Path(tempfile.mkdtemp(dir=os.getcwd()))
 
         if spikesort:
@@ -162,7 +174,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             recording_cmr = se.BinDatRecordingExtractor(filt_filename, samplerate=recording_cmr.getSamplingFrequency(),
                                                         numchan=len(recording_cmr.getChannelIds()), dtype=np.float32,
                                                         recording_channels=recording_active.getChannelIds())
-            print('Filter time: ', time.time() -t_start)
+            print('Filter time: ', time.time() - t_start)
         if compute_lfp:
             print('Computing LFP')
             t_start = time.time()
@@ -171,17 +183,17 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
                                                         numchan=len(recording_lfp.getChannelIds()), dtype=np.float32,
                                                         recording_channels=recording_active.getChannelIds())
-            print('Filter time: ', time.time() -t_start)
+            print('Filter time: ', time.time() - t_start)
 
         if compute_mua:
             print('Computing MUA')
             t_start = time.time()
-            mua_filename =  Path(tmpdir) / 'mua.dat'
+            mua_filename = Path(tmpdir) / 'mua.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_mua, save_path=mua_filename, dtype=np.float32)
             recording_mua = se.BinDatRecordingExtractor(mua_filename, samplerate=recording_mua.getSamplingFrequency(),
                                                         numchan=len(recording_mua.getChannelIds()), dtype=np.float32,
                                                         recording_channels=recording_active.getChannelIds())
-            print('Filter time: ', time.time() -t_start)
+            print('Filter time: ', time.time() - t_start)
 
         recording_cmr = se.loadProbeFile(recording_cmr, probe_path)
         recording_lfp = se.loadProbeFile(recording_lfp, probe_path)
@@ -189,18 +201,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         if spikesort:
             try:
-                if sorter == 'klusta':
-                    sorting = st.sorters.klusta(recording_cmr, by_property='group', **spikesorter_params)
-                elif sorter == 'mountain':
-                    sorting = st.sorters.mountainsort4(recording_cmr, by_property='group', **spikesorter_params) # by_property='group',
-                elif sorter == 'kilosort':
-                    sorting = st.sorters.kilosort(recording_cmr, by_property='group', **spikesorter_params)
-                elif sorter == 'spyking-circus':
-                    sorting = st.sorters.spyking_circus(recording_cmr, by_property='group', **spikesorter_params)
-                elif sorter == 'ironclust':
-                    sorting = st.sorters.ironclust(recording_cmr, by_property='group', **spikesorter_params)
-                else:
-                    raise NotImplementedError("sorter is not implemented")
+                sorting = st.sorters.run_sorter(sorter, recording_cmr,  parallel=parallel, grouping_property=sort_by,
+                                                debug=True, delete_output_folder=True, **spikesorter_params)
             except Exception as e:
                 shutil.rmtree(tmpdir)
                 print(e)
@@ -210,7 +212,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         # extract waveforms
         if spikesort:
             print('Computing waveforms')
-            wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group',
+            wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, grouping_property='group',
+                                                    compute_property_from_recording=True,
                                                     ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
             print('Saving sorting output to exdir format')
             se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
@@ -220,6 +223,18 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if compute_mua:
             print('Saving MUA to exdir format')
             se.ExdirRecordingExtractor.writeRecording(recording_mua, exdir_path, mua=True)
+
+        # save attributes
+        exdir_group = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+        ephys = exdir_group.require_group('processing').require_group('electrophysiology')
+        spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
+        filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
+                        'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp, 'resample': freq_resample_lfp},
+                        'mua_filter': {'resample': freq_resample_mua}}
+        reference_attrs = {'type': str(ref), 'split': str(split)}
+        ephys.attrs.update({'spike_sorting': spike_sorting_attrs,
+                            'filter': filter_attrs,
+                            'reference': reference_attrs})
 
         print('Cleanup')
         if not os.access(str(tmpdir), os.W_OK):
@@ -328,6 +343,14 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if split is not None:
             split_cmd = ' --split-channels ' + str(split)
 
+        par_cmd = ''
+        if not parallel:
+            par_cmd = ' --no-par '
+
+        sortby_cmd = ''
+        if sort_by is not None:
+            sortby_cmd = ' --sort-by ' + sort_by
+
         wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf)
 
         try:
@@ -360,9 +383,9 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
                                                                        remote_acq, remote_exdir, ground_cmd, ref_cmd,
-                                                                       split_cmd, wf_cmd, extra_args)
+                                                                       par_cmd, sort_by, split_cmd, wf_cmd, extra_args)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 
