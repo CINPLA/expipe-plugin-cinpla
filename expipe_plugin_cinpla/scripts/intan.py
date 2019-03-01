@@ -134,14 +134,24 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         # apply filtering and cmr
         print('Writing filtered and common referenced data')
 
+        freq_min_hp = 300
+        freq_max_hp = 3000
+        freq_min_lfp = 1
+        freq_max_lfp = 300
+        freq_resample_lfp = 1000
+        freq_resample_mua = 1000
+        q = 100
+        type_hp = 'butter'
+        order_hp = 5
+
         recording_hp = st.preprocessing.bandpass_filter(recording_active,
-                                                        freq_min=300,
-                                                        freq_max=6000,
-                                                        type='butter',
-                                                        order=5)
-        recording_hp = st.preprocessing.notch_filter(recording_hp,
-                                                     freq=3050,
-                                                     q=30)
+                                                        freq_min=freq_min_hp,
+                                                        freq_max=freq_max_hp,
+                                                        type=type_hp,
+                                                        order=order_hp)
+        freq_notch = _find_fmax_noise(recording_hp)
+        recording_hp = st.preprocessing.notch_filter(recording_hp, freq=freq_notch, q=q)
+
         if ref is not None:
             if ref.lower() == 'cmr':
                 reference = 'median'
@@ -183,9 +193,9 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             recording_rm_art = recording_cmr
             print('Artifacts not removed')
 
-        recording_lfp = st.preprocessing.bandpass_filter(recording_active, freq_min=1, freq_max=300)
-        recording_lfp = st.preprocessing.resample(recording_lfp, 1000)
-        recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_active), 1000)
+        recording_lfp = st.preprocessing.bandpass_filter(recording_active, freq_min=freq_min_lfp, freq_max=freq_max_lfp)
+        recording_lfp = st.preprocessing.resample(recording_lfp, freq_resample_lfp)
+        recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_active), freq_resample_mua)
         tmpdir = Path(tempfile.mkdtemp(dir=os.getcwd()))
 
         if spikesort:
@@ -197,7 +207,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             recording_rm_art = se.BinDatRecordingExtractor(filt_filename,
                                                            samplerate=recording_rm_art.getSamplingFrequency(),
                                                            numchan=len(recording_cmr.getChannelIds()), dtype=np.float32,
-                                                        recording_channels=recording_active.getChannelIds())
+                                                           recording_channels=recording_active.getChannelIds())
             print('Filter time: ', time.time() -t_start)
         if compute_lfp:
             print('Computing LFP')
@@ -256,6 +266,19 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         if compute_mua:
             print('Saving MUA to exdir format')
             se.ExdirRecordingExtractor.writeRecording(recording_mua, exdir_path, mua=True)
+
+        # save attributes
+        exdir_group = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+        ephys = exdir_group.require_group('processing').require_group('electrophysiology')
+        spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
+        filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
+                        'notch_filter': {'freq': freq_notch, 'q': q},
+                        'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp, 'resample': freq_resample_lfp},
+                        'mua_filter': {'resample': freq_resample_mua}}
+        reference_attrs = {'type': str(ref), 'split': str(split)}
+        ephys.attrs.update({'spike_sorting': spike_sorting_attrs,
+                            'filter': filter_attrs,
+                            'reference': reference_attrs})
 
         print('Cleanup')
         if not os.access(str(tmpdir), os.W_OK):
@@ -455,3 +478,14 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
 
     print('Saved to exdir: ', exdir_path)
     print("Total elapsed time: ", time.time() - proc_start)
+
+
+def _find_fmax_noise(recording_hp, start_frame=0, end_frame=300000, start_freq=2000, end_freq=4000):
+    import scipy.signal as ss
+    filt_traces = recording_hp.getTraces(start_frame=start_frame, end_frame=end_frame)
+    f, p = ss.welch(filt_traces, recording_hp.getSamplingFrequency())
+    idxs = np.where((f > start_freq) & (f < end_freq))
+
+    max_freq = f[idxs][np.squeeze(p[:, idxs]).mean(axis=0).argmax()]
+
+    return max_freq
