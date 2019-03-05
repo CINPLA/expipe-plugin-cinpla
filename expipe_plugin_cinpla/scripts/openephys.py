@@ -72,7 +72,8 @@ def register_openephys_recording(
     for idx, m in enumerate(openephys_rec.messages):
         print('OpenEphys message: ', m.text)
         secs = float(m.time.rescale('s').magnitude)
-        dtime = openephys_rec.datetime + datetime.timedelta(seconds=secs)
+        dtime = openephys_rec.datetime + datetime.timedelta(
+            seconds=secs + float(openephys_rec.start_time.rescale('s').magnitude))
         action.create_message(text=m.text, user=user, datetime=dtime)
 
     exdir_path = utils._make_data_path(action, overwrite)
