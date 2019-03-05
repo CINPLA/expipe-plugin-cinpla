@@ -44,7 +44,7 @@ def query_yes_no(question, default="yes", answer=None):
 
 
 def deltadate(adjustdate, regdate):
-    delta = regdate - adjustdate if regdate > adjustdate else timedelta.max
+    delta = regdate - adjustdate if regdate > adjustdate else datetime.timedelta.max
     return delta
 
 
@@ -205,19 +205,12 @@ class ShellHandler:
 
         shout = []
         sherr = []
-        exit_status = 0
         for line in self.stdout:
             if str(line).startswith(cmd) or str(line).startswith(echo_cmd):
                 # up for now filled with shell junk from stdin
                 shout = []
             elif finish in str(line):
                 # our finish command ends with the exit status
-                exit_status = int(str(line).rsplit(maxsplit=1)[1])
-                if exit_status:
-                    # stderr is combined with stdout.
-                    # thus, swap sherr with shout in a case of failure.
-                    sherr = shout
-                    shout = []
                 if print_lines:
                     print('finish command: break')
                 break
