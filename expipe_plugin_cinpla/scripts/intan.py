@@ -209,6 +209,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                                                            numchan=len(recording_cmr.getChannelIds()), dtype=np.float32,
                                                            recording_channels=recording_active.getChannelIds())
             print('Filter time: ', time.time() - t_start)
+            
         if compute_lfp:
             print('Computing LFP')
             t_start = time.time()
@@ -487,5 +488,4 @@ def _find_fmax_noise(recording_hp, start_frame=0, end_frame=300000, start_freq=2
     idxs = np.where((f > start_freq) & (f < end_freq))
 
     max_freq = f[idxs][np.squeeze(p[:, idxs]).mean(axis=0).argmax()]
-
     return max_freq
