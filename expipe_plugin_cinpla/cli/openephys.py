@@ -113,6 +113,15 @@ def attach_to_process(cli):
                   is_flag=True,
                   help='if True LFP are not extracted.',
                   )
+    @click.option('--no-par',
+                  is_flag=True,
+                  help='if True groups are not sorted in parallel.',
+                  )
+    @click.option('--sort-by',
+                  type=click.STRING,
+                  default=None,
+                  help='sort by property (group).',
+                  )
     @click.option('--no-mua',
                   is_flag=True,
                   help='if True MUA are not extracted.',
@@ -141,7 +150,8 @@ def attach_to_process(cli):
     @click.option('--split-channels',
                   default='all',
                   type=click.STRING,
-                  help="It can be 'all', 'half', or list of channels used for custom split e.g. [[0,1,2,3,4], [5,6,7,8,9]]"
+                  help="It can be 'all', 'half', or list of channels "
+                       "used for custom split e.g. [[0,1,2,3,4], [5,6,7,8,9]]"
                   )
     @click.option('--ms-before-wf',
                   default=1,
@@ -154,7 +164,7 @@ def attach_to_process(cli):
                   help="ms to clip after waveform peak"
                   )
     def _process_openephys(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp, ms_before_wf, ms_after_wf,
-                           spike_params, server, acquisition, exdir_path, ground, ref, split_channels):
+                           spike_params, server, acquisition, exdir_path, ground, ref, split_channels, no_par, sort_by):
         if no_sorting:
             spikesort = False
         else:
@@ -176,6 +186,10 @@ def attach_to_process(cli):
                 params = None
         else:
             params = None
+        if no_par:
+            parallel = False
+        else:
+            parallel = True
 
         if split_channels == 'custom':
             import ast
@@ -187,4 +201,5 @@ def attach_to_process(cli):
                                     spikesort=spikesort, compute_lfp=compute_lfp, compute_mua=compute_mua,
                                     spikesorter_params=params, server=server, acquisition_folder=acquisition,
                                     exdir_file_path=exdir_path, ground=ground, ref=ref, split=split_channels,
-                                    ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf)
+                                    ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf, parallel=parallel,
+                                    sort_by=sort_by)

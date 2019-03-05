@@ -81,6 +81,8 @@ def attach_to_register(cli):
             delete_raw_data=None,
             correct_depth_answer=None,
             register_depth=register_depth)
+
+
 def attach_to_process(cli):
     @cli.command('intan',
                  short_help='Process intan recordings.')
@@ -120,6 +122,15 @@ def attach_to_process(cli):
                   type=click.STRING,
                   default=None,
                   help='Path to spike sorting params yml file.',
+                  )
+    @click.option('--no-par',
+                  is_flag=True,
+                  help='if True groups are not sorted in parallel.',
+                  )
+    @click.option('--sort-by',
+                  type=click.STRING,
+                  default=None,
+                  help='sort by property (group).',
                   )
     @click.option('--server',
                   type=click.STRING,
@@ -167,9 +178,10 @@ def attach_to_process(cli):
                   type=click.FLOAT,
                   help="ms to clip before stimulation trigger"
                   )
-    def _process_openephys(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp, rm_art_channel,
+    def _process_intan(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp, rm_art_channel,
                            ms_before_wf, ms_after_wf, ms_before_stim, ms_after_stim,
-                           spike_params, server, acquisition, exdir_path, ground, ref, split_channels):
+                           spike_params, server, acquisition, exdir_path, ground, ref, split_channels,
+                           no_par, sort_by):
         if no_sorting:
             spikesort = False
         else:
@@ -191,6 +203,10 @@ def attach_to_process(cli):
                 params = None
         else:
             params = None
+        if no_par:
+            parallel = False
+        else:
+            parallel = True
 
         if split_channels == 'custom':
             import ast
@@ -203,4 +219,5 @@ def attach_to_process(cli):
                             spikesorter_params=params, server=server, acquisition_folder=acquisition,
                             exdir_file_path=exdir_path, ground=ground, ref=ref, split=split_channels,
                             remove_artifact_channel=rm_art_channel, ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf,
-                            ms_before_stim=ms_before_stim, ms_after_stim=ms_after_stim)
+                            ms_before_stim=ms_before_stim, ms_after_stim=ms_after_stim, parallel=parallel,
+                            sort_by=sort_by)

@@ -85,8 +85,8 @@ def register_openephys_recording(
 
 
 def process_openephys(project, action_id, probe_path, sorter, acquisition_folder=None,
-                      exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False,
-                      spikesorter_params=None, server=None, ground=None, ref=None, split=None,
+                      exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
+                      spikesorter_params=None, server=None, ground=None, ref=None, split=None, sort_by=None,
                       ms_before_wf=1, ms_after_wf=2,):
     import spikeextractors as se
     import spiketoolkit as st
@@ -173,7 +173,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             recording_cmr = se.BinDatRecordingExtractor(filt_filename, samplerate=recording_cmr.getSamplingFrequency(),
                                                         numchan=len(recording_cmr.getChannelIds()), dtype=np.float32,
                                                         recording_channels=recording_active.getChannelIds())
-            print('Filter time: ', time.time() -t_start)
+            print('Filter time: ', time.time() - t_start)
         if compute_lfp:
             print('Computing LFP')
             t_start = time.time()
@@ -182,17 +182,17 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
                                                         numchan=len(recording_lfp.getChannelIds()), dtype=np.float32,
                                                         recording_channels=recording_active.getChannelIds())
-            print('Filter time: ', time.time() -t_start)
+            print('Filter time: ', time.time() - t_start)
 
         if compute_mua:
             print('Computing MUA')
             t_start = time.time()
-            mua_filename =  Path(tmpdir) / 'mua.dat'
+            mua_filename = Path(tmpdir) / 'mua.dat'
             se.BinDatRecordingExtractor.writeRecording(recording_mua, save_path=mua_filename, dtype=np.float32)
             recording_mua = se.BinDatRecordingExtractor(mua_filename, samplerate=recording_mua.getSamplingFrequency(),
                                                         numchan=len(recording_mua.getChannelIds()), dtype=np.float32,
                                                         recording_channels=recording_active.getChannelIds())
-            print('Filter time: ', time.time() -t_start)
+            print('Filter time: ', time.time() - t_start)
 
         recording_cmr = se.loadProbeFile(recording_cmr, probe_path)
         recording_lfp = se.loadProbeFile(recording_lfp, probe_path)
@@ -200,18 +200,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         if spikesort:
             try:
-                if sorter == 'klusta':
-                    sorting = st.sorters.klusta(recording_cmr, by_property='group', **spikesorter_params)
-                elif sorter == 'mountain':
-                    sorting = st.sorters.mountainsort4(recording_cmr, by_property='group', **spikesorter_params) # by_property='group',
-                elif sorter == 'kilosort':
-                    sorting = st.sorters.kilosort(recording_cmr, by_property='group', **spikesorter_params)
-                elif sorter == 'spyking-circus':
-                    sorting = st.sorters.spyking_circus(recording_cmr, by_property='group', **spikesorter_params)
-                elif sorter == 'ironclust':
-                    sorting = st.sorters.ironclust(recording_cmr, by_property='group', **spikesorter_params)
-                else:
-                    raise NotImplementedError("sorter is not implemented")
+                sorting = st.sorters.run_sorter(sorter, recording_cmr,  parallel=parallel, grouping_property=sort_by,
+                                                debug=True, delete_output_folder=True, **spikesorter_params)
             except Exception as e:
                 shutil.rmtree(tmpdir)
                 print(e)
@@ -221,7 +211,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         # extract waveforms
         if spikesort:
             print('Computing waveforms')
-            wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, by_property='group',
+            wf = st.postprocessing.getUnitWaveforms(recording_cmr, sorting, grouping_property='group',
+                                                    compute_property_from_recording=True,
                                                     ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
             print('Saving sorting output to exdir format')
             se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_cmr)
@@ -282,7 +273,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         openephys_path = Path(acquisition.directory) / openephys_session
         print('Initializing transfer of "' + str(openephys_path) + '" to "' +
               host + '"')
-
 
         try:  # make directory for untaring
             process_folder = 'process_' + str(np.random.randint(10000000))
@@ -351,6 +341,14 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if split is not None:
             split_cmd = ' --split-channels ' + str(split)
 
+        par_cmd = ''
+        if not parallel:
+            par_cmd = ' --no-par '
+
+        sortby_cmd = ''
+        if sort_by is not None:
+            sortby_cmd = ' --sort-by ' + sort_by
+
         wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf)
 
         try:
@@ -383,9 +381,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
-                                                                       remote_acq, remote_exdir, ground_cmd, ref_cmd,
-                                                                       split_cmd, wf_cmd, extra_args)
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter,
+                                                                             remote_yaml, remote_acq, remote_exdir,
+                                                                             ground_cmd, ref_cmd, par_cmd, sortby_cmd,
+                                                                             split_cmd, wf_cmd, extra_args)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 
