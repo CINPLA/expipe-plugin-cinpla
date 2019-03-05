@@ -247,9 +247,13 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         # extract waveforms
         if spikesort:
             print('Computing waveforms')
-            wf = st.postprocessing.getUnitWaveforms(recording_rm_art, sorting, grouping_property='group',
-                                                    ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
-                                                    compute_property_from_recording=True)
+            if sort_by == 'group':
+                wf = st.postprocessing.getUnitWaveforms(recording_rm_art, sorting, grouping_property='group',
+                                                        ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
+            else:
+                wf = st.postprocessing.getUnitWaveforms(recording_rm_art, sorting, grouping_property='group',
+                                                        compute_property_from_recording=True,
+                                                        ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
             print('Saving sorting output to exdir format')
             se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_rm_art)
         if compute_lfp:
