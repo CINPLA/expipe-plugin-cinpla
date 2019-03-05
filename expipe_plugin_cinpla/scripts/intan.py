@@ -391,6 +391,14 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf) + \
                  ' --ms-before-stim ' + str(ms_before_stim) + ' --ms-after-stim ' + str(ms_after_stim)
 
+        par_cmd = ''
+        if not parallel:
+            par_cmd = ' --no-par '
+
+        sortby_cmd = ''
+        if sort_by is not None:
+            sortby_cmd = ' --sort-by ' + sort_by
+
         try:
             pbar[0].close()
         except Exception:
@@ -420,10 +428,11 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process intan {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
-                                                                          remote_acq, remote_exdir, ground_cmd, ref_cmd,
-                                                                          split_cmd, remove_art_cmd,
-                                                                          wf_cmd, extra_args)
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter,
+                                                                                remote_yaml, remote_acq, remote_exdir,
+                                                                                ground_cmd, ref_cmd, split_cmd,
+                                                                                remove_art_cmd,  par_cmd, sortby_cmd,
+                                                                                wf_cmd, extra_args)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
         ####################### RETURN PROCESSED DATA #######################

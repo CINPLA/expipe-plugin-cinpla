@@ -90,7 +90,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                       ms_before_wf=1, ms_after_wf=2,):
     import spikeextractors as se
     import spiketoolkit as st
-    import pprint
 
     proc_start = time.time()
 
@@ -275,7 +274,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         print('Initializing transfer of "' + str(openephys_path) + '" to "' +
               host + '"')
 
-
         try:  # make directory for untaring
             process_folder = 'process_' + str(np.random.randint(10000000))
             stdin, stdout, stderr = remote_shell.execute('mkdir ' + process_folder)
@@ -383,9 +381,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter, remote_yaml,
-                                                                       remote_acq, remote_exdir, ground_cmd, ref_cmd,
-                                                                       par_cmd, sort_by, split_cmd, wf_cmd, extra_args)
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter,
+                                                                             remote_yaml, remote_acq, remote_exdir,
+                                                                             ground_cmd, ref_cmd, par_cmd, sortby_cmd,
+                                                                             split_cmd, wf_cmd, extra_args)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 
