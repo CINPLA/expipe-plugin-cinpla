@@ -81,8 +81,6 @@ def attach_to_register(cli):
         action_id, axona_filename, depth, user, overwrite, templates,
         entity_id, location, message, tag, get_inp, no_cut, cluster_group,
         set_zero_cluster_to_noise, register_depth):
-        local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
-        project = expipe.get_project(path=local_root)
         axona.register_axona_recording(
             project=project,
             action_id=action_id,

@@ -11,6 +11,4 @@ def attach_to_process(cli):
                   type=click.STRING,
                   help='Psyschopy for visual analysis files are present.')
     def _process_psychopy(action_id, jsonpath):
-        local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
-        project = expipe.get_project(path=local_root)
         psychopy.process_psychopy(project=project, action_id=action_id, jsonpath=jsonpath)
