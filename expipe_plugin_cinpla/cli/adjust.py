@@ -48,6 +48,8 @@ def attach_to_cli(cli):
                   )
     def _register_adjustment(entity_id, date, adjustment, user, index, init,
                              depth, yes, overwrite):
+        local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
+        project = expipe.get_project(path=local_root)
         adjust.register_adjustment(
-            PAR.PROJECT, entity_id, date, adjustment, user, index, init,
+            project, entity_id, date, adjustment, user, index, init,
             depth, yes, overwrite)

@@ -7,11 +7,6 @@ def expipe():
     return expipe
 
 @lazy_import
-def PAR():
-    from expipe_plugin_cinpla.scripts.config import load_parameters
-    return load_parameters()
-
-@lazy_import
 def pd():
     import pandas as pd
     return pd

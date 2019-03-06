@@ -68,8 +68,10 @@ def attach_to_cli(cli):
     def _register_surgery(
         project, entity_id, procedure, date, user, weight, location,
         overwrite, position, angle, message, tag, templates):
+        local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
+        project = expipe.get_project(path=local_root)
         surgery.register_surgery(
-            PAR.PROJECT, entity_id, procedure, date, user, weight, location,
+            project, entity_id, procedure, date, user, weight, location,
             overwrite, position, angle, message, tag, templates)
 
 
@@ -112,6 +114,8 @@ def attach_to_cli(cli):
                   help='Which templates to add',
                   )
     def _register_perfusion(entity_id, date, user, weight, overwrite, message, templates, location):
+        local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
+        project = expipe.get_project(path=local_root)
         surgery.register_perfusion(
-            PAR.PROJECT, entity_id, date, user, weight, overwrite, message,
+            project, entity_id, date, user, weight, overwrite, message,
             templates, location)

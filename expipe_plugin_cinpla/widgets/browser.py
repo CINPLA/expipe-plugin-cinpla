@@ -17,9 +17,7 @@ import expipe
 # TODO: fix old data
 
 
-def display(project_path=None):
-    project_path = project_path or PAR.PROJECT_ROOT
-    assert project_path is not None
+def display(project_path):
     project = expipe.get_project(project_path)
     # register tab
     register_tab_tab_titles = [

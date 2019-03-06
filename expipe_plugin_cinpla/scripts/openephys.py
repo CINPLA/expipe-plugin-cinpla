@@ -14,11 +14,11 @@ def register_openephys_recording(
     project, action_id, openephys_path, depth, overwrite, templates,
     entity_id, user, session, location, message, tag, delete_raw_data,
     correct_depth_answer, register_depth):
-    user = user or PAR.USERNAME
+    user = user or project.config.get('username')
     if user is None:
         print('Missing option "user".')
         return
-    location = location or PAR.LOCATION
+    location = location or project.config.get('location')
     if location is None:
         print('Missing option "location".')
         return

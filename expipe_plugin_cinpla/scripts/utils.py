@@ -1,6 +1,5 @@
 from expipe_plugin_cinpla.imports import *
 import re
-from .config import load_parameters
 
 nwb_main_groups = ['acquisition', 'analysis', 'processing', 'epochs',
                    'general']

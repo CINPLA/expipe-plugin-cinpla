@@ -7,9 +7,9 @@ import ast
 
 def register_intan_view(project):
     intan_path = SelectFileButton(description='*Select Intan rhs or rhd path')
-    user = ipywidgets.Text(placeholder='*User', value=PAR.USERNAME)
+    user = ipywidgets.Text(placeholder='*User', value=project.config.get('username'))
     session = ipywidgets.Text(placeholder='Session')
-    location = ipywidgets.Text(placeholder='*Location', value=PAR.LOCATION)
+    location = ipywidgets.Text(placeholder='*Location', value=project.config.get('location'))
     action_id = ipywidgets.Text(placeholder='Action id')
     entity_id = ipywidgets.Text(placeholder='Entity id')
     message = ipywidgets.Text(placeholder='Message')

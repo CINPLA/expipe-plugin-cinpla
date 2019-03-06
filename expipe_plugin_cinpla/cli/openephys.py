@@ -64,8 +64,9 @@ def attach_to_register(cli):
                   )
     def _register_openephys_recording(action_id, openephys_path, depth, overwrite, templates,
                                       entity_id, user, session, location, message, tag, register_depth):
-
-        openephys.register_openephys_recording(project=PAR.PROJECT,
+        local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
+        project = expipe.get_project(path=local_root)
+        openephys.register_openephys_recording(project=project,
                                                action_id=action_id,
                                                openephys_path=openephys_path,
                                                depth=depth,
@@ -196,8 +197,9 @@ def attach_to_process(cli):
             split_channels = ast.literal_eval(split_channels)
             assert isinstance(split_channels, list), 'With custom reference the list of channels has to be provided ' \
                                                      'with the --split-channels argument'
-
-        openephys.process_openephys(project=PAR.PROJECT, action_id=action_id, probe_path=probe_path, sorter=sorter,
+        local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
+        project = expipe.get_project(path=local_root)
+        openephys.process_openephys(project=project, action_id=action_id, probe_path=probe_path, sorter=sorter,
                                     spikesort=spikesort, compute_lfp=compute_lfp, compute_mua=compute_mua,
                                     spikesorter_params=params, server=server, acquisition_folder=acquisition,
                                     exdir_file_path=exdir_path, ground=ground, ref=ref, split=split_channels,

@@ -22,9 +22,10 @@ def attach_to_cli(cli):
                   help='The experimenter performing the annotation.',
                   )
     def annotate(action_id, tag, message, user):
-        project = PAR.PROJECT
+        local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
+        project = expipe.get_project(path=local_root)
         action = project.actions[action_id]
-        user = user or PAR.USERNAME
+        user = user or project.config.get('username')
         if user is None:
             raise ValueError('Please add user name')
         users = list(set(action.users))
@@ -51,9 +52,10 @@ def attach_to_cli(cli):
         ch.setLevel(logging.DEBUG)
         logger.addHandler(ch)
 
-        project = PAR.PROJECT
+        local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
+        project = expipe.get_project(path=local_root)
         action = project.require_action(action_id)
-        exdir_path = PAR.PROJECT_ROOT / action.data[0]
+        exdir_path = local_root / action.data[0]
         print('Spikesorting ', exdir_path)
         model = NeoModel(exdir_path)
         channel_groups = model.channel_groups

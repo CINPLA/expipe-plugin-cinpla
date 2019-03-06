@@ -92,5 +92,7 @@ def attach_to_cli(cli):
                   )
     def _register_entity(entity_id, user, message, location, tag, overwrite,
                          templates, **kwargs):
-        entity.register_entity(PAR.PROJECT, entity_id, user, message, location, tag, overwrite,
+        local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
+        project = expipe.get_project(path=local_root)
+        entity.register_entity(project, entity_id, user, message, location, tag, overwrite,
                              templates, **kwargs)

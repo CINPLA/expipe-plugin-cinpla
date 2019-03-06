@@ -5,7 +5,7 @@ from .utils import DateTimePicker, MultiInput, required_values_filled, none_if_e
 
 def adjustment_view(project):
     entity_id = SearchSelect(options=project.entities, description='*Entities')
-    user = ipywidgets.Text(placeholder='*User', value=PAR.USERNAME)
+    user = ipywidgets.Text(placeholder='*User', value=project.config.get('username'))
     date = DateTimePicker()
     adjustment = MultiInput(['*Key', '*Probe', '*Adjustment', '*Unit'], 'Add adjustment')
     depth = MultiInput(['Key', 'Probe', 'Depth', 'Unit'], 'Add depth')

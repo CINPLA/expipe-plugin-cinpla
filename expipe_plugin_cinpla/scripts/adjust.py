@@ -26,7 +26,7 @@ adjustment_template = {
 
 def register_adjustment(project, entity_id, date, adjustment, user,
                         depth, yes):
-    user = user or PAR.USERNAME
+    user = user or project.config.get('username')
     if user is None:
         print('Missing option "user".')
         return
