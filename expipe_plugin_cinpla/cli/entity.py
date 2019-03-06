@@ -25,7 +25,7 @@ def attach_to_cli(cli):
     @click.option('--cell_line',
                   type=click.STRING,
                   callback=utils.optional_choice,
-                  envvar=PAR.POSSIBLE_CELL_LINES,
+                  envvar=project.config.get('possible_cell_lines') or [],
                   help='Add cell line to entity.',
                   )
     @click.option('--developmental-stage',
@@ -78,7 +78,7 @@ def attach_to_cli(cli):
                   multiple=True,
                   type=click.STRING,
                   callback=utils.optional_choice,
-                  envvar=PAR.POSSIBLE_TAGS,
+                  envvar=project.config.get('possible_tags') or [],
                   help='Add tags to entity.',
                   )
     @click.option('--overwrite',

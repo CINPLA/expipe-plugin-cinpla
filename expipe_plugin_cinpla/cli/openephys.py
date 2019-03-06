@@ -22,7 +22,7 @@ def attach_to_register(cli):
     @click.option('-l', '--location',
                   type=click.STRING,
                   callback=utils.optional_choice,
-                  envvar=PAR.POSSIBLE_LOCATIONS,
+                  envvar=project.config.get('possible_locations') or [],
                   help='The location of the recording, i.e. "room-1-ibv".'
                   )
     @click.option('--session',
@@ -46,7 +46,7 @@ def attach_to_register(cli):
                   multiple=True,
                   type=click.STRING,
                   callback=utils.optional_choice,
-                  envvar=PAR.POSSIBLE_TAGS,
+                  envvar=project.config.get('possible_tags') or [],
                   help='Add tags to action.',
                   )
     @click.option('--overwrite',

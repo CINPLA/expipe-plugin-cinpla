@@ -12,6 +12,12 @@ def pd():
     return pd
 
 @lazy_import
+def project():
+    local_root, _ = expipe.config._load_local_config(pathlib.Path.cwd())
+    return expipe.get_project(path=local_root)
+
+
+@lazy_import
 def dt():
     import datetime as dt
     return dt

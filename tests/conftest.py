@@ -8,7 +8,7 @@ from click.testing import CliRunner
 expipe.ensure_testing()
 
 
-project.config['project'] = PAR.project.config['project']
+project.config['project'] = project.config['project']
 ACTION_ID = 'action-plugin-test'
 MODULE_ID = 'module-plugin-test'
 RAT_ID = 'test-rat'
@@ -20,7 +20,7 @@ def pytest_namespace():
             "MODULE_ID": MODULE_ID,
             "RAT_ID": RAT_ID,
             "USERNAME": project.config.get('username'),
-            "PAR.POSSIBLE_TAGS": PAR.POSSIBLE_TAGS,
+            "project.config.get('possible_tags') or []": project.config.get('possible_tags') or [],
             "OBLIGATORY_TAGS": OBLIGATORY_TAGS}
 
 
