@@ -92,7 +92,7 @@ def attach_to_process(cli):
                   )
     @click.option('--sorter',
                   default='klusta',
-                  type=click.Choice(['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust']),
+                  type=click.Choice([s.sorter_name for s in st.sorters.sorter_full_list]),
                   help='Spike sorter software to be used.',
                   )
     @click.option('--acquisition',
