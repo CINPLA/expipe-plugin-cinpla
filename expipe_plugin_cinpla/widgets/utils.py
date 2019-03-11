@@ -38,7 +38,8 @@ class SearchSelectMultiple(ipywidgets.VBox):
         )
         self.description = kwargs.get('description') or '' # TODO move into placeholder
         search_widget = ipywidgets.Text(
-            placeholder=self.description, layout={'width': self.select_multiple.layout.width})
+            placeholder=self.description,
+            layout={'width': self.select_multiple.layout.width})
         orig_list = list(self.select_multiple.options)
         # Wire the search field to the checkboxes
         def on_text_change(change):
@@ -70,7 +71,8 @@ class SearchSelect(ipywidgets.VBox):
         )
         self.description = kwargs.get('description') or ''
         search_widget = ipywidgets.Text(
-            placeholder=self.description, layout={'width': self.select.layout.width})
+            placeholder=self.description,
+            layout={'width': self.select.layout.width})
         orig_list = list(self.select.options)
         # Wire the search field to the checkboxes
         def on_text_change(change):
@@ -135,18 +137,25 @@ class ParameterSelectList(ipywidgets.VBox):
         children = []
         for (k, v) in param_dict.items():
             if isinstance(v, bool):
-                wid = ipywidgets.ToggleButton(description=k, value=v, disabled=False, button_style='',
-                                              tooltip='Description',
-                                              icon='check', style={'description_width': 'initial'})
+                wid = ipywidgets.ToggleButton(
+                    description=k, value=v, disabled=False, button_style='',
+                    tooltip='Description', icon='check',
+                    style={'description_width': 'initial'})
                 children.append(wid)
             elif isinstance(v, (int, np.integer)):
-                wid = ipywidgets.IntText(description=k, value=v, style={'description_width': 'initial'})
+                wid = ipywidgets.IntText(
+                    description=k, value=v,
+                    style={'description_width': 'initial'})
                 children.append(wid)
             elif isinstance(v, (float, np.float)):
-                wid = ipywidgets.FloatText(description=k, value=v, style={'description_width': 'initial'})
+                wid = ipywidgets.FloatText(
+                    description=k, value=v,
+                    style={'description_width': 'initial'})
                 children.append(wid)
             elif not isinstance(v, dict):
-                wid = ipywidgets.Text(description=k, value=str(v), style={'description_width': 'initial'})
+                wid = ipywidgets.Text(
+                    description=k, value=str(v),
+                    style={'description_width': 'initial'})
                 children.append(wid)
             else:
                 print('not showing dictionary')
