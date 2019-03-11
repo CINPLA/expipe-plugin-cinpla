@@ -1,5 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import intan
+import spiketoolkit as st
 from . import utils
 
 
@@ -92,7 +93,7 @@ def attach_to_process(cli):
                   )
     @click.option('--sorter',
                   default='klusta',
-                  type=click.Choice(['klusta', 'mountain', 'kilosort', 'spyking-circus', 'ironclust']),
+                  type=click.STRING,
                   help='Spike sorter software to be used.',
                   )
     @click.option('--acquisition',
