@@ -198,7 +198,7 @@ class DatePicker(ipywidgets.DatePicker):
 
 
 class SelectFileButton(ipywidgets.Button):
-    """A file widget that leverages tkinter.filedialog."""
+    """A file widget that leverages tkfilebrowser."""
 
     def __init__(self, filetype=None, *args, **kwargs):
         """Initialize the SelectFileButton class."""
@@ -217,9 +217,8 @@ class SelectFileButton(ipywidgets.Button):
 
     @staticmethod
     def select_file(self):
-        from tkinter import Tk, filedialog
-        """Generate instance of tkinter.filedialog.
-        """
+        from tkfilebrowser import askopenfilename
+        from tkinter import Tk
         # Create Tk root
         root = Tk()
         # Hide the main window
@@ -232,12 +231,12 @@ class SelectFileButton(ipywidgets.Button):
             if not ft.startswith('.'):
                 ft = '.' + ft
             name = ft[1:].capitalize()
-            result = filedialog.askopenfilename(
+            result = askopenfilename(
                 defaultextension=ft,
                 filetypes=[('{} file'.format(name),'*{}'.format(ft)), ('All files','*.*')])
             self.file = result if len(result) > 0 else ''
         else:
-            result = filedialog.askopenfilename()
+            result = askopenfilename()
             self.file = result if len(result) > 0 else ''
         if len(self.file) > 0:
             self.description = "File Selected"
@@ -249,27 +248,26 @@ class SelectFileButton(ipywidgets.Button):
 
 
 class SelectDirectoryButton(ipywidgets.Button):
-    """A file widget that leverages tkinter.filedialog."""
+    """A directory widget that leverages tkfilebrowser."""
 
     def __init__(self, *args, **kwargs):
         """Initialize the SelectDirectoryButton class."""
         super(SelectDirectoryButton, self).__init__(*args, **kwargs)
         # Add the selected_files trait
         import traitlets
-        self.add_traits(directory=traitlets.traitlets.Unicode())
+        self.add_traits(directories=traitlets.traitlets.List())
         # Create the button.
         self.description = kwargs.get('description') or "Select Directory"
         self.icon = "square-o"
         self.style.button_color = "orange"
         # Set on click behavior.
-        self.on_click(self.select_directory)
+        self.on_click(self.select_directories)
         self.value = False
 
     @staticmethod
-    def select_directory(self):
-        from tkinter import Tk, filedialog
-        """Generate instance of tkinter.filedialog.
-        """
+    def select_directories(self):
+        from tkfilebrowser import askopendirnames
+        from tkinter import Tk
         # Create Tk root
         root = Tk()
         # Hide the main window
@@ -277,9 +275,9 @@ class SelectDirectoryButton(ipywidgets.Button):
         # Raise the root to the top of all windows.
         root.call('wm', 'attributes', '.', '-topmost', True)
         # List of selected fileswill be set to self.value
-        self.directory = filedialog.askdirectory()
+        self.directories = askopendirnames()
 
-        if self.directory is not None:
+        if len(self.directories) > 0:
             self.description = "Directory Selected"
             self.icon = "check-square-o"
             self.style.button_color = "lightgreen"

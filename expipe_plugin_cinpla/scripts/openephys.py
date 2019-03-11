@@ -409,9 +409,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             pass
 
         print('Unpacking tar archive')
-        tar = tarfile.open(local_proc_tar)
-        tar.extractall(str(exdir_path))
-        # print('Deleting tar archives')
+        extract(local_proc_tar, exdir_path, overwrite=True)
+        print('Deleting tar archives')
         if not os.access(str(local_proc_tar), os.W_OK):
             # Is the error an access error ?
             os.chmod(str(local_proc_tar), stat.S_IWUSR)
@@ -442,3 +441,18 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
     print('Saved to exdir: ', exdir_path)
     print("Total elapsed time: ", time.time() - proc_start)
+
+
+def extract(tarname, destination, overwrite=True):
+    tar = tarfile.open(tarname)
+    if overwrite:
+        for file_ in tar:
+            try:
+                tar.extract(file_)
+            except IOError as e:
+                os.remove(file_.name)
+                tar.extract(file_)
+            finally:
+                os.chmod(file_.name, file_.mode)
+    else:
+        tar.extractall(str(destination))

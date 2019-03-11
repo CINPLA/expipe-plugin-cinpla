@@ -70,22 +70,23 @@ def register_openephys_view(project):
         if not required_values_filled(user, location, openephys_path):
             return
         tags = split_tags(tag)
-        openephys.register_openephys_recording(
-            templates=templates.value,
-            project=project,
-            action_id=none_if_empty(action_id.value),
-            openephys_path=openephys_path.directory,
-            depth=depth.value,
-            overwrite=overwrite.value,
-            register_depth=register_depth.value,
-            entity_id=none_if_empty(entity_id.value),
-            user=user.value,
-            session=session.value,
-            location=location.value,
-            message=none_if_empty(message.value),
-            tag=tags,
-            delete_raw_data=delete_raw_data.value,
-            correct_depth_answer=True)
+        for directory in openephys_path.directories:
+            openephys.register_openephys_recording(
+                templates=templates.value,
+                project=project,
+                action_id=none_if_empty(action_id.value),
+                openephys_path=directory,
+                depth=depth.value,
+                overwrite=overwrite.value,
+                register_depth=register_depth.value,
+                entity_id=none_if_empty(entity_id.value),
+                user=user.value,
+                session=session.value,
+                location=location.value,
+                message=none_if_empty(message.value),
+                tag=tags,
+                delete_raw_data=delete_raw_data.value,
+                correct_depth_answer=True)
 
     register.on_click(on_register)
     return main_box
@@ -94,28 +95,37 @@ def register_openephys_view(project):
 def process_openephys_view(project):
     import spiketoolkit as st
 
-    probe_path = SelectFileButton('.prb', description='*Select probe file', style={'description_width': 'initial'},
-                                  layout={'width': 'initial'})
-    action_id = SearchSelect(project.actions, description='*Actions', layout={'width': 'initial'})
+    probe_path = SelectFileButton(
+        '.prb', description='*Select probe file',
+        style={'description_width': 'initial'},
+        layout={'width': 'initial'})
+    action_id = SearchSelectMultiple(
+        project.actions, description='*Actions', layout={'width': 'initial'})
 
     sorter = ipywidgets.Dropdown(
-        description='Sorter', options=[s.sorter_name for s in st.sorters.sorter_full_list],
+        description='Sorter',
+        options=[s.sorter_name for s in st.sorters.sorter_full_list],
         style={'description_width': 'initial'}, layout={'width': 'initial'}
     )
 
-    sorter_param = ParameterSelectList(description='Spike sorting options', param_dict={},
-                                       layout={'width': 'initial'})
+    sorter_param = ParameterSelectList(
+        description='Spike sorting options', param_dict={},
+        layout={'width': 'initial'})
     sorter_param.layout.visibility = 'hidden'
-    parallel_box = ipywidgets.Checkbox(description='Parallel', layout={'width': 'initial'})
+    parallel_box = ipywidgets.Checkbox(
+        description='Parallel', layout={'width': 'initial'})
     parallel_box.layout.visibility = 'hidden'
-    sort_by = ipywidgets.Text(description='sort_by', value='group', placeholder='group', layout={'width': 'initial'})
+    sort_by = ipywidgets.Text(
+        description='sort_by', value='group', placeholder='group',
+        layout={'width': 'initial'})
     sort_by.layout.visibility = 'hidden'
 
     config = expipe.config._load_config_by_name(None)
     current_servers = config.get('servers') or []
     server_list = ['local'] + [s['host'] for s in current_servers]
     servers = ipywidgets.Dropdown(
-        description='Server', options=server_list, style={'description_width': 'initial'}, layout={'width': 'initial'}
+        description='Server', options=server_list,
+        style={'description_width': 'initial'}, layout={'width': 'initial'}
     )
 
     compute_lfp = ipywidgets.ToggleButton(
@@ -170,7 +180,9 @@ def process_openephys_view(project):
         options=['cmr', 'car', 'none'],
         description='Reference:',
         disabled=False,
-        tooltips=['Common Median Reference', 'Common Average Reference', 'No re-referencing'],
+        tooltips=[
+            'Common Median Reference',
+            'Common Average Reference', 'No re-referencing'],
         orientation='vertical',
         layout={'width': 'initial'}
         #     icons=['check'] * 3
@@ -181,27 +193,36 @@ def process_openephys_view(project):
         options=['all', 'half', 'custom'],
         description='Ref channels:',
         disabled=False,
-        tooltips=['all channels are used to re-reference', 'channels are split in half and re-referenced separately',
-                  'custom decided split'],
+        tooltips=[
+            'all channels are used to re-reference',
+            'channels are split in half and re-referenced separately',
+            'custom decided split'],
         orientation='vertical',
         layout={'width': 'initial'}
     )
     split_group.layout.visibility = 'hidden'
 
-    custom_split = ipywidgets.Text(description='Split', value='', placeholder='(e.g. [[1,2,3,...], [4,5,6,...]])',
-                                   style={'description_width': 'initial'})
+    custom_split = ipywidgets.Text(
+        description='Split', value='',
+        placeholder='(e.g. [[1,2,3,...], [4,5,6,...]])',
+        style={'description_width': 'initial'})
     custom_split.layout.visibility = 'hidden'
 
-    bad_channels = ipywidgets.Text(description='Bad channels', value='', placeholder='(e.g. 5, 8, 12)',
-                                   style={'description_width': 'initial'})
+    bad_channels = ipywidgets.Text(
+        description='Bad channels', value='', placeholder='(e.g. 5, 8, 12)',
+        style={'description_width': 'initial'})
     bad_channels.layout.visibility = 'hidden'
 
-    rightbox = ipywidgets.VBox([ipywidgets.Label('Processing options', style={'description_width': 'initial'},
-                                                 layout={'width': 'initial'}),
-                                spikesort, compute_lfp, compute_mua, servers, other_settings,
-                                bad_channels, reference, split_group, custom_split], layout={'width': 'initial'})
+    rightbox = ipywidgets.VBox([
+        ipywidgets.Label(
+            'Processing options', style={'description_width': 'initial'},
+            layout={'width': 'initial'}),
+        spikesort, compute_lfp, compute_mua, servers, other_settings,
+        bad_channels, reference, split_group, custom_split],
+        layout={'width': 'initial'})
 
-    run = ipywidgets.Button(description='Process', layout={'width': '100%', 'height': '100px'})
+    run = ipywidgets.Button(
+        description='Process', layout={'width': '100%', 'height': '100px'})
     run.style.button_color = 'pink'
 
     fields = ipywidgets.VBox([
@@ -252,21 +273,22 @@ def process_openephys_view(project):
             sort_by_val = None
         else:
             sort_by_val = sort_by.value
-        openephys.process_openephys(
-            project=project,
-            action_id=action_id.value,
-            probe_path=probe_path.file,
-            sorter=sorter.value,
-            spikesort=spikesort.value,
-            compute_lfp=compute_lfp.value,
-            compute_mua=compute_mua.value,
-            parallel=parallel_box.value,
-            spikesorter_params=spikesorter_params,
-            server=servers.value,
-            ground=bad_chans,
-            ref=ref,
-            split=split,
-            sort_by=sort_by_val)
+        for a in action_id.value:
+            openephys.process_openephys(
+                project=project,
+                action_id=a,
+                probe_path=probe_path.file,
+                sorter=sorter.value,
+                spikesort=spikesort.value,
+                compute_lfp=compute_lfp.value,
+                compute_mua=compute_mua.value,
+                parallel=parallel_box.value,
+                spikesorter_params=spikesorter_params,
+                server=servers.value,
+                ground=bad_chans,
+                ref=ref,
+                split=split,
+                sort_by=sort_by_val)
 
     def on_show(change):
         if change['type'] == 'change' and change['name'] == 'value':
