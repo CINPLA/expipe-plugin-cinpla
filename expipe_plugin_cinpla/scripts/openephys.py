@@ -123,7 +123,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 recording, channel_ids=active_channels)
         else:
             recording_active = recording
-
+        if 'processing' in exdir_file:
+            if 'electrophysiology' in exdir_file['processing']:
+                print('Deleting old processing/electrophysiology')
+                shutil.rmtree(exdir_file['processing']['electrophysiology'].path)
         # apply filtering and cmr
         print('Writing filtered and common referenced data')
 
@@ -447,7 +450,12 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             pass
 
         print('Unpacking tar archive')
-        extract(local_proc_tar, exdir_path, overwrite=True)
+        if 'processing' in exdir_file:
+            if 'electrophysiology' in exdir_file['processing']:
+                print('Deleting old processing/electrophysiology')
+                shutil.rmtree(exdir_file['processing']['electrophysiology'].path)
+        tar = tarfile.open(local_proc_tar)
+        tar.extractall(str(exdir_path))
         print('Deleting tar archives')
         if not os.access(str(local_proc_tar), os.W_OK):
             # Is the error an access error ?
@@ -479,18 +487,3 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
     print('Saved to exdir: ', exdir_path)
     print("Total elapsed time: ", time.time() - proc_start)
-
-
-def extract(tarname, destination, overwrite=True):
-    tar = tarfile.open(tarname)
-    if overwrite:
-        for file_ in tar:
-            try:
-                tar.extract(file_, str(destination))
-            except IOError as e:
-                os.remove(destination /file_.name)
-                tar.extract(file_, str(destination))
-            finally:
-                os.chmod(str(destination / file_.name), file_.mode)
-    else:
-        tar.extractall(str(destination))
