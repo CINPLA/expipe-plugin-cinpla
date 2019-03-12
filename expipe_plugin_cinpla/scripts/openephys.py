@@ -106,6 +106,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                                  'related to this action')
             openephys_session = acquisition.attrs["session"]
             openephys_path = Path(acquisition.directory) / openephys_session
+            if 'processing' in exdir_file:
+                if 'electrophysiology' in exdir_file['processing']:
+                    print('Deleting old processing/electrophysiology')
+                    shutil.rmtree(exdir_file['processing']['electrophysiology'].path)
         else:
             openephys_path = Path(acquisition_folder)
             assert exdir_file_path is not None
@@ -123,10 +127,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 recording, channel_ids=active_channels)
         else:
             recording_active = recording
-        if 'processing' in exdir_file:
-            if 'electrophysiology' in exdir_file['processing']:
-                print('Deleting old processing/electrophysiology')
-                shutil.rmtree(exdir_file['processing']['electrophysiology'].path)
+
         # apply filtering and cmr
         print('Writing filtered and common referenced data')
 
