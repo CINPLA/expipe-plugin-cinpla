@@ -165,7 +165,7 @@ def attach_to_process(cli):
                   )
     def _process_openephys(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp, ms_before_wf, ms_after_wf,
                            spike_params, server, acquisition, exdir_path, bad_channels, ref, split_channels, no_par, sort_by):
-        if bad_channels == 'auto':
+        if 'auto' in bad_channels:
             bad_channels = ['auto']
         else:
             bad_channels = (int(bc) for bc in bad_channels)
