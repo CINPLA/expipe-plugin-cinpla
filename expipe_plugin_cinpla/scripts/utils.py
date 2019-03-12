@@ -92,7 +92,7 @@ def get_depth_from_adjustment(project, action, entity_id):
     return adjusts[adjustdate]['depth'].contents, adjustdate
 
 
-def register_depth(project, action, depth=None, answer=None):
+def register_depth(project, action, depth=None, answer=None, overwrite=False):
     if len(action.entities) != 1:
         print('Exactly 1 entity is required to register depth.')
         return False
@@ -104,13 +104,13 @@ def register_depth(project, action, depth=None, answer=None):
     else:
         curr_depth, adjustdate = get_depth_from_adjustment(
             project, action, action.entities[0])
+        print('Adjust date time: {}\n'.format(adjustdate))
     if curr_depth is None:
         print('Cannot find current depth from adjustments.')
         return False
 
     def last_num(x):
         return '{:03d}'.format(int(x.split('_')[-1]))
-    print('Adjust date time: {}\n'.format(adjustdate))
     print(''.join('Depth: {} {} = {}\n'.format(key, probe_key, val[probe_key])
             for key, val in curr_depth.items()
             for probe_key in sorted(val, key=lambda x: last_num(x))))
@@ -119,7 +119,8 @@ def register_depth(project, action, depth=None, answer=None):
         answer=answer)
     if not correct:
         return False
-
+    if 'depth' in action.modules and overwrite:
+        action.delete_module('depth')
     action.create_module(name='depth', contents=curr_depth)
     return True
 

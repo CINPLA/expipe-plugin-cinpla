@@ -1,7 +1,9 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import openephys
-from .utils import SelectDirectoryButton, MultiInput, SearchSelectMultiple, SelectFileButton, \
-    required_values_filled, none_if_empty, split_tags, SearchSelect, ParameterSelectList
+from .utils import (
+    SelectDirectoryButton, MultiInput, SearchSelectMultiple, SelectFileButton,
+    required_values_filled, none_if_empty, split_tags, SearchSelect,
+    ParameterSelectList)
 import ast
 
 

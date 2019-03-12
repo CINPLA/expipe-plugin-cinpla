@@ -5,7 +5,7 @@ from .openephys import register_openephys_view, process_openephys_view
 from .intan import register_intan_view, process_intan_view
 from .tracking import process_tracking_view
 from .entity import entity_view
-from .adjust import adjustment_view
+from .adjust import adjustment_view, annotate_view
 from .surgery import perfuse_view, surgery_view
 from .axona import axona_view
 import expipe
@@ -27,7 +27,8 @@ def display(project_path):
         'Adjustment',
         'Entity',
         'Surgery',
-        'Perfusion']
+        'Perfusion',
+        'Annotate']
     register_tab = ipywidgets.Tab()
     register_tab.children = [
         register_openephys_view(project),
@@ -37,6 +38,7 @@ def display(project_path):
         entity_view(project),
         surgery_view(project),
         perfuse_view(project),
+        annotate_view(project)
     ]
     for i, title in enumerate(register_tab_tab_titles):
         register_tab.set_title(i, title)
