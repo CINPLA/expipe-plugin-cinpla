@@ -214,12 +214,17 @@ def process_openephys_view(project):
         style={'description_width': 'initial'})
     bad_channels.layout.visibility = 'hidden'
 
+    bad_threshold = ipywidgets.FloatText(
+        description='Auto threshold', value=2, placeholder='(e.g 2, default = 2 * std)',
+        style={'description_width': 'initial'})
+    bad_threshold.layout.visibility = 'hidden'
+
     rightbox = ipywidgets.VBox([
         ipywidgets.Label(
             'Processing options', style={'description_width': 'initial'},
             layout={'width': 'initial'}),
         spikesort, compute_lfp, compute_mua, servers, other_settings,
-        bad_channels, reference, split_group, custom_split],
+        bad_channels, bad_threshold, reference, split_group, custom_split],
         layout={'width': 'initial'})
 
     run = ipywidgets.Button(
@@ -291,7 +296,8 @@ def process_openephys_view(project):
                 bad_channels=bad_chans,
                 ref=ref,
                 split=split,
-                sort_by=sort_by_val)
+                sort_by=sort_by_val,
+                bad_threshold=bad_threshold.value)
 
     def on_show(change):
         if change['type'] == 'change' and change['name'] == 'value':
@@ -312,10 +318,12 @@ def process_openephys_view(project):
         if change['type'] == 'change' and change['name'] == 'value':
             if other_settings.value:
                 bad_channels.layout.visibility = 'visible'
+                bad_threshold.layout.visibility = 'visible'
                 reference.layout.visibility = 'visible'
                 split_group.layout.visibility = 'visible'
             else:
                 bad_channels.layout.visibility = 'hidden'
+                bad_threshold.layout.visibility = 'hidden'
                 reference.layout.visibility = 'hidden'
                 split_group.layout.visibility = 'hidden'
 

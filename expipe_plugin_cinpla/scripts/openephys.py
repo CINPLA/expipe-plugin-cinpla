@@ -88,7 +88,7 @@ def register_openephys_recording(
 def process_openephys(project, action_id, probe_path, sorter, acquisition_folder=None,
                       exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
                       spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
-                      ms_before_wf=1, ms_after_wf=2, bad_threshold=3):
+                      ms_before_wf=1, ms_after_wf=2, bad_threshold=2):
     import spikeextractors as se
     import spiketoolkit as st
     bad_channels = bad_channels or []
