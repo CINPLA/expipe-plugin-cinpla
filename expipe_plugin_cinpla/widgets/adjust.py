@@ -50,3 +50,55 @@ def adjustment_view(project):
 
     register.on_click(on_register)
     return main_box
+
+
+def annotate_view(project):
+    entity_id = SearchSelectMultiple(options=project.actions, description='*Actions')
+    user = ipywidgets.Text(placeholder='*User', value=project.config.get('username'))
+    date = DateTimePicker()
+    depth = MultiInput(['Key', 'Probe', 'Depth', 'Unit'], 'Add depth')
+    location = ipywidgets.Text(placeholder='*Location', value=project.config.get('location'))
+    entity_id = ipywidgets.Text(placeholder='Entity id')
+    message = ipywidgets.Text(placeholder='Message')
+    tag = ipywidgets.Text(placeholder='Tags (; to separate)')
+    templates = SearchSelectMultiple(project.templates, description='Templates')
+    register = ipywidgets.Button(description='Register')
+
+    fields = ipywidgets.VBox([
+        user,
+        date,
+        adjustment,
+        register])
+    main_box = ipywidgets.VBox([
+            depth_from_surgery,
+            ipywidgets.HBox([fields, entity_id])
+        ])
+
+
+    def on_manual_depth(change):
+        if change['name'] == 'value':
+            if not change['owner'].value:
+                children = list(main_box.children)
+                children = children[:5] + [depth] + children[5:]
+                main_box.children = children
+            else:
+                children = list(main_box.children)
+                del(children[5])
+                main_box.children = children
+
+    depth_from_surgery.observe(on_manual_depth, names='value')
+
+    def on_register(change):
+        if not required_values_filled(entity_id, user, adjustment):
+            return
+        adjust.register_adjustment(
+            project=project,
+            entity_id=entity_id.value,
+            date=date.value,
+            adjustment=adjustment.value,
+            user=user.value,
+            depth=depth.value,
+            yes=True)
+
+    register.on_click(on_register)
+    return main_box
