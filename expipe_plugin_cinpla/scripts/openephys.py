@@ -297,7 +297,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
               host + '"')
 
         try:  # make directory for untaring
-            process_folder = 'process_' + str(np.random.randint(10000000))
+            process_folder = '/tmp/process_' + str(np.random.randint(10000000))
             stdin, stdout, stderr = remote_shell.execute('mkdir ' + process_folder)
         except IOError:
             pass
