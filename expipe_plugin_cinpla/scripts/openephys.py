@@ -353,7 +353,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         bad_channels_cmd = ''
         if bad_channels is not None:
             for bc in bad_channels:
-                bad_channels_cmd = bad_channels_cmd + ' --bc ' + str(bc)
+                bad_channels_cmd = bad_channels_cmd + ' -bc ' + str(bc)
 
         ref_cmd = ''
         if ref is not None:
