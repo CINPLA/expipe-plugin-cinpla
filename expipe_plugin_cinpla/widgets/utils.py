@@ -209,11 +209,12 @@ class DatePicker(ipywidgets.DatePicker):
 class SelectFileButton(ipywidgets.Button):
     """A file widget that leverages tkfilebrowser."""
 
-    def __init__(self, filetype=None, *args, **kwargs):
+    def __init__(self, filetype=None, initialdir=None, *args, **kwargs):
         """Initialize the SelectFileButton class."""
         super(SelectFileButton, self).__init__(*args, **kwargs)
         # Add the selected_file trait
         import traitlets
+        self.initialdir = initialdir
         self.add_traits(file=traitlets.traitlets.Unicode())
         # Create the button.
         self.description = kwargs.get('description') or "Select file"
@@ -242,7 +243,10 @@ class SelectFileButton(ipywidgets.Button):
             name = ft[1:].capitalize()
             result = askopenfilename(
                 defaultextension=ft,
-                filetypes=[('{} file'.format(name),'*{}'.format(ft)), ('All files','*.*')])
+                filetypes=[
+                    ('{} file'.format(name),'*{}'.format(ft)),
+                    ('All files','*.*')],
+                initialdir=self.initialdir)
             self.file = result if len(result) > 0 else ''
         else:
             result = askopenfilename()
@@ -259,11 +263,12 @@ class SelectFileButton(ipywidgets.Button):
 class SelectDirectoryButton(ipywidgets.Button):
     """A directory widget that leverages tkfilebrowser."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, initialdir=None, *args, **kwargs):
         """Initialize the SelectDirectoryButton class."""
         super(SelectDirectoryButton, self).__init__(*args, **kwargs)
         # Add the selected_files trait
         import traitlets
+        self.initialdir = initialdir
         self.add_traits(directories=traitlets.traitlets.List())
         # Create the button.
         self.description = kwargs.get('description') or "Select Directory"
@@ -284,7 +289,7 @@ class SelectDirectoryButton(ipywidgets.Button):
         # Raise the root to the top of all windows.
         root.call('wm', 'attributes', '.', '-topmost', True)
         # List of selected fileswill be set to self.value
-        self.directories = askopendirnames()
+        self.directories = askopendirnames(initialdir=self.initialdir)
 
         if len(self.directories) > 0:
             self.description = "Directory Selected"

@@ -96,7 +96,8 @@ def process_openephys_view(project):
     import spiketoolkit as st
 
     probe_path = SelectFileButton(
-        '.prb', description='*Select probe file',
+        '.prb', initialdir=project._backend.path,
+        description='*Select probe file',
         style={'description_width': 'initial'},
         layout={'width': 'initial'})
     action_id = SearchSelectMultiple(
@@ -209,7 +210,7 @@ def process_openephys_view(project):
     custom_split.layout.visibility = 'hidden'
 
     bad_channels = ipywidgets.Text(
-        description='Bad channels', value='', placeholder='(e.g. 5, 8, 12)',
+        description='Bad channels', value='', placeholder='(e.g. 5, 8, 12 or auto)',
         style={'description_width': 'initial'})
     bad_channels.layout.visibility = 'hidden'
 
@@ -255,8 +256,10 @@ def process_openephys_view(project):
             if v == 'None':
                 spikesorter_params[k] = None
 
-        if bad_channels.value is not '':
+        if bad_channels.value not in ['', 'auto']:
             bad_chans = [int(b) for b in bad_channels.value.split(',')]
+        elif bad_channels.value == 'auto':
+            bad_chans = ['auto']
         else:
             bad_chans = []
         if reference.value is not 'none':
@@ -285,7 +288,7 @@ def process_openephys_view(project):
                 parallel=parallel_box.value,
                 spikesorter_params=spikesorter_params,
                 server=servers.value,
-                ground=bad_chans,
+                bad_channels=bad_chans,
                 ref=ref,
                 split=split,
                 sort_by=sort_by_val)

@@ -87,8 +87,8 @@ def register_openephys_recording(
 
 def process_openephys(project, action_id, probe_path, sorter, acquisition_folder=None,
                       exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
-                      spikesorter_params=None, server=None, ground=None, ref=None, split=None, sort_by=None,
-                      ms_before_wf=1, ms_after_wf=2,):
+                      spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
+                      ms_before_wf=1, ms_after_wf=2, bad_threshold=3):
     import spikeextractors as se
     import spiketoolkit as st
 
@@ -113,10 +113,11 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         probe_path = probe_path or project.config.get('probe')
         recording = se.OpenEphysRecordingExtractor(str(openephys_path))
-        if ground is not None:
+
+        if bad_channels is not None:
             active_channels = []
             for chan in recording.getChannelIds():
-                if chan not in ground:
+                if chan not in bad_channels:
                     active_channels.append(chan)
             recording_active = se.SubRecordingExtractor(recording, channel_ids=active_channels)
         else:
@@ -136,9 +137,11 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         type_hp = 'butter'
         order_hp = 5
 
-        recording_hp = st.preprocessing.bandpass_filter(recording_active, freq_min=freq_min_hp, freq_max=freq_max_hp,
-                                                        type=type_hp,
-                                                        order=order_hp)
+        recording_hp = st.preprocessing.bandpass_filter(
+            recording_active, freq_min=freq_min_hp, freq_max=freq_max_hp,
+            type=type_hp, order=order_hp)
+
+
         if ref is not None:
             if ref.lower() == 'cmr':
                 reference = 'median'
@@ -159,6 +162,20 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                     raise Exception("'split' must be a list of lists")
         else:
             recording_cmr = recording
+
+        if bad_channels == ('auto'):
+            start_frame = recording_cmr.getNumFrames() // 2
+            end_frame = int(start_frame + 10 * recording_cmr.getSamplingFrequency())
+            traces = recording_cmr.getTraces(
+                start_frame=start_frame, end_frame=end_frame)
+            stds = np.std(traces, axis=1)
+            bad_channels = [ch for ch, std in enumerate(stds) if std > bad_threshold * np.median(stds)]
+            print('Automatically found bad channels', bad_channels)
+            active_channels = []
+            for chan in recording.getChannelIds():
+                if chan not in bad_channels:
+                    active_channels.append(chan)
+            recording_active = se.SubRecordingExtractor(recording, channel_ids=active_channels)
 
         recording_lfp = st.preprocessing.bandpass_filter(recording_active, freq_min=freq_min_lfp, freq_max=freq_max_lfp)
         recording_lfp = st.preprocessing.resample(recording_lfp, freq_resample_lfp)
@@ -333,10 +350,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if split is not None and isinstance(split, str):
             split = split.lower()
 
-        ground_cmd = ''
-        if ground is not None:
-            for g in ground:
-                ground_cmd = ground_cmd + ' -g ' + str(g)
+        bad_channels_cmd = ''
+        if bad_channels is not None:
+            for bc in bad_channels:
+                bad_channels_cmd = bad_channels_cmd + ' --bc ' + str(bc)
 
         ref_cmd = ''
         if ref is not None:
@@ -386,10 +403,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter,
-                                                                             remote_yaml, remote_acq, remote_exdir,
-                                                                             ground_cmd, ref_cmd, par_cmd, sortby_cmd,
-                                                                             split_cmd, wf_cmd, extra_args)
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {}".format(
+              action_id, remote_probe, sorter, remote_yaml, remote_acq,
+              remote_exdir, bad_channels_cmd, ref_cmd, par_cmd, sortby_cmd,
+              split_cmd, wf_cmd, extra_args)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 
@@ -448,10 +465,10 @@ def extract(tarname, destination, overwrite=True):
     if overwrite:
         for file_ in tar:
             try:
-                tar.extract(file_)
+                tar.extract(file_, str(destination))
             except IOError as e:
-                os.remove(file_.name)
-                tar.extract(file_)
+                os.remove(destination /file_.name)
+                tar.extract(file_, str(destination))
             finally:
                 os.chmod(file_.name, file_.mode)
     else:
