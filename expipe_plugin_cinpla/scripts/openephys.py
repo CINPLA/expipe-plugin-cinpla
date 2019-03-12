@@ -123,8 +123,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         else:
             recording_active = recording
 
-        print("Active channels: ", len(recording_active.getChannelIds()))
-
         # apply filtering and cmr
         print('Writing filtered and common referenced data')
 
@@ -175,8 +173,9 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             for chan in recording.getChannelIds():
                 if chan not in bad_channels:
                     active_channels.append(chan)
-            recording_active = se.SubRecordingExtractor(recording, channel_ids=active_channels)
-
+            recording_active = se.SubRecordingExtractor(recording_cmr, channel_ids=active_channels)
+            
+        print("Active channels: ", len(recording_active.getChannelIds()))
         recording_lfp = st.preprocessing.bandpass_filter(recording_active, freq_min=freq_min_lfp, freq_max=freq_max_lfp)
         recording_lfp = st.preprocessing.resample(recording_lfp, freq_resample_lfp)
         recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_cmr), freq_resample_mua)
