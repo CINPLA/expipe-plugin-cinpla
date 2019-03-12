@@ -203,6 +203,6 @@ def attach_to_process(cli):
         openephys.process_openephys(project=project, action_id=action_id, probe_path=probe_path, sorter=sorter,
                                     spikesort=spikesort, compute_lfp=compute_lfp, compute_mua=compute_mua,
                                     spikesorter_params=params, server=server, acquisition_folder=acquisition,
-                                    exdir_file_path=exdir_path, bad_cannels=bad_cannels, ref=ref, split=split_channels,
+                                    exdir_file_path=exdir_path, bad_channels=bad_channels, ref=ref, split=split_channels,
                                     ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf, parallel=parallel,
                                     sort_by=sort_by)
