@@ -143,7 +143,7 @@ def attach_to_process(cli):
                   help="bad channels to ground.",
                   )
     @click.option('--bad-threshold', '-bt',
-                  type=click.INT,
+                  type=click.FLOAT,
                   default=None,
                   help="bad channels to ground.",
                   )
