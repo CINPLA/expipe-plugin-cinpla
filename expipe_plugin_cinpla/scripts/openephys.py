@@ -91,7 +91,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                       ms_before_wf=1, ms_after_wf=2, bad_threshold=3):
     import spikeextractors as se
     import spiketoolkit as st
-
+    bad_channels = bad_channels or []
     proc_start = time.time()
 
     if server is None or server == 'local':
@@ -114,7 +114,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         probe_path = probe_path or project.config.get('probe')
         recording = se.OpenEphysRecordingExtractor(str(openephys_path))
 
-        if bad_channels is not None:
+        if bad_channels:
             active_channels = []
             for chan in recording.getChannelIds():
                 if chan not in bad_channels:
@@ -163,7 +163,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         else:
             recording_cmr = recording
 
-        if bad_channels == ('auto'):
+        if 'auto' in bad_channels:
             start_frame = recording_cmr.getNumFrames() // 2
             end_frame = int(start_frame + 10 * recording_cmr.getSamplingFrequency())
             traces = recording_cmr.getTraces(
@@ -344,6 +344,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             extra_args = extra_args + ' --no-mua'
         if not spikesort:
             extra_args = extra_args + ' --no-sorting'
+        extra_args = extra_args + ' -bt {}'.format(bad_threshold)
 
         if ref is not None and isinstance(ref, str):
             ref = ref.lower()
@@ -351,9 +352,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             split = split.lower()
 
         bad_channels_cmd = ''
-        if bad_channels is not None:
-            for bc in bad_channels:
-                bad_channels_cmd = bad_channels_cmd + ' -bc ' + str(bc)
+        for bc in bad_channels:
+            bad_channels_cmd = bad_channels_cmd + ' -bc ' + str(bc)
 
         ref_cmd = ''
         if ref is not None:
@@ -470,6 +470,6 @@ def extract(tarname, destination, overwrite=True):
                 os.remove(destination /file_.name)
                 tar.extract(file_, str(destination))
             finally:
-                os.chmod(file_.name, file_.mode)
+                os.chmod(str(destination / file_.name), file_.mode)
     else:
         tar.extractall(str(destination))
