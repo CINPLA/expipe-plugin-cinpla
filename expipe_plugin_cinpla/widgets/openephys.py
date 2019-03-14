@@ -284,22 +284,27 @@ def process_openephys_view(project):
         else:
             sort_by_val = sort_by.value
         for a in action_id.value:
-            openephys.process_openephys(
-                project=project,
-                action_id=a,
-                probe_path=probe_path.file,
-                sorter=sorter.value,
-                spikesort=spikesort.value,
-                compute_lfp=compute_lfp.value,
-                compute_mua=compute_mua.value,
-                parallel=parallel_box.value,
-                spikesorter_params=spikesorter_params,
-                server=servers.value,
-                bad_channels=bad_chans,
-                ref=ref,
-                split=split,
-                sort_by=sort_by_val,
-                bad_threshold=bad_threshold.value)
+            try:
+                openephys.process_openephys(
+                    project=project,
+                    action_id=a,
+                    probe_path=probe_path.file,
+                    sorter=sorter.value,
+                    spikesort=spikesort.value,
+                    compute_lfp=compute_lfp.value,
+                    compute_mua=compute_mua.value,
+                    parallel=parallel_box.value,
+                    spikesorter_params=spikesorter_params,
+                    server=servers.value,
+                    bad_channels=bad_chans,
+                    ref=ref,
+                    split=split,
+                    sort_by=sort_by_val,
+                    bad_threshold=bad_threshold.value)
+            except Exception as e:
+                print('ERROR: unable to process', a)
+                print(str(e))
+                pass
 
     def on_show(change):
         if change['type'] == 'change' and change['name'] == 'value':

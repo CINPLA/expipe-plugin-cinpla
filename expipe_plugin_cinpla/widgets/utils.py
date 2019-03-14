@@ -46,11 +46,11 @@ class SearchSelectMultiple(ipywidgets.VBox):
             search_input = change['new']
             if search_input == '':
                 # Reset search field
-                new_options = orig_list
+                new_options = sorted(orig_list)
             else:
                 # Filter by search field.
                 new_options = [a for a in orig_list if search_input in a]
-            self.select_multiple.options = new_options
+            self.select_multiple.options = sorted(new_options)
 
         search_widget.observe(on_text_change, names='value')
         self.children = [search_widget, self.select_multiple]
