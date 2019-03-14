@@ -198,7 +198,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         if spikesort:
             print('Bandpass filter')
             t_start = time.time()
-            print(recording_cmr.getTraces(start_frame=0, end_frame=300).shape)
             filt_filename = Path(tmpdir) / 'filt.dat'
             se.BinDatRecordingExtractor.writeRecording(
                 recording_cmr, save_path=filt_filename, dtype=np.float32)
