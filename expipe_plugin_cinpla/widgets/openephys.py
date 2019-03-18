@@ -98,7 +98,7 @@ def process_openephys_view(project):
     import spiketoolkit as st
 
     probe_path = SelectFileButton(
-        '.prb', initialdir=project._backend.path,
+        '.prb', initialdir=str(project._backend.path),
         description='*Select probe file',
         style={'description_width': 'initial'},
         layout={'width': 'initial'})
