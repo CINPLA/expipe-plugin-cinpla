@@ -39,7 +39,7 @@ def process_psychopy(project, action_id, jsonpath):
 
     # Get epoch dataset from json
     ts = []
-    ori = []
+    data = []
     dur = []
 
     key = list(json_data[0].keys())[0]
@@ -56,15 +56,21 @@ def process_psychopy(project, action_id, jsonpath):
         else:
             ts.append(event[key]["time"])
         dur.append(event[key]["duration"])
-        ori.append(event[key]["orientation"])
+        if 'orientation' in event[key].keys():
+            data.append(event[key]["orientation"])
+        elif 'color' in event[key].keys():
+            data.append(event[key]["color"])
 
     timestamps = np.array(ts)*pq.s
     durations = np.array(dur)*pq.s
-    orientations = np.array(ori)*pq.deg
+    if 'orientation' in event[key].keys():
+        data = np.array(data)*pq.deg
+    elif 'color' in event[key].keys():
+        data = np.array(data)*pq.dimensionless
 
     psychopy.require_dataset('timestamps', data=timestamps)
     psychopy.require_dataset('durations', data=durations)
-    data = psychopy.require_dataset('data', data=orientations)
+    data = psychopy.require_dataset('data', data=data)
     data.attrs['type'] = key
 
     # copy json file
