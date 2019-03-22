@@ -43,14 +43,18 @@ def process_psychopy(project, action_id, jsonpath):
     dur = []
 
     key = list(json_data[0].keys())[0]
-    for event in json_data:
+    for i, event in enumareta(json_data):
         new_key = list(event.keys())[0]
         if key != new_key:
             warn("Different experiment design in session; {} =/= {}".format(key, new_key))
         key = new_key
 
         # Add dataset to exdir
-        ts.append(event[key]["time"])
+        if 'time' not in event[key].keys():
+            print("'time' not available: using dummy ", i+1, ' s')
+            ts.append(i+1)
+        else:
+            ts.append(event[key]["time"])
         dur.append(event[key]["duration"])
         ori.append(event[key]["orientation"])
 
