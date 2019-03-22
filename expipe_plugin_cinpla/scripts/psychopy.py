@@ -66,7 +66,7 @@ def process_psychopy(project, action_id, jsonpath):
     if 'orientation' in event[key].keys():
         data = np.array(data)*pq.deg
     elif 'color' in event[key].keys():
-        data = np.array(data)*pq.dimensionless
+        data = np.array(data)
 
     psychopy.require_dataset('timestamps', data=timestamps)
     psychopy.require_dataset('durations', data=durations)
