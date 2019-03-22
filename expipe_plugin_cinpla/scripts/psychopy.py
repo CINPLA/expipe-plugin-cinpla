@@ -43,7 +43,7 @@ def process_psychopy(project, action_id, jsonpath):
     dur = []
 
     key = list(json_data[0].keys())[0]
-    for i, event in enumareta(json_data):
+    for i, event in enumerate(json_data):
         new_key = list(event.keys())[0]
         if key != new_key:
             warn("Different experiment design in session; {} =/= {}".format(key, new_key))
