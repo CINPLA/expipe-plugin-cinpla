@@ -313,7 +313,7 @@ class SelectFilesButton(ipywidgets.Button):
                 initialdir=self.initialdir)
         else:
             self.files = askopenfilenames()
-        if len(self.file) > 0:
+        if len(self.files) > 0:
             self.description = "File Selected"
             self.icon = "check-square-o"
             self.style.button_color = "lightgreen"

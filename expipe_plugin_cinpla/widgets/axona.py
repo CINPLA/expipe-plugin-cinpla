@@ -73,7 +73,7 @@ def axona_view(project):
         if not required_values_filled(user, location):
             return
         no_cut = not load_cut.value
-        for path in axona_path.files:
+        for path in axona_button.files:
             axona.register_axona_recording(
                 project=project,
                 action_id=none_if_empty(action_id.value),
