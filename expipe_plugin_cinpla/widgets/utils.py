@@ -258,6 +258,68 @@ class SelectFileButton(ipywidgets.Button):
             self.value = True
         else:
             self.value = False
+ipywidgets.Text
+
+class SelectFilesButton(ipywidgets.Button):
+    """A file widget that leverages tkfilebrowser."""
+
+    def __init__(self, filetype=None, initialdir=None, *args, **kwargs):
+        """Initialize the SelectFileButton class."""
+        super(SelectFilesButton, self).__init__(*args, **kwargs)
+        # Add the selected_file trait
+        if isinstance(initialdir, ipywidgets.Text):
+            def on_text_change(change):
+                path = change['new']
+                if path == '':
+                    # Reset search field
+                    pass
+                else:
+                    # Filter by search field.
+                    self.initialdir = path
+            initialdir.observe(on_text_change, names='value')
+        import traitlets
+        self.initialdir = initialdir
+        self.add_traits(file=traitlets.traitlets.Unicode())
+        # Create the button.
+        self.description = kwargs.get('description') or "Select file"
+        self.icon = "square-o"
+        self.style.button_color = "orange"
+        # Set on click behavior.
+        self.on_click(self.select_file)
+        self.filetype = filetype
+        self.value = False
+
+    @staticmethod
+    def select_file(self):
+        from tkfilebrowser import askopenfilenames
+        from tkinter import Tk
+        # Create Tk root
+        root = Tk()
+        # Hide the main window
+        root.withdraw()
+        # Raise the root to the top of all windows.
+        root.call('wm', 'attributes', '.', '-topmost', True)
+        # List of selected filewill be set to self.value
+        ft = self.filetype
+        if ft is not None:
+            if not ft.startswith('.'):
+                ft = '.' + ft
+            name = ft[1:].capitalize()
+            self.files = askopenfilenames(
+                defaultextension=ft,
+                filetypes=[
+                    ('{} file'.format(name),'*{}'.format(ft)),
+                    ('All files','*.*')],
+                initialdir=self.initialdir)
+        else:
+            self.files = askopenfilenames()
+        if len(self.file) > 0:
+            self.description = "File Selected"
+            self.icon = "check-square-o"
+            self.style.button_color = "lightgreen"
+            self.value = True
+        else:
+            self.value = False
 
 
 class SelectDirectoryButton(ipywidgets.Button):

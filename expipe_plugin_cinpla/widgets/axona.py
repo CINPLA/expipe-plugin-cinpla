@@ -1,10 +1,12 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import axona
-from .utils import SelectFileButton, MultiInput, SearchSelectMultiple, required_values_filled, none_if_empty, split_tags
+from .utils import SelectFilesButton, MultiInput, SearchSelectMultiple, required_values_filled, none_if_empty, split_tags
 
 
 def axona_view(project):
-    axona_path = SelectFileButton('.set')
+    initialdir = ipywidgets.Text(placeholder='Path')
+    axona_button = SelectFilesButton('.set', initialdir=initialdir)
+    axona_path = ipywidgets.VBox([axona_button, initialdir])
     user = ipywidgets.Text(placeholder='*User', value=project.config.get('username'))
     location = ipywidgets.Text(placeholder='*Location', value=project.config.get('location'))
     action_id = ipywidgets.Text(placeholder='Action id')
@@ -71,24 +73,25 @@ def axona_view(project):
         if not required_values_filled(user, location):
             return
         no_cut = not load_cut.value
-        axona.register_axona_recording(
-            project=project,
-            action_id=none_if_empty(action_id.value),
-            axona_filename=axona_path.file,
-            depth=depth.value,
-            user=user.value,
-            overwrite=overwrite.value,
-            templates=templates.value,
-            entity_id=none_if_empty(entity_id.value),
-            location=location.value,
-            message=none_if_empty(message.value),
-            tag=tags,
-            get_inp=load_input.value,
-            no_cut=no_cut,
-            cluster_group=[],
-            set_zero_cluster_to_noise=set_zero_cluster_to_noise.value,
-            register_depth=register_depth.value,
-            correct_depth_answer=True)
+        for path in axona_path.files:
+            axona.register_axona_recording(
+                project=project,
+                action_id=none_if_empty(action_id.value),
+                axona_filename=path,
+                depth=depth.value,
+                user=user.value,
+                overwrite=overwrite.value,
+                templates=templates.value,
+                entity_id=none_if_empty(entity_id.value),
+                location=location.value,
+                message=none_if_empty(message.value),
+                tag=tags,
+                get_inp=load_input.value,
+                no_cut=no_cut,
+                cluster_group=[],
+                set_zero_cluster_to_noise=set_zero_cluster_to_noise.value,
+                register_depth=register_depth.value,
+                correct_depth_answer=True)
 
     register.on_click(on_register)
     return main_box
