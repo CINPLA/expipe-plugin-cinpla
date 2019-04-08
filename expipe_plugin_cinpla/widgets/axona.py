@@ -4,9 +4,7 @@ from .utils import SelectFilesButton, MultiInput, SearchSelectMultiple, required
 
 
 def axona_view(project):
-    initialdir = ipywidgets.Text(placeholder='Path')
-    axona_button = SelectFilesButton('.set', initialdir=initialdir)
-    axona_path = ipywidgets.VBox([axona_button, initialdir])
+    axona_button = SelectFilesButton('.set')
     user = ipywidgets.Text(placeholder='*User', value=project.config.get('username'))
     location = ipywidgets.Text(placeholder='*Location', value=project.config.get('location'))
     action_id = ipywidgets.Text(placeholder='Action id')
@@ -34,7 +32,7 @@ def axona_view(project):
         tag,
         register
     ])
-    checks = ipywidgets.HBox([axona_path, register_depth, overwrite, load_cut, load_input])
+    checks = ipywidgets.HBox([axona_button, register_depth, overwrite, load_cut, load_input])
     main_box = ipywidgets.VBox([
             checks,
             ipywidgets.HBox([fields, templates])
