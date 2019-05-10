@@ -37,10 +37,11 @@ class SearchSelectMultiple(ipywidgets.VBox):
             layout={'height': '200px', 'width': '300px'}
         )
         self.description = kwargs.get('description') or '' # TODO move into placeholder
-        search_widget = ipywidgets.Text(
+        self.search_widget = ipywidgets.Text(
             placeholder=self.description,
             layout={'width': self.select_multiple.layout.width})
         orig_list = list(self.select_multiple.options)
+
         # Wire the search field to the checkboxes
         def on_text_change(change):
             search_input = change['new']
@@ -52,8 +53,8 @@ class SearchSelectMultiple(ipywidgets.VBox):
                 new_options = [a for a in orig_list if search_input in a]
             self.select_multiple.options = sorted(new_options)
 
-        search_widget.observe(on_text_change, names='value')
-        self.children = [search_widget, self.select_multiple]
+        self.search_widget.observe(on_text_change, names='value')
+        self.children = [self.search_widget, self.select_multiple]
 
     @property
     def value(self):

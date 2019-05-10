@@ -8,6 +8,7 @@ from .entity import entity_view
 from .adjust import adjustment_view, annotate_view
 from .surgery import perfuse_view, surgery_view
 from .axona import axona_view
+from .curation import process_curation_view
 import expipe
 
 # TODO: how to make templates
@@ -44,13 +45,14 @@ def display(project_path):
         register_tab.set_title(i, title)
 
     process_tab_tab_titles = [
-        'OpenEphys', 'Intan', 'Tracking', 'Psychopy']
+        'OpenEphys', 'Intan', 'Tracking', 'Psychopy', 'Curation']
     process_tab = ipywidgets.Tab()
     process_tab.children = [
         process_openephys_view(project),
         process_intan_view(project),
         process_tracking_view(project),
-        process_psychopy_view(project)
+        process_psychopy_view(project),
+        process_curation_view(project)
     ]
     for i, title in enumerate(process_tab_tab_titles):
         process_tab.set_title(i, title)

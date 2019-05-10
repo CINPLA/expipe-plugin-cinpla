@@ -106,26 +106,23 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                                  'related to this action')
             openephys_session = acquisition.attrs["session"]
             openephys_path = Path(acquisition.directory) / openephys_session
-            if 'processing' in exdir_file:
-                if 'electrophysiology' in exdir_file['processing']:
-                    print('Deleting old processing/electrophysiology')
-                    shutil.rmtree(
-                        exdir_file['processing']['electrophysiology'].directory)
         else:
             openephys_path = Path(acquisition_folder)
             assert exdir_file_path is not None
             exdir_path = Path(exdir_file_path)
+            exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+
+        if 'processing' in exdir_file:
+            if 'electrophysiology' in exdir_file['processing']:
+                print('Deleting old processing/electrophysiology')
+                shutil.rmtree(
+                    exdir_file['processing']['electrophysiology'].directory)
 
         probe_path = probe_path or project.config.get('probe')
         recording = se.OpenEphysRecordingExtractor(str(openephys_path))
 
         if 'auto' not in bad_channels:
-            active_channels = []
-            for chan in recording.get_channel_ids():
-                if chan not in bad_channels:
-                    active_channels.append(chan)
-            recording_active = se.SubRecordingExtractor(
-                recording, channel_ids=active_channels)
+            recording_active = st.preprocessing.remove_bad_channels(recording, bad_channels=bad_channels)
         else:
             recording_active = recording
 
@@ -144,7 +141,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         recording_hp = st.preprocessing.bandpass_filter(
             recording_active, freq_min=freq_min_hp, freq_max=freq_max_hp,
             type=type_hp, order=order_hp)
-
 
         if ref is not None:
             if ref.lower() == 'cmr':
@@ -168,23 +164,11 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             recording_cmr = recording
 
         if 'auto' in bad_channels:
-            start_frame = recording_cmr.get_num_frames() // 2
-            end_frame = int(start_frame + 10 * recording_cmr.get_sampling_frequency())
-            traces = recording_cmr.get_traces(
-                start_frame=start_frame, end_frame=end_frame)
-            stds = np.std(traces, axis=1)
-            bad_channels = [
-                ch for ch, std in enumerate(stds)
-                if std > bad_threshold * np.median(stds)]
-            print('Automatically found bad channels', bad_channels)
-            active_channels = []
-            for chan in recording.get_channel_ids():
-                if chan not in bad_channels:
-                    active_channels.append(chan)
-            recording_cmr = se.SubRecordingExtractor(
-                recording_cmr, channel_ids=active_channels)
+            print('ciaooooone')
+            recording_cmr = st.preprocessing.remove_bad_channels(recording_cmr, bad_channels='auto',
+                                                                 bad_threshold=bad_threshold, seconds=10)
             recording_active = se.SubRecordingExtractor(
-                recording, channel_ids=active_channels)
+                recording, channel_ids=recording_cmr.active_channels)
 
         print("Active channels: ", len(recording_active.get_channel_ids()))
         recording_lfp = st.preprocessing.bandpass_filter(
@@ -234,12 +218,30 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         recording_lfp = se.load_probe_file(recording_lfp, probe_path)
         recording_mua = se.load_probe_file(recording_mua, probe_path)
 
+        print('Number of channels', recording_cmr.get_num_channels())
+
         if spikesort:
             try:
+                # save attributes
+                exdir_group = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+                ephys = exdir_group.require_group('processing').require_group('electrophysiology')
+                spikesorting = ephys.require_group('spikesorting')
+                sorting_group = spikesorting.require_group(sorter)
+                output_folder = sorting_group.require_raw('output').directory
+                print(output_folder)
                 sorting = st.sorters.run_sorter(
                     sorter, recording_cmr,  parallel=parallel,
-                    grouping_property=sort_by, debug=True,
-                    delete_output_folder=True, **spikesorter_params)
+                    grouping_property=sort_by, debug=True, output_folder=output_folder,
+                    delete_output_folder=False, **spikesorter_params)
+                spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
+                filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
+                                'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp,
+                                               'resample': freq_resample_lfp},
+                                'mua_filter': {'resample': freq_resample_mua}}
+                reference_attrs = {'type': str(ref), 'split': str(split)}
+                sorting_group.attrs.update({'spike_sorting': spike_sorting_attrs,
+                                            'filter': filter_attrs,
+                                            'reference': reference_attrs})
             except Exception as e:
                 shutil.rmtree(tmpdir)
                 print(e)
@@ -248,19 +250,14 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         # extract waveforms
         if spikesort:
-            print('Computing waveforms')
-            if sort_by == 'group':
-                wf = st.postprocessing.get_unit_waveforms(
-                    recording_cmr, sorting, grouping_property='group',
-                    ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
-            else:
-                wf = st.postprocessing.get_unit_waveforms(
-                    recording_cmr, sorting, grouping_property='group',
-                    compute_property_from_recording=True,
-                    ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
-            print('Saving sorting output to exdir format')
-            se.ExdirSortingExtractor.write_sorting(
-                sorting, exdir_path, recording=recording_cmr)
+            # se.ExdirSortingExtractor.write_sorting(
+            #     sorting, exdir_path, recording=recording_cmr, verbose=True)
+            print('Saving Phy output')
+            phy_folder = sorting_group.require_raw('phy').directory
+            t_start_save = time.time()
+            st.postprocessing.export_to_phy(recording_cmr, sorting, output_folder=phy_folder, save_waveforms=True,
+                                            ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
+            print('Save to phy time:', time.time() - t_start_save)
         if compute_lfp:
             print('Saving LFP to exdir format')
             se.ExdirRecordingExtractor.write_recording(
@@ -269,18 +266,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             print('Saving MUA to exdir format')
             se.ExdirRecordingExtractor.write_recording(
                 recording_mua, exdir_path, mua=True)
-
-        # save attributes
-        exdir_group = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
-        ephys = exdir_group.require_group('processing').require_group('electrophysiology')
-        spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
-        filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
-                        'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp, 'resample': freq_resample_lfp},
-                        'mua_filter': {'resample': freq_resample_mua}}
-        reference_attrs = {'type': str(ref), 'split': str(split)}
-        ephys.attrs.update({'spike_sorting': spike_sorting_attrs,
-                            'filter': filter_attrs,
-                            'reference': reference_attrs})
 
         print('Cleanup')
         if not os.access(str(tmpdir), os.W_OK):
