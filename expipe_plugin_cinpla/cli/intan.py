@@ -137,11 +137,21 @@ def attach_to_process(cli):
                   default=None,
                   help="'local' or name of expipe server.",
                   )
-    @click.option('--ground', '-g',
-                  type=click.INT,
+    @click.option('--bad-channels', '-bc',
+                  type=click.STRING,
                   multiple=True,
                   default=None,
                   help="bad channels to ground.",
+                  )
+    @click.option('--bad-threshold', '-bt',
+                  type=click.FLOAT,
+                  default=None,
+                  help="bad channels to ground.",
+                  )
+    @click.option('--min-spikes', '-ms',
+                  type=click.INT,
+                  default=None,
+                  help="Minimum number of spikes per unit to retain.",
                   )
     @click.option('--ref',
                   default='cmr',
@@ -179,9 +189,9 @@ def attach_to_process(cli):
                   help="ms to clip before stimulation trigger"
                   )
     def _process_intan(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp, rm_art_channel,
-                           ms_before_wf, ms_after_wf, ms_before_stim, ms_after_stim,
-                           spike_params, server, acquisition, exdir_path, ground, ref, split_channels,
-                           no_par, sort_by):
+                       ms_before_wf, ms_after_wf, ms_before_stim, ms_after_stim,
+                       spike_params, server, acquisition, exdir_path, bad_channels, ref, split_channels,
+                       no_par, sort_by, bad_threshold, min_spikes):
         if no_sorting:
             spikesort = False
         else:
@@ -216,7 +226,7 @@ def attach_to_process(cli):
         intan.process_intan(project=project, action_id=action_id, probe_path=probe_path, sorter=sorter,
                             spikesort=spikesort, compute_lfp=compute_lfp, compute_mua=compute_mua,
                             spikesorter_params=params, server=server, acquisition_folder=acquisition,
-                            exdir_file_path=exdir_path, ground=ground, ref=ref, split=split_channels,
+                            exdir_file_path=exdir_path, bad_channels=bad_channels, ref=ref, split=split_channels,
                             remove_artifact_channel=rm_art_channel, ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf,
                             ms_before_stim=ms_before_stim, ms_after_stim=ms_after_stim, parallel=parallel,
-                            sort_by=sort_by)
+                            sort_by=sort_by, bad_threshold=bad_threshold, min_number_of_spikes=min_spikes)

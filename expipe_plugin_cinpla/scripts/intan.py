@@ -83,10 +83,12 @@ def register_intan_recording(
 def process_intan(project, action_id, probe_path, sorter, acquisition_folder=None, remove_artifact_channel=None,
                   exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
                   ms_before_wf=0.5, ms_after_wf=2, ms_before_stim=0.5, ms_after_stim=2,
-                  spikesorter_params=None, server=None, ground=None, ref=None, split=None, sort_by=None):
+                  spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
+                  bad_threshold=2, min_number_of_spikes=0):
     import spikeextractors as se
     import spiketoolkit as st
 
+    bad_channels = bad_channels or []
     proc_start = time.time()
 
     if server is None or server == 'local':
@@ -120,16 +122,12 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
 
         probe_path = probe_path or project.config.get('probe')
         recording = se.IntanRecordingExtractor(str(intan_path))
-        if ground is not None:
-            active_channels = []
-            for chan in recording.getChannelIds():
-                if chan not in ground:
-                    active_channels.append(chan)
-            recording_active = se.SubRecordingExtractor(recording, channel_ids=active_channels)
+        if 'auto' not in bad_channels:
+            recording_active = st.preprocessing.remove_bad_channels(recording, bad_channels=bad_channels)
         else:
             recording_active = recording
 
-        print("Active channels: ", len(recording_active.getChannelIds()))
+        print("Active channels: ", len(recording_active.get_channel_ids()))
 
         # apply filtering and cmr
         print('Writing filtered and common referenced data')
@@ -162,8 +160,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             if split == 'all':
                 recording_cmr = st.preprocessing.common_reference(recording_hp, reference=reference)
             elif split == 'half':
-                groups = [recording.getChannelIds()[:int(len(recording.getChannelIds()) / 2)],
-                          recording.getChannelIds()[int(len(recording.getChannelIds()) / 2):]]
+                groups = [recording.get_channel_ids()[:int(len(recording.get_channel_ids()) / 2)],
+                          recording.get_channel_ids()[int(len(recording.get_channel_ids()) / 2):]]
                 recording_cmr = st.preprocessing.common_reference(recording_hp, groups=groups, reference=reference)
             else:
                 if isinstance(split, list):
@@ -172,6 +170,12 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                     raise Exception("'split' must be a list of lists")
         else:
             recording_cmr = recording
+
+        if 'auto' in bad_channels:
+            recording_cmr = st.preprocessing.remove_bad_channels(recording_cmr, bad_channels='auto',
+                                                                 bad_threshold=bad_threshold, seconds=10)
+            recording_active = se.SubRecordingExtractor(
+                recording, channel_ids=recording_cmr.active_channels)
 
         if remove_artifact_channel is not None and remove_artifact_channel >= 0:
             intan_rec = pyintan.File(str(intan_path))
@@ -203,65 +207,97 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             t_start = time.time()
 
             filt_filename = Path(tmpdir) / 'filt.dat'
-            se.BinDatRecordingExtractor.writeRecording(recording_rm_art, save_path=filt_filename, dtype=np.float32)
+            se.BinDatRecordingExtractor.write_recording(recording_rm_art, save_path=filt_filename, dtype=np.float32)
             recording_rm_art = se.BinDatRecordingExtractor(filt_filename,
-                                                           samplerate=recording_rm_art.getSamplingFrequency(),
-                                                           numchan=len(recording_cmr.getChannelIds()), dtype=np.float32,
-                                                           recording_channels=recording_active.getChannelIds())
+                                                           samplerate=recording_rm_art.get_sampling_frequency(),
+                                                           numchan=len(recording_cmr.get_channel_ids()), dtype=np.float32,
+                                                           recording_channels=recording_active.get_channel_ids())
             print('Filter time: ', time.time() - t_start)
             
         if compute_lfp:
             print('Computing LFP')
             t_start = time.time()
             lfp_filename = Path(tmpdir) / 'lfp.dat'
-            se.BinDatRecordingExtractor.writeRecording(recording_lfp, save_path=lfp_filename, dtype=np.float32)
-            recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
-                                                        numchan=len(recording_lfp.getChannelIds()), dtype=np.float32,
-                                                        recording_channels=recording_active.getChannelIds())
+            se.BinDatRecordingExtractor.write_recording(recording_lfp, save_path=lfp_filename, dtype=np.float32)
+            recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.get_sampling_frequency(),
+                                                        numchan=len(recording_lfp.get_channel_ids()), dtype=np.float32,
+                                                        recording_channels=recording_active.get_channel_ids())
             print('Filter time: ', time.time() - t_start)
 
         if compute_mua:
             print('Computing MUA')
             t_start = time.time()
             mua_filename =  Path(tmpdir) / 'mua.dat'
-            se.BinDatRecordingExtractor.writeRecording(recording_mua, save_path=mua_filename, dtype=np.float32)
-            recording_mua = se.BinDatRecordingExtractor(mua_filename, samplerate=recording_mua.getSamplingFrequency(),
-                                                        numchan=len(recording_mua.getChannelIds()), dtype=np.float32,
-                                                        recording_channels=recording_active.getChannelIds())
+            se.BinDatRecordingExtractor.write_recording(recording_mua, save_path=mua_filename, dtype=np.float32)
+            recording_mua = se.BinDatRecordingExtractor(mua_filename, samplerate=recording_mua.get_sampling_frequency(),
+                                                        numchan=len(recording_mua.get_channel_ids()), dtype=np.float32,
+                                                        recording_channels=recording_active.get_channel_ids())
             print('Filter time: ', time.time() - t_start)
 
-        recording_rm_art = se.loadProbeFile(recording_rm_art, probe_path)
-        recording_lfp = se.loadProbeFile(recording_lfp, probe_path)
-        recording_mua = se.loadProbeFile(recording_mua, probe_path)
+        recording_rm_art = se.load_probe_file(recording_rm_art, probe_path)
+        recording_lfp = se.load_probe_file(recording_lfp, probe_path)
+        recording_mua = se.load_probe_file(recording_mua, probe_path)
 
         if spikesort:
             try:
-                sorting = st.sorters.run_sorter(sorter, recording_rm_art, grouping_property=sort_by, parallel=parallel,
-                                                debug=True, delete_output_folder=True, **spikesorter_params)
+                # save attributes
+                exdir_group = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+                ephys = exdir_group.require_group('processing').require_group('electrophysiology')
+                spikesorting = ephys.require_group('spikesorting')
+                sorting_group = spikesorting.require_group(sorter)
+                output_folder = sorting_group.require_raw('output').directory
+                if 'kilosort' in sorter:
+                    sorting = st.sorters.run_sorter(
+                        sorter, recording_rm_art, debug=True, output_folder=output_folder,
+                        delete_output_folder=False, **spikesorter_params)
+                else:
+                    sorting = st.sorters.run_sorter(
+                        sorter, recording_rm_art, parallel=parallel,
+                        grouping_property=sort_by, debug=True, output_folder=output_folder,
+                        delete_output_folder=False, **spikesorter_params)
+                spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
+                filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
+                                'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp,
+                                               'resample': freq_resample_lfp},
+                                'mua_filter': {'resample': freq_resample_mua}}
+                reference_attrs = {'type': str(ref), 'split': str(split)}
+                sorting_group.attrs.update({'spike_sorting': spike_sorting_attrs,
+                                            'filter': filter_attrs,
+                                            'reference': reference_attrs})
             except Exception as e:
                 shutil.rmtree(tmpdir)
                 print(e)
                 raise Exception("Spike sorting failed")
-            print('Found ', len(sorting.getUnitIds()), ' units!')
+            print('Found ', len(sorting.get_unit_ids()), ' units!')
 
         # extract waveforms
-        if spikesort:
-            print('Computing waveforms')
-            if sort_by == 'group':
-                wf = st.postprocessing.getUnitWaveforms(recording_rm_art, sorting, grouping_property='group',
-                                                        ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
-            else:
-                wf = st.postprocessing.getUnitWaveforms(recording_rm_art, sorting, grouping_property='group',
-                                                        compute_property_from_recording=True,
-                                                        ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
-            print('Saving sorting output to exdir format')
-            se.ExdirSortingExtractor.writeSorting(sorting, exdir_path, recording=recording_rm_art)
-        if compute_lfp:
-            print('Saving LFP to exdir format')
-            se.ExdirRecordingExtractor.writeRecording(recording_lfp, exdir_path, lfp=True)
-        if compute_mua:
-            print('Saving MUA to exdir format')
-            se.ExdirRecordingExtractor.writeRecording(recording_mua, exdir_path, mua=True)
+            # extract waveforms
+            if spikesort:
+                # se.ExdirSortingExtractor.write_sorting(
+                #     sorting, exdir_path, recording=recording_cmr, verbose=True)
+                print('Saving Phy output')
+                phy_folder = sorting_group.require_raw('phy').directory
+                if min_number_of_spikes > 0:
+                    sorting_min = st.postprocessing.threshold_min_num_spikes(sorting, min_number_of_spikes)
+                    print("Removed ", (len(sorting.get_unit_ids()) - len(sorting_min.get_unit_ids())),
+                          'units with less than',
+                          min_number_of_spikes, 'spikes')
+                else:
+                    sorting_min = sorting
+                t_start_save = time.time()
+                st.postprocessing.export_to_phy(recording_cmr, sorting_min, output_folder=phy_folder,
+                                                save_waveforms=True,
+                                                ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
+                                                grouping_property=sort_by)
+                print('Save to phy time:', time.time() - t_start_save)
+            if compute_lfp:
+                print('Saving LFP to exdir format')
+                se.ExdirRecordingExtractor.write_recording(
+                    recording_lfp, exdir_path, lfp=True)
+            if compute_mua:
+                print('Saving MUA to exdir format')
+                se.ExdirRecordingExtractor.write_recording(
+                    recording_mua, exdir_path, mua=True)
 
         # save attributes
         exdir_group = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
@@ -370,16 +406,16 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             extra_args = extra_args + ' --no-mua'
         if not spikesort:
             extra_args = extra_args + ' --no-sorting'
+        extra_args = extra_args + ' -bt {}'.format(bad_threshold)
 
         if ref is not None and isinstance(ref, str):
             ref = ref.lower()
         if split is not None and isinstance(split, str):
             split = split.lower()
 
-        ground_cmd = ''
-        if ground is not None:
-            for g in ground:
-                ground_cmd = ground_cmd + ' -g ' + str(g)
+        bad_channels_cmd = ''
+        for bc in bad_channels:
+            bad_channels_cmd = bad_channels_cmd + ' -bc ' + str(bc)
 
         ref_cmd = ''
         if ref is not None:
@@ -395,6 +431,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
 
         wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf) + \
                  ' --ms-before-stim ' + str(ms_before_stim) + ' --ms-after-stim ' + str(ms_after_stim)
+
+        ms_cmd = ' --min-spikes ' + str(min_number_of_spikes)
 
         par_cmd = ''
         if not parallel:
@@ -433,11 +471,12 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process intan {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter,
-                                                                                remote_yaml, remote_acq, remote_exdir,
-                                                                                ground_cmd, ref_cmd, split_cmd,
-                                                                                remove_art_cmd,  par_cmd, sortby_cmd,
-                                                                                wf_cmd, extra_args)
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter,
+                                                                                   remote_yaml, remote_acq,
+                                                                                   remote_exdir, bad_channels_cmd,
+                                                                                   ref_cmd, split_cmd, remove_art_cmd,
+                                                                                   par_cmd, sortby_cmd,
+                                                                                   wf_cmd, extra_args, ms_cmd)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
         ####################### RETURN PROCESSED DATA #######################
@@ -487,8 +526,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
 
 def _find_fmax_noise(recording_hp, start_frame=0, end_frame=300000, start_freq=2000, end_freq=4000):
     import scipy.signal as ss
-    filt_traces = recording_hp.getTraces(start_frame=start_frame, end_frame=end_frame)
-    f, p = ss.welch(filt_traces, recording_hp.getSamplingFrequency())
+    filt_traces = recording_hp.get_traces(start_frame=start_frame, end_frame=end_frame)
+    f, p = ss.welch(filt_traces, recording_hp.get_sampling_frequency())
     idxs = np.where((f > start_freq) & (f < end_freq))
 
     max_freq = f[idxs][np.squeeze(p[:, idxs]).mean(axis=0).argmax()]

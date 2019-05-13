@@ -88,7 +88,7 @@ def register_openephys_recording(
 def process_openephys(project, action_id, probe_path, sorter, acquisition_folder=None,
                       exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
                       spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
-                      ms_before_wf=1, ms_after_wf=2, bad_threshold=2):
+                      ms_before_wf=1, ms_after_wf=2, bad_threshold=2, min_number_of_spikes=0):
     import spikeextractors as se
     import spiketoolkit as st
     bad_channels = bad_channels or []
@@ -106,11 +106,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                                  'related to this action')
             openephys_session = acquisition.attrs["session"]
             openephys_path = Path(acquisition.directory) / openephys_session
-            if 'processing' in exdir_file:
-                if 'electrophysiology' in exdir_file['processing']:
-                    print('Deleting old processing/electrophysiology')
-                    shutil.rmtree(
-                        exdir_file['processing']['electrophysiology'].directory)
         else:
             openephys_path = Path(acquisition_folder)
             assert exdir_file_path is not None
@@ -120,12 +115,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         recording = se.OpenEphysRecordingExtractor(str(openephys_path))
 
         if 'auto' not in bad_channels:
-            active_channels = []
-            for chan in recording.getChannelIds():
-                if chan not in bad_channels:
-                    active_channels.append(chan)
-            recording_active = se.SubRecordingExtractor(
-                recording, channel_ids=active_channels)
+            recording_active = st.preprocessing.remove_bad_channels(recording, bad_channels=bad_channels)
         else:
             recording_active = recording
 
@@ -145,7 +135,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             recording_active, freq_min=freq_min_hp, freq_max=freq_max_hp,
             type=type_hp, order=order_hp)
 
-
         if ref is not None:
             if ref.lower() == 'cmr':
                 reference = 'median'
@@ -156,8 +145,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             if split == 'all':
                 recording_cmr = st.preprocessing.common_reference(recording_hp, reference=reference)
             elif split == 'half':
-                groups = [recording.getChannelIds()[:int(len(recording.getChannelIds()) / 2)],
-                          recording.getChannelIds()[int(len(recording.getChannelIds()) / 2):]]
+                groups = [recording.get_channel_ids()[:int(len(recording.get_channel_ids()) / 2)],
+                          recording.get_channel_ids()[int(len(recording.get_channel_ids()) / 2):]]
                 recording_cmr = st.preprocessing.common_reference(recording_hp, groups=groups, reference=reference)
             else:
                 if isinstance(split, list):
@@ -168,25 +157,12 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             recording_cmr = recording
 
         if 'auto' in bad_channels:
-            start_frame = recording_cmr.getNumFrames() // 2
-            end_frame = int(start_frame + 10 * recording_cmr.getSamplingFrequency())
-            traces = recording_cmr.getTraces(
-                start_frame=start_frame, end_frame=end_frame)
-            stds = np.std(traces, axis=1)
-            bad_channels = [
-                ch for ch, std in enumerate(stds)
-                if std > bad_threshold * np.median(stds)]
-            print('Automatically found bad channels', bad_channels)
-            active_channels = []
-            for chan in recording.getChannelIds():
-                if chan not in bad_channels:
-                    active_channels.append(chan)
-            recording_cmr = se.SubRecordingExtractor(
-                recording_cmr, channel_ids=active_channels)
+            recording_cmr = st.preprocessing.remove_bad_channels(recording_cmr, bad_channels='auto',
+                                                                 bad_threshold=bad_threshold, seconds=10)
             recording_active = se.SubRecordingExtractor(
-                recording, channel_ids=active_channels)
+                recording, channel_ids=recording_cmr.active_channels)
 
-        print("Active channels: ", len(recording_active.getChannelIds()))
+        print("Active channels: ", len(recording_active.get_channel_ids()))
         recording_lfp = st.preprocessing.bandpass_filter(
             recording_active, freq_min=freq_min_lfp, freq_max=freq_max_lfp)
         recording_lfp = st.preprocessing.resample(
@@ -199,88 +175,100 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             print('Bandpass filter')
             t_start = time.time()
             filt_filename = Path(tmpdir) / 'filt.dat'
-            se.BinDatRecordingExtractor.writeRecording(
+            se.BinDatRecordingExtractor.write_recording(
                 recording_cmr, save_path=filt_filename, dtype=np.float32)
             recording_cmr = se.BinDatRecordingExtractor(
-                filt_filename, samplerate=recording_cmr.getSamplingFrequency(),
-                numchan=len(recording_cmr.getChannelIds()), dtype=np.float32,
-                recording_channels=recording_cmr.getChannelIds())
+                filt_filename, samplerate=recording_cmr.get_sampling_frequency(),
+                numchan=len(recording_cmr.get_channel_ids()), dtype=np.float32,
+                recording_channels=recording_cmr.get_channel_ids())
             print('Filter time: ', time.time() - t_start)
         if compute_lfp:
             print('Computing LFP')
             t_start = time.time()
             lfp_filename = Path(tmpdir) / 'lfp.dat'
-            se.BinDatRecordingExtractor.writeRecording(
+            se.BinDatRecordingExtractor.write_recording(
                 recording_lfp, save_path=lfp_filename, dtype=np.float32)
             recording_lfp = se.BinDatRecordingExtractor(
-                lfp_filename, samplerate=recording_lfp.getSamplingFrequency(),
-                numchan=len(recording_lfp.getChannelIds()), dtype=np.float32,
-                recording_channels=recording_lfp.getChannelIds())
+                lfp_filename, samplerate=recording_lfp.get_sampling_frequency(),
+                numchan=len(recording_lfp.get_channel_ids()), dtype=np.float32,
+                recording_channels=recording_lfp.get_channel_ids())
             print('Filter time: ', time.time() - t_start)
 
         if compute_mua:
             print('Computing MUA')
             t_start = time.time()
             mua_filename = Path(tmpdir) / 'mua.dat'
-            se.BinDatRecordingExtractor.writeRecording(
+            se.BinDatRecordingExtractor.write_recording(
                 recording_mua, save_path=mua_filename, dtype=np.float32)
             recording_mua = se.BinDatRecordingExtractor(
-                mua_filename, samplerate=recording_mua.getSamplingFrequency(),
-                numchan=len(recording_mua.getChannelIds()), dtype=np.float32,
-                recording_channels=recording_mua.getChannelIds())
+                mua_filename, samplerate=recording_mua.get_sampling_frequency(),
+                numchan=len(recording_mua.get_channel_ids()), dtype=np.float32,
+                recording_channels=recording_mua.get_channel_ids())
             print('Filter time: ', time.time() - t_start)
 
-        recording_cmr = se.loadProbeFile(recording_cmr, probe_path)
-        recording_lfp = se.loadProbeFile(recording_lfp, probe_path)
-        recording_mua = se.loadProbeFile(recording_mua, probe_path)
+        recording_cmr = se.load_probe_file(recording_cmr, probe_path)
+        recording_lfp = se.load_probe_file(recording_lfp, probe_path)
+        recording_mua = se.load_probe_file(recording_mua, probe_path)
+
+        print('Number of channels', recording_cmr.get_num_channels())
 
         if spikesort:
             try:
-                sorting = st.sorters.run_sorter(
-                    sorter, recording_cmr,  parallel=parallel,
-                    grouping_property=sort_by, debug=True,
-                    delete_output_folder=True, **spikesorter_params)
+                # save attributes
+                exdir_group = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+                ephys = exdir_group.require_group('processing').require_group('electrophysiology')
+                spikesorting = ephys.require_group('spikesorting')
+                sorting_group = spikesorting.require_group(sorter)
+                output_folder = sorting_group.require_raw('output').directory
+                if 'kilosort' in sorter:
+                    sorting = st.sorters.run_sorter(
+                        sorter, recording_cmr, debug=True, output_folder=output_folder,
+                        delete_output_folder=False, **spikesorter_params)
+                else:
+                    sorting = st.sorters.run_sorter(
+                        sorter, recording_cmr,  parallel=parallel,
+                        grouping_property=sort_by, debug=True, output_folder=output_folder,
+                        delete_output_folder=False, **spikesorter_params)
+                spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
+                filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
+                                'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp,
+                                               'resample': freq_resample_lfp},
+                                'mua_filter': {'resample': freq_resample_mua}}
+                reference_attrs = {'type': str(ref), 'split': str(split)}
+                sorting_group.attrs.update({'spike_sorting': spike_sorting_attrs,
+                                            'filter': filter_attrs,
+                                            'reference': reference_attrs})
             except Exception as e:
                 shutil.rmtree(tmpdir)
                 print(e)
                 raise Exception("Spike sorting failed")
-            print('Found ', len(sorting.getUnitIds()), ' units!')
+            print('Found ', len(sorting.get_unit_ids()), ' units!')
 
         # extract waveforms
         if spikesort:
-            print('Computing waveforms')
-            if sort_by == 'group':
-                wf = st.postprocessing.getUnitWaveforms(
-                    recording_cmr, sorting, grouping_property='group',
-                    ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
+            # se.ExdirSortingExtractor.write_sorting(
+            #     sorting, exdir_path, recording=recording_cmr, verbose=True)
+            print('Saving Phy output')
+            phy_folder = sorting_group.require_raw('phy').directory
+            if min_number_of_spikes > 0:
+                sorting_min = st.postprocessing.threshold_min_num_spikes(sorting, min_number_of_spikes)
+                print("Removed ", (len(sorting.get_unit_ids())-len(sorting_min.get_unit_ids())), 'units with less than',
+                      min_number_of_spikes, 'spikes')
             else:
-                wf = st.postprocessing.getUnitWaveforms(
-                    recording_cmr, sorting, grouping_property='group',
-                    compute_property_from_recording=True,
-                    ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
-            print('Saving sorting output to exdir format')
-            se.ExdirSortingExtractor.writeSorting(
-                sorting, exdir_path, recording=recording_cmr)
+                sorting_min = sorting
+            t_start_save = time.time()
+            st.postprocessing.export_to_phy(recording_cmr, sorting_min, output_folder=phy_folder, save_waveforms=True,
+                                            ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
+                                            grouping_property=sort_by)
+            print('Save to phy time:', time.time() - t_start_save)
         if compute_lfp:
             print('Saving LFP to exdir format')
-            se.ExdirRecordingExtractor.writeRecording(
+            se.ExdirRecordingExtractor.write_recording(
                 recording_lfp, exdir_path, lfp=True)
         if compute_mua:
             print('Saving MUA to exdir format')
-            se.ExdirRecordingExtractor.writeRecording(
+            se.ExdirRecordingExtractor.write_recording(
                 recording_mua, exdir_path, mua=True)
-
-        # save attributes
-        exdir_group = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
-        ephys = exdir_group.require_group('processing').require_group('electrophysiology')
-        spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
-        filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
-                        'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp, 'resample': freq_resample_lfp},
-                        'mua_filter': {'resample': freq_resample_mua}}
-        reference_attrs = {'type': str(ref), 'split': str(split)}
-        ephys.attrs.update({'spike_sorting': spike_sorting_attrs,
-                            'filter': filter_attrs,
-                            'reference': reference_attrs})
 
         print('Cleanup')
         if not os.access(str(tmpdir), os.W_OK):
@@ -398,6 +386,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf)
 
+        ms_cmd = ' --min-spikes ' + str(min_number_of_spikes)
+
         try:
             pbar[0].close()
         except Exception:
@@ -428,10 +418,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {}".format(
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {} {}".format(
               action_id, remote_probe, sorter, remote_yaml, remote_acq,
               remote_exdir, bad_channels_cmd, ref_cmd, par_cmd, sortby_cmd,
-              split_cmd, wf_cmd, extra_args)
+              split_cmd, wf_cmd, extra_args, ms_cmd)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 
