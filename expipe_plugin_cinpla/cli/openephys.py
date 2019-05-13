@@ -140,12 +140,17 @@ def attach_to_process(cli):
                   type=click.STRING,
                   multiple=True,
                   default=None,
-                  help="bad channels to ground.",
+                  help="Bad channels to ground.",
                   )
     @click.option('--bad-threshold', '-bt',
                   type=click.FLOAT,
                   default=None,
-                  help="bad channels to ground.",
+                  help="Bad channels to ground.",
+                  )
+    @click.option('--min-spikes', '-ms',
+                  type=click.INT,
+                  default=None,
+                  help="Minimum number of spikes per unit to retain.",
                   )
     @click.option('--ref',
                   default='cmr',
@@ -169,7 +174,8 @@ def attach_to_process(cli):
                   help="ms to clip after waveform peak"
                   )
     def _process_openephys(action_id, probe_path, sorter, no_sorting, no_mua, no_lfp, ms_before_wf, ms_after_wf,
-                           spike_params, server, acquisition, exdir_path, bad_channels, ref, split_channels, no_par, sort_by, bad_threshold):
+                           spike_params, server, acquisition, exdir_path, bad_channels, ref, split_channels, no_par,
+                           sort_by, bad_threshold, min_spikes):
         if 'auto' in bad_channels:
             bad_channels = ['auto']
         else:
@@ -210,4 +216,4 @@ def attach_to_process(cli):
                                     spikesorter_params=params, server=server, acquisition_folder=acquisition,
                                     exdir_file_path=exdir_path, bad_channels=bad_channels, ref=ref, split=split_channels,
                                     ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf, parallel=parallel,
-                                    sort_by=sort_by, bad_threshold=bad_threshold)
+                                    sort_by=sort_by, bad_threshold=bad_threshold, min_number_of_spikes=min_spikes)

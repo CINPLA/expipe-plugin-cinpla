@@ -88,7 +88,7 @@ def register_openephys_recording(
 def process_openephys(project, action_id, probe_path, sorter, acquisition_folder=None,
                       exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
                       spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
-                      ms_before_wf=1, ms_after_wf=2, bad_threshold=2):
+                      ms_before_wf=1, ms_after_wf=2, bad_threshold=2, min_number_of_spikes=0):
     import spikeextractors as se
     import spiketoolkit as st
     bad_channels = bad_channels or []
@@ -110,13 +110,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             openephys_path = Path(acquisition_folder)
             assert exdir_file_path is not None
             exdir_path = Path(exdir_file_path)
-            exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
-
-        if 'processing' in exdir_file:
-            if 'electrophysiology' in exdir_file['processing']:
-                print('Deleting old processing/electrophysiology')
-                shutil.rmtree(
-                    exdir_file['processing']['electrophysiology'].directory)
 
         probe_path = probe_path or project.config.get('probe')
         recording = se.OpenEphysRecordingExtractor(str(openephys_path))
@@ -164,7 +157,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             recording_cmr = recording
 
         if 'auto' in bad_channels:
-            print('ciaooooone')
             recording_cmr = st.preprocessing.remove_bad_channels(recording_cmr, bad_channels='auto',
                                                                  bad_threshold=bad_threshold, seconds=10)
             recording_active = se.SubRecordingExtractor(
@@ -228,11 +220,15 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 spikesorting = ephys.require_group('spikesorting')
                 sorting_group = spikesorting.require_group(sorter)
                 output_folder = sorting_group.require_raw('output').directory
-                print(output_folder)
-                sorting = st.sorters.run_sorter(
-                    sorter, recording_cmr,  parallel=parallel,
-                    grouping_property=sort_by, debug=True, output_folder=output_folder,
-                    delete_output_folder=False, **spikesorter_params)
+                if 'kilosort' in sorter:
+                    sorting = st.sorters.run_sorter(
+                        sorter, recording_cmr, debug=True, output_folder=output_folder,
+                        delete_output_folder=False, **spikesorter_params)
+                else:
+                    sorting = st.sorters.run_sorter(
+                        sorter, recording_cmr,  parallel=parallel,
+                        grouping_property=sort_by, debug=True, output_folder=output_folder,
+                        delete_output_folder=False, **spikesorter_params)
                 spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
                 filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
                                 'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp,
@@ -254,9 +250,16 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             #     sorting, exdir_path, recording=recording_cmr, verbose=True)
             print('Saving Phy output')
             phy_folder = sorting_group.require_raw('phy').directory
+            if min_number_of_spikes > 0:
+                sorting_min = st.postprocessing.threshold_min_num_spikes(sorting, min_number_of_spikes)
+                print("Removed ", (len(sorting.get_unit_ids())-len(sorting_min.get_unit_ids())), 'units with less than',
+                      min_number_of_spikes, 'spikes')
+            else:
+                sorting_min = sorting
             t_start_save = time.time()
-            st.postprocessing.export_to_phy(recording_cmr, sorting, output_folder=phy_folder, save_waveforms=True,
-                                            ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True)
+            st.postprocessing.export_to_phy(recording_cmr, sorting_min, output_folder=phy_folder, save_waveforms=True,
+                                            ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
+                                            grouping_property=sort_by)
             print('Save to phy time:', time.time() - t_start_save)
         if compute_lfp:
             print('Saving LFP to exdir format')
@@ -383,6 +386,8 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf)
 
+        ms_cmd = ' --min-spikes ' + str(min_number_of_spikes)
+
         try:
             pbar[0].close()
         except Exception:
@@ -413,10 +418,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {}".format(
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {} {}".format(
               action_id, remote_probe, sorter, remote_yaml, remote_acq,
               remote_exdir, bad_channels_cmd, ref_cmd, par_cmd, sortby_cmd,
-              split_cmd, wf_cmd, extra_args)
+              split_cmd, wf_cmd, extra_args, ms_cmd)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 

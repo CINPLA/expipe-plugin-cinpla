@@ -15,29 +15,43 @@ def process_phy(project, action_id, sorter):
     exdir_path = _get_data_path(action)
     exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
 
+    phy_dir = str(exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory)
     phy_params = str(exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory / 'params.py')
-    print(phy_params)
-    print('Running phy')
-    cmd = 'phy template-gui ' + phy_params
 
-    _run_command_and_print_output(cmd)
+    sorting_phy = se.PhySortingExtractor(phy_dir)
+    if len(sorting_phy.get_unit_ids()) > 1:
+        print('Running phy')
+        cmd = 'phy template-gui ' + phy_params
+        _run_command_and_print_output(cmd)
+    else:
+        print('Only one unit found. Phy needs more than one unit.')
 
 
-def process_consensus(project, action_id, sorters, min_agreement):
-    pass
-    # print(action_id, sorters, min_agreement)
-    # action = project.actions[action_id]
-    # # if exdir_path is None:
-    # exdir_path = _get_data_path(action)
-    # exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
-    #
-    # print(exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory)
-    #
-    # phy_params = str(exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory / 'params.py')
-    # print('Running phy')
-    # cmd = ['phy', 'template-gui', phy_params]
-    #
-    # _run_command_and_print_output(cmd)
+def process_consensus(project, action_id, sorters, min_agreement=None):
+    action = project.actions[action_id]
+    # if exdir_path is None:
+    exdir_path = _get_data_path(action)
+    exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+
+    sorting_list = []
+    sorter_names = []
+    for sorter in sorters:
+        phy_dir = str(exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory)
+        phy_params = str(
+            exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory / 'params.py')
+
+        sorting_phy = se.PhySortingExtractor(phy_dir)
+        sorting_list.append(sorting_phy)
+        sorter_names.append(sorter)
+
+    mcmp = st.comparison.compare_multiple_sorters(sorting_list=sorting_list, name_list=sorter_names, verbose=True)
+    if min_agreement is None:
+        min_agreement = len(sorter_names)
+
+    agr = mcmp.get_agreement_sorting(minimum_matching=min_agreement)
+    print(agr.get_unit_ids())
+    for u in agr.get_unit_ids():
+        print(agr.get_unit_property(u, 'sorter_unit_ids'))
 
 
 def process_save_phy(project, action_id, sorter):
@@ -49,7 +63,7 @@ def process_save_phy(project, action_id, sorter):
     print(exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory)
 
     phy_folder = exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory
-    sorting = se.PhySortingExtractor(phy_folder, exclude_groups=['noise'], verbose=True)
+    sorting = se.PhySortingExtractor(phy_folder, exclude_groups=['noise'], load_waveforms=True, verbose=True)
     se.ExdirSortingExtractor.write_sorting(sorting, exdir_path, sample_rate=sorting.params['sample_rate'],
                                            save_waveforms=True, verbose=True)
 

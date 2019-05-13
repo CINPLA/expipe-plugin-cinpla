@@ -79,7 +79,15 @@ def process_curation_view(project):
                 curation.process_phy(project, action_id.value[0], sorter_list.value[0])
 
     def on_run_consensus(change):
-        print('Not implemented yet! Stay tuned')
+        if not required_values_filled(sorter_list, action_id):
+            return
+        else:
+            if len(action_id.value) > 1:
+                print("Select one action at a time")
+            elif len(sorter_list.value) == 1:
+                print("Select more than one spike sorting output to get consensus-based output")
+            else:
+                curation.process_consensus(project, action_id.value[0], sorter_list.value)
 
     def on_run_save(change):
         if not required_values_filled(sorter_list, action_id):
