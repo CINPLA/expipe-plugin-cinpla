@@ -2,7 +2,12 @@ from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import intan
 import spiketoolkit as st
 from . import utils
+from distutils.version import StrictVersion
 
+if StrictVersion(yaml.__version__) >= StrictVersion('5.0.0'):
+    use_loader = True
+else:
+    use_loader = False
 
 def attach_to_register(cli):
     @cli.command('intan',
@@ -93,7 +98,7 @@ def attach_to_process(cli):
                   )
     @click.option('--sorter',
                   default='klusta',
-                  type=click.STRING,
+                  type=click.Choice([s.sorter_name for s in st.sorters.sorter_full_list]),
                   help='Spike sorter software to be used.',
                   )
     @click.option('--acquisition',
@@ -192,6 +197,10 @@ def attach_to_process(cli):
                        ms_before_wf, ms_after_wf, ms_before_stim, ms_after_stim,
                        spike_params, server, acquisition, exdir_path, bad_channels, ref, split_channels,
                        no_par, sort_by, bad_threshold, min_spikes):
+        if 'auto' in bad_channels:
+            bad_channels = ['auto']
+        else:
+            bad_channels = (int(bc) for bc in bad_channels)
         if no_sorting:
             spikesort = False
         else:
@@ -208,7 +217,10 @@ def attach_to_process(cli):
             spike_params = pathlib.Path(spike_params)
             if spike_params.is_file():
                 with spike_params.open() as f:
-                    params = yaml.load(f)
+                    if use_loader:
+                        params = yaml.load(f, Loader=yaml.FullLoader)
+                    else:
+                        params = yaml.load(f)
             else:
                 params = None
         else:

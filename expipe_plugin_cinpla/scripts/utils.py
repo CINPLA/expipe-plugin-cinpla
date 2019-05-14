@@ -197,6 +197,7 @@ class ShellHandler:
         print(cmd)
         cmd = cmd.strip('\n')
         self.stdin.write(cmd + '\n')
+        finish_proc = 'Finished processing'
         finish = 'end of stdOUT buffer. finished with exit status'
         echo_cmd = 'echo {} $?'.format(finish)
         self.stdin.write(echo_cmd + '\n')
@@ -206,24 +207,25 @@ class ShellHandler:
         shout = []
         sherr = []
         for line in self.stdout:
-            if str(line).startswith(cmd) or str(line).startswith(echo_cmd):
+            if cmd in str(line) or echo_cmd in str(line):
                 # up for now filled with shell junk from stdin
                 shout = []
-            elif finish in str(line):
+            elif finish in str(line) or finish_proc in str(line):
                 # our finish command ends with the exit status
                 if print_lines:
-                    print('finish command: break')
+                    print(str(line))
                 break
             else:
                 if print_lines:
-                    print(line)
+                    print(str(line))
                 # get rid of 'coloring and formatting' special characters
-                shout.append(re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]').sub('', line).
-                             replace('\b', '').replace('\r', ''))
+                # shout.append(re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]').sub('', line).
+                #              replace('\b', '').replace('\r', ''))
+                shout.append(str(line))
 
                 if finish in str(line):
-                    if print_lines:
-                        print('finish command: break!!!!')
+                    break
+                if finish_proc in str(line):
                     break
 
         # first and last lines of shout/sherr contain a prompt
@@ -236,9 +238,8 @@ class ShellHandler:
         if sherr and cmd in sherr[0]:
             sherr.pop(0)
 
-        # print(''.join(shout))
-
         return shin, shout, sherr
+
 
 def ssh_execute(ssh, command, **kw):
     stdin, stdout, stderr = ssh.exec_command(command, **kw)

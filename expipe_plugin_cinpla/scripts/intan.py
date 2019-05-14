@@ -494,9 +494,28 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             pass
 
         print('Unpacking tar archive')
-        tar = tarfile.open(local_proc_tar)
-        tar.extractall(str(exdir_path))
-        # print('Deleting tar archives')
+        if 'processing' in exdir_file:
+            if 'electrophysiology' in exdir_file['processing']:
+                print('Deleting old processing/electrophysiology')
+                shutil.rmtree(
+                    exdir_file['processing']['electrophysiology'].directory)
+        with tarfile.open(local_proc_tar) as tar:
+            _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                 'exdir.yaml' in m.name]
+            if spikesort:
+                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                     'spikesorting' in m.name and sorter in m.name]
+            if compute_lfp:
+                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                     'LFP' in m.name]
+                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                     'group' in m.name and 'attributes' in m.name]
+            if compute_lfp:
+                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                     'MUA' in m.name]
+                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                     'group' in m.name and 'attributes' in m.name]
+        print('Deleting tar archives')
         if not os.access(str(local_proc_tar), os.W_OK):
             # Is the error an access error ?
             os.chmod(str(local_proc_tar), stat.S_IWUSR)
@@ -522,6 +541,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
 
     print('Saved to exdir: ', exdir_path)
     print("Total elapsed time: ", time.time() - proc_start)
+    print('Finished processing')
 
 
 def _find_fmax_noise(recording_hp, start_frame=0, end_frame=300000, start_freq=2000, end_freq=4000):
