@@ -2,6 +2,12 @@ from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import openephys
 import spiketoolkit as st
 from . import utils
+from distutils.version import StrictVersion
+
+if StrictVersion(yaml.__version__) >= StrictVersion('5.0.0'):
+    use_loader = True
+else:
+    use_loader = False
 
 
 def attach_to_register(cli):
@@ -179,7 +185,7 @@ def attach_to_process(cli):
         if 'auto' in bad_channels:
             bad_channels = ['auto']
         else:
-            bad_channels = (int(bc) for bc in bad_channels)
+            bad_channels = [int(bc) for bc in bad_channels]
         if no_sorting:
             spikesort = False
         else:
@@ -196,7 +202,10 @@ def attach_to_process(cli):
             spike_params = pathlib.Path(spike_params)
             if spike_params.is_file():
                 with spike_params.open() as f:
-                    params = yaml.load(f)
+                    if use_loader:
+                        params = yaml.load(f, Loader=yaml.FullLoader)
+                    else:
+                        params = yaml.load(f)
             else:
                 params = None
         else:

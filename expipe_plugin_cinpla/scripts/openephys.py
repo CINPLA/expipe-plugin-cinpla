@@ -367,6 +367,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         bad_channels_cmd = ''
         for bc in bad_channels:
             bad_channels_cmd = bad_channels_cmd + ' -bc ' + str(bc)
+        print(bad_channels_cmd)
 
         ref_cmd = ''
         if ref is not None:
@@ -446,8 +447,23 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 print('Deleting old processing/electrophysiology')
                 shutil.rmtree(
                     exdir_file['processing']['electrophysiology'].directory)
-        tar = tarfile.open(local_proc_tar)
-        tar.extractall(str(exdir_path))
+        with tarfile.open(local_proc_tar) as tar:
+            _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                 'exdir.yaml' in m.name]
+            if spikesort:
+                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                     'spikesorting' in m.name and sorter in m.name]
+            if compute_lfp:
+                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                     'LFP' in m.name]
+                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                     'group' in m.name and 'attributes' in m.name]
+            if compute_lfp:
+                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                     'MUA' in m.name]
+                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                     'group' in m.name and 'attributes' in m.name]
+
         print('Deleting tar archives')
         if not os.access(str(local_proc_tar), os.W_OK):
             # Is the error an access error ?
@@ -479,3 +495,4 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
     print('Saved to exdir: ', exdir_path)
     print("Total elapsed time: ", time.time() - proc_start)
+    print('Finished processing')
