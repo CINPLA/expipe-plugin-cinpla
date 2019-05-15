@@ -448,7 +448,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 shutil.rmtree(
                     exdir_file['processing']['electrophysiology'].directory)
         with tarfile.open(local_proc_tar) as tar:
-            _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+            _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if 'tracking' not in m.name and
                  'exdir.yaml' in m.name]
             if spikesort:
                 _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if

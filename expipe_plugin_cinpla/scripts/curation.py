@@ -1,8 +1,9 @@
 from expipe_plugin_cinpla.imports import *
-from .utils import _get_data_path
+from .utils import _get_data_path, read_python, write_python
 from pathlib import Path
 import shutil
 import time
+from pathlib import Path
 import shlex
 from subprocess import Popen, PIPE
 import spikeextractors as se
@@ -15,13 +16,21 @@ def process_phy(project, action_id, sorter):
     exdir_path = _get_data_path(action)
     exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
 
-    phy_dir = str(exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory)
-    phy_params = str(exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory / 'params.py')
+    phy_dir = exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory
+    phy_params = exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory / 'params.py'
 
     sorting_phy = se.PhySortingExtractor(phy_dir)
+    if not Path(sorting_phy.params['dat_path']).is_file():
+        datfile = [x for x in phy_dir.iterdir() if x.suffix == '.dat'][0]
+        new_params = sorting_phy.params
+        new_params['dat_path'] = str(datfile.absolute())
+        write_python(phy_dir / 'params.py', new_params)
+        sorting_phy = se.PhySortingExtractor(phy_dir)
+        print("Changed absolute dat path to:", str(datfile.absolute()))
+
     if len(sorting_phy.get_unit_ids()) > 1:
         print('Running phy')
-        cmd = 'phy template-gui ' + phy_params
+        cmd = 'phy template-gui ' + str(phy_params)
         _run_command_and_print_output(cmd)
     else:
         print('Only one unit found. Phy needs more than one unit.')

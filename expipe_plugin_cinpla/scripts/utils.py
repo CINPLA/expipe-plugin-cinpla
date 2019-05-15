@@ -1,5 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 import re
+from pathlib import Path
 
 nwb_main_groups = ['acquisition', 'analysis', 'processing', 'epochs',
                    'general']
@@ -53,6 +54,27 @@ def position_to_dict(depth):
         probe_key = 'probe_{}'.format(num)
         position[key][probe_key] = pq.Quantity(val, unit)
     return position
+
+
+def read_python(path):
+    from six import exec_
+    path = Path(path).absolute()
+    assert path.is_file()
+    with path.open('r') as f:
+        contents = f.read()
+    metadata = {}
+    exec_(contents, {}, metadata)
+    metadata = {k.lower(): v for (k, v) in metadata.items()}
+    return metadata
+
+
+def write_python(path, dict):
+    with Path(path).open('w') as f:
+        for k, v in dict.items():
+            if isinstance(v ,str) and not v.startswith("'"):
+                f.write(str(k) + " = '" + str(v) + "'\n")
+            else:
+                f.write(str(k) + " = " + str(v) + "\n")
 
 
 def get_depth_from_surgery(project, entity_id):
