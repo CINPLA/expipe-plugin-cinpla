@@ -3,7 +3,7 @@ from .utils import _get_data_path, read_python, write_python
 from pathlib import Path
 import shutil
 import time
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import shlex
 from subprocess import Popen, PIPE
 import spikeextractors as se
@@ -23,6 +23,7 @@ def process_phy(project, action_id, sorter):
     if not Path(sorting_phy.params['dat_path']).is_file():
         datfile = [x for x in phy_dir.iterdir() if x.suffix == '.dat'][0]
         new_params = sorting_phy.params
+        datfile = Path(PureWindowsPath(datfile))
         new_params['dat_path'] = str(datfile.absolute())
         write_python(phy_dir / 'params.py', new_params)
         sorting_phy = se.PhySortingExtractor(phy_dir)
@@ -40,7 +41,7 @@ def process_consensus(project, action_id, sorters, min_agreement=None):
     action = project.actions[action_id]
     # if exdir_path is None:
     exdir_path = _get_data_path(action)
-    exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+    exdir_file = exdir.File(exdir_path, plugins=[exdir.plugins.quantities])
 
     sorting_list = []
     sorter_names = []
