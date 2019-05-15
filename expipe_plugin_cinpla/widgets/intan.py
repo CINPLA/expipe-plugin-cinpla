@@ -213,7 +213,8 @@ def process_intan_view(project):
     rightbox = ipywidgets.VBox([ipywidgets.Label('Processing options', style={'description_width': 'initial'},
                                                  layout={'width': 'initial'}),
                                 spikesort, compute_lfp, compute_mua, servers, other_settings,
-                                bad_channels, remove_artifacts, reference, split_group, custom_split],
+                                bad_channels, bad_threshold, min_spikes, remove_artifacts, reference, split_group,
+                                custom_split],
                                layout={'width': 'initial'})
 
     run = ipywidgets.Button(description='Process', layout={'width': '100%', 'height': '100px'})
@@ -278,7 +279,7 @@ def process_intan_view(project):
             spikesorter_params=spikesorter_params,
             parallel=parallel_box.value,
             server=servers.value,
-            ground=bad_chans,
+            bad_channels=bad_chans,
             ref=ref,
             split=split,
             remove_artifact_channel=remove_artifacts.value - 1,

@@ -20,10 +20,13 @@ def process_tracking_view(project):
         if not required_values_filled(openephys_path, action_id):
             return
 
-        tracking.process_tracking(
-            project=project,
-            action_id=action_id.value,
-            openephys_path=openephys_path.directory)
+        if len(openephys_path.directories) > 1:
+            print('Select a single folder')
+        else:
+            tracking.process_tracking(
+                project=project,
+                action_id=action_id.value,
+                openephys_path=openephys_path.directories[0])
 
     run.on_click(on_run)
     return main_box

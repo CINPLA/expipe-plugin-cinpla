@@ -285,7 +285,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 else:
                     sorting_min = sorting
                 t_start_save = time.time()
-                st.postprocessing.export_to_phy(recording_cmr, sorting_min, output_folder=phy_folder,
+                st.postprocessing.export_to_phy(recording_rm_art, sorting_min, output_folder=phy_folder,
                                                 save_waveforms=True,
                                                 ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
                                                 grouping_property=sort_by)
