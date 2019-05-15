@@ -25,7 +25,7 @@ def process_phy(project, action_id, sorter):
         new_params = sorting_phy.params
         datfile = Path(PureWindowsPath(datfile))
         new_params['dat_path'] = str(datfile.absolute())
-        write_python(phy_dir / 'params.py', new_params)
+        write_python(str(phy_dir / 'params.py'), new_params)
         sorting_phy = se.PhySortingExtractor(phy_dir)
         print("Changed absolute dat path to:", str(datfile.absolute()))
 
@@ -92,7 +92,3 @@ def _run_command_and_print_output(command):
                 print(output_stderr.decode())
         rc = process.poll()
         return rc
-
-
-
-

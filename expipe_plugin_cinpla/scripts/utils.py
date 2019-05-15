@@ -1,5 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 import re
+import sys
 from pathlib import Path
 
 nwb_main_groups = ['acquisition', 'analysis', 'processing', 'epochs',
@@ -72,7 +73,10 @@ def write_python(path, dict):
     with Path(path).open('w') as f:
         for k, v in dict.items():
             if isinstance(v ,str) and not v.startswith("'"):
-                f.write(str(k) + " = '" + str(v) + "'\n")
+                if 'path' in k and 'win' in sys.platform:
+                    f.write(str(k) + " = r'" + str(v) + "'\n")
+                else:
+                    f.write(str(k) + " = '" + str(v) + "'\n")
             else:
                 f.write(str(k) + " = " + str(v) + "\n")
 

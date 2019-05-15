@@ -213,7 +213,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                                                            numchan=len(recording_cmr.get_channel_ids()), dtype=np.float32,
                                                            recording_channels=recording_active.get_channel_ids())
             print('Filter time: ', time.time() - t_start)
-            
+
         if compute_lfp:
             print('Computing LFP')
             t_start = time.time()
@@ -341,6 +341,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         action = project.actions[action_id]
         # if exdir_path is None:
         exdir_path = _get_data_path(action)
+        exdir_path_str = str(exdir_path)
         exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
         acquisition = exdir_file["acquisition"]
         if acquisition.attrs['acquisition_system'] is None:
@@ -464,7 +465,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             # Is the error an access error ?
             os.chmod(str(local_tar), stat.S_IWUSR)
         try:
-            os.remove(local_tar)
+            os.remove(str(local_tar))
         except:
             print('Could not remove: ', local_tar)
 
@@ -498,29 +499,29 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             if 'electrophysiology' in exdir_file['processing']:
                 print('Deleting old processing/electrophysiology')
                 shutil.rmtree(
-                    exdir_file['processing']['electrophysiology'].directory)
-        with tarfile.open(local_proc_tar) as tar:
-            _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                    str(exdir_file['processing']['electrophysiology'].directory))
+        with tarfile.open(str(local_proc_tar)) as tar:
+            _ = [tar.extract(m, exdir_path_str) for m in tar.getmembers() if
                  'exdir.yaml' in m.name]
             if spikesort:
-                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                _ = [tar.extract(m, exdir_path_str) for m in tar.getmembers() if
                      'spikesorting' in m.name and sorter in m.name]
             if compute_lfp:
-                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                _ = [tar.extract(m, exdir_path_str) for m in tar.getmembers() if
                      'LFP' in m.name]
-                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                _ = [tar.extract(m, exdir_path_str) for m in tar.getmembers() if
                      'group' in m.name and 'attributes' in m.name]
             if compute_lfp:
-                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                _ = [tar.extract(m, exdir_path_str) for m in tar.getmembers() if
                      'MUA' in m.name]
-                _ = [tar.extract(m, exdir_path) for m in tar.getmembers() if
+                _ = [tar.extract(m, exdir_path_str) for m in tar.getmembers() if
                      'group' in m.name and 'attributes' in m.name]
         print('Deleting tar archives')
         if not os.access(str(local_proc_tar), os.W_OK):
             # Is the error an access error ?
             os.chmod(str(local_proc_tar), stat.S_IWUSR)
         try:
-            os.remove(local_proc_tar)
+            os.remove(str(local_proc_tar))
         except:
             print('Could not remove: ', local_proc_tar)
         # sftp_client.remove(remote_proc_tar)

@@ -200,6 +200,16 @@ def process_intan_view(project):
                                    style={'description_width': 'initial'})
     bad_channels.layout.visibility = 'hidden'
 
+    bad_threshold = ipywidgets.FloatText(
+        description='Auto threshold', value=2, placeholder='(e.g 2, default = 2 * std)',
+        style={'description_width': 'initial'})
+    bad_threshold.layout.visibility = 'hidden'
+
+    min_spikes = ipywidgets.IntText(
+        description='Minumum spikes', value=0, placeholder='(e.g 100, default = 0)',
+        style={'description_width': 'initial'})
+    min_spikes.layout.visibility = 'hidden'
+
     rightbox = ipywidgets.VBox([ipywidgets.Label('Processing options', style={'description_width': 'initial'},
                                                  layout={'width': 'initial'}),
                                 spikesort, compute_lfp, compute_mua, servers, other_settings,
@@ -272,7 +282,9 @@ def process_intan_view(project):
             ref=ref,
             split=split,
             remove_artifact_channel=remove_artifacts.value - 1,
-            sort_by=sort_by_val)
+            sort_by=sort_by_val,
+            bad_threshold=bad_threshold.value,
+            min_number_of_spikes=min_spikes.value)
 
     def on_show(change):
         if change['type'] == 'change' and change['name'] == 'value':
@@ -293,15 +305,19 @@ def process_intan_view(project):
         if change['type'] == 'change' and change['name'] == 'value':
             if other_settings.value:
                 bad_channels.layout.visibility = 'visible'
+                bad_threshold.layout.visibility = 'visible'
                 reference.layout.visibility = 'visible'
                 remove_artifacts.layout.visibility = 'visible'
                 if reference.value != 'none':
                     split_group.layout.visibility = 'visible'
+                min_spikes.layout.visibility = 'visible'
             else:
                 bad_channels.layout.visibility = 'hidden'
+                bad_threshold.layout.visibility = 'hidden'
                 reference.layout.visibility = 'hidden'
                 split_group.layout.visibility = 'hidden'
                 remove_artifacts.layout.visibility = 'hidden'
+                min_spikes.layout.visibility = 'hidden'
 
     def on_split(change):
         if change['type'] == 'change' and change['name'] == 'value':
