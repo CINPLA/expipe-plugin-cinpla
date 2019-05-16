@@ -114,7 +114,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         probe_path = probe_path or project.config.get('probe')
         recording = se.OpenEphysRecordingExtractor(str(openephys_path))
 
-        if 'auto' not in bad_channels:
+        if 'auto' not in bad_channels and len(bad_channels) > 0:
             recording_active = st.preprocessing.remove_bad_channels(recording, bad_channels=bad_channels)
         else:
             recording_active = recording
@@ -223,12 +223,12 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 if 'kilosort' in sorter:
                     sorting = st.sorters.run_sorter(
                         sorter, recording_cmr, debug=True, output_folder=output_folder,
-                        delete_output_folder=False, **spikesorter_params)
+                        delete_output_folder=True, **spikesorter_params)
                 else:
                     sorting = st.sorters.run_sorter(
                         sorter, recording_cmr,  parallel=parallel,
                         grouping_property=sort_by, debug=True, output_folder=output_folder,
-                        delete_output_folder=False, **spikesorter_params)
+                        delete_output_folder=True, **spikesorter_params)
                 spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
                 filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
                                 'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp,
@@ -257,7 +257,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             else:
                 sorting_min = sorting
             t_start_save = time.time()
-            st.postprocessing.export_to_phy(recording_cmr, sorting_min, output_folder=phy_folder, save_waveforms=True,
+            st.postprocessing.export_to_phy(recording_cmr, sorting_min, output_folder=phy_folder,
                                             ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
                                             grouping_property=sort_by)
             print('Save to phy time:', time.time() - t_start_save)
