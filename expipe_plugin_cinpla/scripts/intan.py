@@ -111,7 +111,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 print('More than one intan file in the acquisition folder: using the first one.')
         else:
             intan_folder = Path(acquisition_folder)
-            intan_files = list(intan_folder.glob('*.rh*'))
+            intan_files = [x for x in intan_folder.iterdir() if x.suffix == '.rhs' or x.suffix == '.rhd']
             if len(intan_files) == 1:
                 intan_path = intan_files[0]
             else:
@@ -461,7 +461,6 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         # utils.ssh_execute(ssh, cmd)
 
         print('Deleting tar archives')
-        sftp_client.remove(remote_tar)
         if not os.access(str(local_tar), os.W_OK):
             # Is the error an access error ?
             os.chmod(str(local_tar), stat.S_IWUSR)
@@ -481,6 +480,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                                                                                    wf_cmd, extra_args, ms_cmd)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
+
         ####################### RETURN PROCESSED DATA #######################
         print('Initializing transfer of "' + remote_proc + '" to "' +
               local_proc + '"')
