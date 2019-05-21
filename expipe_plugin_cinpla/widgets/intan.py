@@ -96,7 +96,8 @@ def process_intan_view(project):
 
     probe_path = SelectFileButton('.prb', description='*Select probe file', style={'description_width': 'initial'},
                                   layout={'width': 'initial'}, initialdir=str(project._backend.path))
-    action_id = SearchSelect(project.actions, description='*Actions', layout={'width': 'initial'})
+    action_id = SearchSelectMultiple(
+        project.actions, description='*Actions', layout={'width': 'initial'})
 
     sorter = ipywidgets.Dropdown(
         description='Sorter', options=[s.sorter_name for s in st.sorters.sorter_full_list],
@@ -268,24 +269,30 @@ def process_intan_view(project):
             sort_by_val = None
         else:
             sort_by_val = sort_by.value
-        intan.process_intan(
-            project=project,
-            action_id=action_id.value,
-            probe_path=probe_path.file,
-            sorter=sorter.value,
-            spikesort=spikesort.value,
-            compute_lfp=compute_lfp.value,
-            compute_mua=compute_mua.value,
-            spikesorter_params=spikesorter_params,
-            parallel=parallel_box.value,
-            server=servers.value,
-            bad_channels=bad_chans,
-            ref=ref,
-            split=split,
-            remove_artifact_channel=remove_artifacts.value - 1,
-            sort_by=sort_by_val,
-            bad_threshold=bad_threshold.value,
-            min_number_of_spikes=min_spikes.value)
+        for a in action_id.value:
+            try:
+                intan.process_intan(
+                    project=project,
+                    action_id=a,
+                    probe_path=probe_path.file,
+                    sorter=sorter.value,
+                    spikesort=spikesort.value,
+                    compute_lfp=compute_lfp.value,
+                    compute_mua=compute_mua.value,
+                    spikesorter_params=spikesorter_params,
+                    parallel=parallel_box.value,
+                    server=servers.value,
+                    bad_channels=bad_chans,
+                    ref=ref,
+                    split=split,
+                    remove_artifact_channel=remove_artifacts.value - 1,
+                    sort_by=sort_by_val,
+                    bad_threshold=bad_threshold.value,
+                    min_number_of_spikes=min_spikes.value)
+            except Exception as e:
+                print('ERROR: unable to process', a)
+                print(str(e))
+                pass
 
     def on_show(change):
         if change['type'] == 'change' and change['name'] == 'value':

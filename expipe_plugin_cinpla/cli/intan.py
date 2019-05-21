@@ -200,7 +200,7 @@ def attach_to_process(cli):
         if 'auto' in bad_channels:
             bad_channels = ['auto']
         else:
-            bad_channels = (int(bc) for bc in bad_channels)
+            bad_channels = [int(bc) for bc in bad_channels]
         if no_sorting:
             spikesort = False
         else:
