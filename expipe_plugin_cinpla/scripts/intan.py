@@ -148,6 +148,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                                                         type=type_hp,
                                                         order=order_hp)
         freq_notch = _find_fmax_noise(recording_hp)
+        print('Removing noise at', freq_notch)
         recording_hp = st.preprocessing.notch_filter(recording_hp, freq=freq_notch, q=q)
 
         if ref is not None:
@@ -182,9 +183,9 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             digital_in = intan_rec.digital_in_events
             trigger_channel = None
             for dig in digital_in:
-                if remove_artifact_channel == int(np.unique(dig.channels)):
-                    trigger_channel = int(np.unique(dig.channels))
-                    triggers = (dig.times[np.where(intan_rec.digital_in_events[0].channel_states == 1)]
+                if int(remove_artifact_channel) == int(np.unique(dig.channels)[0]):
+                    trigger_channel = int(np.unique(dig.channels)[0])
+                    triggers = (np.array(dig.times)[np.where(dig.channel_states == 1)]
                                 * intan_rec.sample_rate).magnitude.astype(int)
             if trigger_channel is not None:
                 recording_rm_art = st.preprocessing.remove_artifacts(recording_cmr, triggers=triggers,
@@ -200,6 +201,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         recording_lfp = st.preprocessing.bandpass_filter(recording_active, freq_min=freq_min_lfp, freq_max=freq_max_lfp)
         recording_lfp = st.preprocessing.resample(recording_lfp, freq_resample_lfp)
         recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_active), freq_resample_mua)
+        # tmpdir = Path('.')
         tmpdir = Path(tempfile.mkdtemp(dir=os.getcwd()))
 
         if spikesort:
@@ -265,7 +267,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                                             'filter': filter_attrs,
                                             'reference': reference_attrs})
             except Exception as e:
-                shutil.rmtree(tmpdir)
+                # shutil.rmtree(tmpdir)
                 print(e)
                 raise Exception("Spike sorting failed")
             print('Found ', len(sorting.get_unit_ids()), ' units!')
@@ -544,7 +546,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
     print('Finished processing')
 
 
-def _find_fmax_noise(recording_hp, start_frame=0, end_frame=300000, start_freq=2000, end_freq=4000):
+def _find_fmax_noise(recording_hp, start_frame=0, end_frame=300000, start_freq=2500, end_freq=4000):
     import scipy.signal as ss
     filt_traces = recording_hp.get_traces(start_frame=start_frame, end_frame=end_frame)
     f, p = ss.welch(filt_traces, recording_hp.get_sampling_frequency())

@@ -6,7 +6,7 @@ import ast
 
 
 def register_intan_view(project):
-    intan_path = SelectFileButton(description='*Select Intan rhs or rhd path')
+    intan_path = SelectFileButton(description='*Select Intan rhs or rhd path', initialdir=str(project._backend.path))
     user = ipywidgets.Text(placeholder='*User', value=project.config.get('username'))
     session = ipywidgets.Text(placeholder='Session')
     location = ipywidgets.Text(placeholder='*Location', value=project.config.get('location'))
@@ -95,7 +95,7 @@ def process_intan_view(project):
     import spiketoolkit as st
 
     probe_path = SelectFileButton('.prb', description='*Select probe file', style={'description_width': 'initial'},
-                                  layout={'width': 'initial'})
+                                  layout={'width': 'initial'}, initialdir=str(project._backend.path))
     action_id = SearchSelect(project.actions, description='*Actions', layout={'width': 'initial'})
 
     sorter = ipywidgets.Dropdown(
