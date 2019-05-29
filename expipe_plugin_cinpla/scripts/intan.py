@@ -82,7 +82,7 @@ def register_intan_recording(
 
 def process_intan(project, action_id, probe_path, sorter, acquisition_folder=None, remove_artifact_channel=None,
                   exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
-                  ms_before_wf=0.5, ms_after_wf=2, ms_before_stim=0.5, ms_after_stim=2,
+                  ms_before_wf=0.5, ms_after_wf=2, ms_before_stim=10, ms_after_stim=10,
                   spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
                   bad_threshold=2, min_number_of_spikes=0):
     import spikeextractors as se
@@ -121,7 +121,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             exdir_path = Path(exdir_file_path)
 
         probe_path = probe_path or project.config.get('probe')
-        recording = se.IntanRecordingExtractor(str(intan_path))
+        recording = se.IntanRecordingExtractor(str(intan_path), verbose=True)
         if 'auto' not in bad_channels and len(bad_channels) > 0:
             recording_active = st.preprocessing.remove_bad_channels(recording, bad_channels=bad_channels)
         else:
