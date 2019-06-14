@@ -223,7 +223,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 if 'kilosort' in sorter:
                     sorting = st.sorters.run_sorter(
                         sorter, recording_cmr, debug=True, output_folder=output_folder,
-                        delete_output_folder=True, **spikesorter_params)
+                        delete_output_folder=False, **spikesorter_params)
                 else:
                     sorting = st.sorters.run_sorter(
                         sorter, recording_cmr,  parallel=parallel,

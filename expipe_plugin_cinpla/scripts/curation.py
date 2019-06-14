@@ -8,9 +8,10 @@ import shlex
 from subprocess import Popen, PIPE
 import spikeextractors as se
 import spiketoolkit as st
+import os
 
 
-def process_phy(project, action_id, sorter):
+def process_phy(project, action_id, sorter, restore=False):
     action = project.actions[action_id]
     # if exdir_path is None:
     exdir_path = _get_data_path(action)
@@ -18,6 +19,12 @@ def process_phy(project, action_id, sorter):
 
     phy_dir = exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory
     phy_params = exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory / 'params.py'
+
+    if restore:
+        groups_file = [p for p in phy_dir.iterdir() if 'cluster_group' in p.name]
+        if len(groups_file) == 1:
+            print('Removing cluster file')
+            os.remove(str(groups_file[0]))
 
     sorting_phy = se.PhySortingExtractor(phy_dir)
     if not Path(sorting_phy.params['dat_path']).is_file():
@@ -53,16 +60,22 @@ def process_consensus(project, action_id, sorters, min_agreement=None):
         sorting_phy = se.PhySortingExtractor(phy_dir)
         sorting_list.append(sorting_phy)
         sorter_names.append(sorter)
+        recording = se.PhyRecordingExtractor(phy_dir)
 
     mcmp = st.comparison.compare_multiple_sorters(sorting_list=sorting_list, name_list=sorter_names, verbose=True)
     if min_agreement is None:
-        min_agreement = len(sorter_names)
+        min_agreement = len(sorter_names) - 1
 
     agr = mcmp.get_agreement_sorting(minimum_matching=min_agreement)
     print(agr.get_unit_ids())
     for u in agr.get_unit_ids():
         print(agr.get_unit_property(u, 'sorter_unit_ids'))
+        agr.get_unit_property_names(u)
 
+    consensus_dir = exdir_file['processing']['electrophysiology']['spikesorting'].require_group('consensus').require_raw('phy').directory
+    st.postprocessing.export_to_phy(recording, agr, output_folder=consensus_dir,
+                                    ms_before=0.5, ms_after=2, verbose=True,
+                                    grouping_property='group')
 
 def process_save_phy(project, action_id, sorter):
     action = project.actions[action_id]
