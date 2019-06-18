@@ -498,9 +498,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         print('Unpacking tar archive')
         if 'processing' in exdir_file:
             if 'electrophysiology' in exdir_file['processing']:
-                print('Deleting old processing/electrophysiology')
-                shutil.rmtree(
-                    str(exdir_file['processing']['electrophysiology'].directory))
+                print('Merging with old processing/electrophysiology')
         with tarfile.open(str(local_proc_tar)) as tar:
             _ = [tar.extract(m, exdir_path_str) for m in tar.getmembers() if
                  'exdir.yaml' in m.name]

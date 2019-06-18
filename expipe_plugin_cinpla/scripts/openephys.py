@@ -223,7 +223,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 if 'kilosort' in sorter:
                     sorting = st.sorters.run_sorter(
                         sorter, recording_cmr, debug=True, output_folder=output_folder,
-                        delete_output_folder=False, **spikesorter_params)
+                        delete_output_folder=True, **spikesorter_params)
                 else:
                     sorting = st.sorters.run_sorter(
                         sorter, recording_cmr,  parallel=parallel,
@@ -444,9 +444,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         print('Unpacking tar archive')
         if 'processing' in exdir_file:
             if 'electrophysiology' in exdir_file['processing']:
-                print('Deleting old processing/electrophysiology')
-                shutil.rmtree(
-                    str(exdir_file['processing']['electrophysiology'].directory))
+                print('Merging with old processing/electrophysiology')
         with tarfile.open(str(local_proc_tar)) as tar:
             _ = [tar.extract(m, exdir_path_str) for m in tar.getmembers() if 'tracking' not in m.name and
                  'exdir.yaml' in m.name]
