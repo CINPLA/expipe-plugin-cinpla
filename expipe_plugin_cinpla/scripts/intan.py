@@ -280,7 +280,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 print('Saving Phy output')
                 phy_folder = sorting_group.require_raw('phy').directory
                 if min_number_of_spikes > 0:
-                    sorting_min = st.postprocessing.threshold_min_num_spikes(sorting, min_number_of_spikes)
+                    sorting_min = st.curation.threshold_min_num_spikes(sorting, min_number_of_spikes)
                     print("Removed ", (len(sorting.get_unit_ids()) - len(sorting_min.get_unit_ids())),
                           'units with less than',
                           min_number_of_spikes, 'spikes')
