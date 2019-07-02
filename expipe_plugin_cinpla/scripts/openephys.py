@@ -368,7 +368,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         bad_channels_cmd = ''
         for bc in bad_channels:
             bad_channels_cmd = bad_channels_cmd + ' -bc ' + str(bc)
-        print(bad_channels_cmd)
 
         ref_cmd = ''
         if ref is not None:
@@ -433,13 +432,17 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         print('Packing tar archive')
         cmd = "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing'
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
+        # cmd = "ls -l " + remote_proc_tar
+        # stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=False)
+        # wait for 5 seconds to ensure that packing is done
+        time.sleep(5)
         # utils.ssh_execute(ssh, "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing')
-        scp_client.get(remote_proc_tar, local_proc_tar,
-                       recursive=False)
+        scp_client.get(remote_proc_tar, local_proc_tar, recursive=False)
         try:
             pbar[0].close()
         except Exception:
             pass
+
 
         print('Unpacking tar archive')
         if 'processing' in exdir_file:

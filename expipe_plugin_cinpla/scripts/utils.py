@@ -224,8 +224,8 @@ class ShellHandler:
         cmd = cmd.strip('\n')
         self.stdin.write(cmd + '\n')
         finish_proc = 'Finished processing'
-        finish = 'end of stdOUT buffer. finished with exit status'
-        echo_cmd = 'echo {} $?'.format(finish)
+        finish = 'end of stdout buffer. finished with exit status'
+        echo_cmd = 'echo {}'.format(finish)
         self.stdin.write(echo_cmd + '\n')
         shin = self.stdin
         self.stdin.flush()
@@ -238,21 +238,22 @@ class ShellHandler:
                 shout = []
             elif finish in str(line) or finish_proc in str(line):
                 # our finish command ends with the exit status
-                if print_lines:
-                    print(str(line))
-                break
-            else:
-                if print_lines:
-                    print(str(line))
-                # get rid of 'coloring and formatting' special characters
-                # shout.append(re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]').sub('', line).
-                #              replace('\b', '').replace('\r', ''))
-                shout.append(str(line))
-
                 if finish in str(line):
+                    print(finish)
                     break
                 if finish_proc in str(line):
+                    print(finish_proc)
                     break
+            else:
+                if finish in str(line):
+                    print(finish)
+                    break
+                if finish_proc in str(line):
+                    print(finish_proc)
+                    break
+                if print_lines:
+                    print(str(line))
+                shout.append(str(line))
 
         # first and last lines of shout/sherr contain a prompt
         if shout and echo_cmd in shout[-1]:

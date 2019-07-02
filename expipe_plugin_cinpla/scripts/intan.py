@@ -289,7 +289,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 t_start_save = time.time()
                 st.postprocessing.export_to_phy(recording_rm_art, sorting_min, output_folder=phy_folder,
                                                 ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
-                                                grouping_property=sort_by)
+                                                grouping_property=sort_by, )
                 print('Save to phy time:', time.time() - t_start_save)
             if compute_lfp:
                 print('Saving LFP to exdir format')
@@ -487,6 +487,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         print('Packing tar archive')
         cmd = "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing'
         stdin, stdout, stderr = remote_shell.execute(cmd)
+        # wait for 5 seconds to ensure that packing is done
+        time.sleep(5)
         # utils.ssh_execute(ssh, "tar -C " + remote_exdir + " -cf " + remote_proc_tar + ' processing')
         scp_client.get(remote_proc_tar, local_proc_tar,
                        recursive=False)
