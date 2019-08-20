@@ -30,11 +30,15 @@ def process_phy(project, action_id, sorter, restore=False):
     if not Path(sorting_phy.params['dat_path']).is_file():
         datfile = [x for x in phy_dir.iterdir() if x.suffix == '.dat'][0]
         new_params = sorting_phy.params
-        datfile = Path(PureWindowsPath(datfile))
-        new_params['dat_path'] = str(datfile)
+        datfile = Path(datfile)
+        if not datfile.is_file():
+            datfile = Path(PureWindowsPath(datfile))
+            if not datfile.is_file():
+                raise OSError('Unable to locate .dat file relative to operative system.')
+        new_params['dat_path'] = str(datfile.absolute())
         write_python(str(phy_dir / 'params.py'), new_params)
         sorting_phy = se.PhySortingExtractor(phy_dir)
-        print("Changed absolute dat path to:", str(datfile))
+        print("Changed absolute dat path to:", str(datfile.absolute()))
 
     if len(sorting_phy.get_unit_ids()) > 1:
         print('Running phy')
