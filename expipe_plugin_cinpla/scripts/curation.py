@@ -31,10 +31,10 @@ def process_phy(project, action_id, sorter, restore=False):
         datfile = [x for x in phy_dir.iterdir() if x.suffix == '.dat'][0]
         new_params = sorting_phy.params
         datfile = Path(PureWindowsPath(datfile))
-        new_params['dat_path'] = str(datfile.absolute())
+        new_params['dat_path'] = str(datfile)
         write_python(str(phy_dir / 'params.py'), new_params)
         sorting_phy = se.PhySortingExtractor(phy_dir)
-        print("Changed absolute dat path to:", str(datfile.absolute()))
+        print("Changed absolute dat path to:", str(datfile))
 
     if len(sorting_phy.get_unit_ids()) > 1:
         print('Running phy')
