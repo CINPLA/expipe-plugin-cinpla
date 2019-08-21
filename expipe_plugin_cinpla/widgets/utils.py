@@ -31,26 +31,27 @@ class SearchSelectMultiple(ipywidgets.VBox):
     def __init__(self, options, *args, **kwargs):
         super(SearchSelectMultiple, self).__init__(*args, **kwargs)
         self.select_multiple = ipywidgets.SelectMultiple(
-            options=options,
+            options=sorted(options),
             value=(),
             disabled=False,
             layout={'height': '200px', 'width': '300px'}
         )
+        update = ipywidgets.Button(
+            description='Update', style={'description_width': 'initial'}, layout={'width': 'initial'})
         self.description = kwargs.get('description') or '' # TODO move into placeholder
         self.search_widget = ipywidgets.Text(
             placeholder=self.description,
             layout={'width': self.select_multiple.layout.width})
-        orig_list = list(self.select_multiple.options)
 
         # Wire the search field to the checkboxes
         def on_text_change(change):
             search_input = change['new']
             if search_input == '':
                 # Reset search field
-                new_options = sorted(orig_list)
+                new_options = sorted(options)
             else:
                 # Filter by search field.
-                new_options = [a for a in orig_list if search_input in a]
+                new_options = [a for a in options if search_input in a]
             self.select_multiple.options = sorted(new_options)
 
         self.search_widget.observe(on_text_change, names='value')
@@ -65,7 +66,7 @@ class SearchSelect(ipywidgets.VBox):
     def __init__(self, options, *args, **kwargs):
         super(SearchSelect, self).__init__(*args, **kwargs)
         self.select = ipywidgets.Select(
-            options=options,
+            options=sorted(options),
             value=None,
             disabled=False,
             layout={'height': '200px', 'width': '300px'}
@@ -74,17 +75,16 @@ class SearchSelect(ipywidgets.VBox):
         search_widget = ipywidgets.Text(
             placeholder=self.description,
             layout={'width': self.select.layout.width})
-        orig_list = list(self.select.options)
         # Wire the search field to the checkboxes
         def on_text_change(change):
             search_input = change['new']
             if search_input == '':
                 # Reset search field
-                new_options = orig_list
+                new_options = sorted(options)
             else:
                 # Filter by search field.
-                new_options = [a for a in orig_list if search_input in a]
-            self.select.options = new_options
+                new_options = [a for a in options if search_input in a]
+            self.select.options = sorted(new_options)
 
         search_widget.observe(on_text_change, names='value')
         self.children = [search_widget, self.select]
