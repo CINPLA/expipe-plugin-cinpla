@@ -87,6 +87,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                   bad_threshold=2, min_number_of_spikes=0):
     import spikeextractors as se
     import spiketoolkit as st
+    import spikesorters as ss
 
     bad_channels = bad_channels or []
     proc_start = time.time()
@@ -123,7 +124,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         probe_path = probe_path or project.config.get('probe')
         recording = se.IntanRecordingExtractor(str(intan_path), verbose=True)
         if 'auto' not in bad_channels and len(bad_channels) > 0:
-            recording_active = st.preprocessing.remove_bad_channels(recording, bad_channels=bad_channels)
+            recording_active = st.preprocessing.remove_bad_channels(recording, bad_channel_ids=bad_channels)
         else:
             recording_active = recording
 
@@ -173,7 +174,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             recording_cmr = recording
 
         if 'auto' in bad_channels:
-            recording_cmr = st.preprocessing.remove_bad_channels(recording_cmr, bad_channels='auto',
+            recording_cmr = st.preprocessing.remove_bad_channels(recording_cmr, bad_channel_ids=None,
                                                                  bad_threshold=bad_threshold, seconds=10)
             recording_active = se.SubRecordingExtractor(
                 recording, channel_ids=recording_cmr.active_channels)
@@ -211,8 +212,9 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             filt_filename = Path(tmpdir) / 'filt.dat'
             se.BinDatRecordingExtractor.write_recording(recording_rm_art, save_path=filt_filename, dtype=np.float32)
             recording_rm_art = se.BinDatRecordingExtractor(filt_filename,
-                                                           samplerate=recording_rm_art.get_sampling_frequency(),
-                                                           numchan=len(recording_cmr.get_channel_ids()), dtype=np.float32,
+                                                           sampling_frequency=recording_rm_art.get_sampling_frequency(),
+                                                           numchan=len(recording_cmr.get_channel_ids()),
+                                                           dtype=np.float32,
                                                            recording_channels=recording_active.get_channel_ids())
             print('Filter time: ', time.time() - t_start)
 
@@ -221,7 +223,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             t_start = time.time()
             lfp_filename = Path(tmpdir) / 'lfp.dat'
             se.BinDatRecordingExtractor.write_recording(recording_lfp, save_path=lfp_filename, dtype=np.float32)
-            recording_lfp = se.BinDatRecordingExtractor(lfp_filename, samplerate=recording_lfp.get_sampling_frequency(),
+            recording_lfp = se.BinDatRecordingExtractor(lfp_filename,
+                                                        sampling_frequency=recording_lfp.get_sampling_frequency(),
                                                         numchan=len(recording_lfp.get_channel_ids()), dtype=np.float32,
                                                         recording_channels=recording_active.get_channel_ids())
             print('Filter time: ', time.time() - t_start)
@@ -231,7 +234,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             t_start = time.time()
             mua_filename =  Path(tmpdir) / 'mua.dat'
             se.BinDatRecordingExtractor.write_recording(recording_mua, save_path=mua_filename, dtype=np.float32)
-            recording_mua = se.BinDatRecordingExtractor(mua_filename, samplerate=recording_mua.get_sampling_frequency(),
+            recording_mua = se.BinDatRecordingExtractor(mua_filename,
+                                                        sampling_frequency=recording_mua.get_sampling_frequency(),
                                                         numchan=len(recording_mua.get_channel_ids()), dtype=np.float32,
                                                         recording_channels=recording_active.get_channel_ids())
             print('Filter time: ', time.time() - t_start)
@@ -249,13 +253,13 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 sorting_group = spikesorting.require_group(sorter)
                 output_folder = sorting_group.require_raw('output').directory
                 if 'kilosort' in sorter:
-                    sorting = st.sorters.run_sorter(
-                        sorter, recording_rm_art, debug=True, output_folder=output_folder,
+                    sorting = ss.run_sorter(
+                        sorter, recording_rm_art, verbose=True, output_folder=output_folder,
                         delete_output_folder=True, **spikesorter_params)
                 else:
-                    sorting = st.sorters.run_sorter(
+                    sorting = ss.run_sorter(
                         sorter, recording_rm_art, parallel=parallel,
-                        grouping_property=sort_by, debug=True, output_folder=output_folder,
+                        grouping_property=sort_by, verbose=True, output_folder=output_folder,
                         delete_output_folder=True, **spikesorter_params)
                 spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
                 filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
@@ -280,7 +284,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 print('Saving Phy output')
                 phy_folder = sorting_group.require_raw('phy').directory
                 if min_number_of_spikes > 0:
-                    sorting_min = st.curation.threshold_min_num_spikes(sorting, min_number_of_spikes)
+                    sorting_min = st.curation.threshold_num_spikes(sorting, min_number_of_spikes)
                     print("Removed ", (len(sorting.get_unit_ids()) - len(sorting_min.get_unit_ids())),
                           'units with less than',
                           min_number_of_spikes, 'spikes')

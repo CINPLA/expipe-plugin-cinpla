@@ -8,6 +8,7 @@ import shlex
 from subprocess import Popen, PIPE
 import spikeextractors as se
 import spiketoolkit as st
+import spikecomparison as sc
 import os
 
 
@@ -62,7 +63,7 @@ def process_consensus(project, action_id, sorters, min_agreement=None):
         sorter_names.append(sorter)
         recording = se.PhyRecordingExtractor(phy_dir)
 
-    mcmp = st.comparison.compare_multiple_sorters(sorting_list=sorting_list, name_list=sorter_names, verbose=True)
+    mcmp = sc.compare_multiple_sorters(sorting_list=sorting_list, name_list=sorter_names, verbose=True)
     if min_agreement is None:
         min_agreement = len(sorter_names) - 1
 
@@ -86,8 +87,8 @@ def process_save_phy(project, action_id, sorter):
     print(exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory)
 
     phy_folder = exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory
-    sorting = se.PhySortingExtractor(phy_folder, exclude_groups=['noise'], load_waveforms=True, verbose=True)
-    se.ExdirSortingExtractor.write_sorting(sorting, exdir_path, sample_rate=sorting.params['sample_rate'],
+    sorting = se.PhySortingExtractor(phy_folder, exclude_cluster_groups=['noise'], load_waveforms=True, verbose=True)
+    se.ExdirSortingExtractor.write_sorting(sorting, exdir_path, sampling_frequency=sorting.params['sample_rate'],
                                            save_waveforms=True, verbose=True)
 
 
