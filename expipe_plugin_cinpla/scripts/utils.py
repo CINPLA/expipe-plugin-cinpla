@@ -170,7 +170,11 @@ def _make_data_path(action, overwrite):
 
 
 def _get_data_path(action):
-    data_path = action.data_path('main')
+    try:
+        data_path = action.data_path('main')
+    except:
+        data_path = pathlib.Path('None')
+        pass
     if not data_path.is_dir():
         action_path = action._backend.path
         project_path = action_path.parent.parent
