@@ -13,5 +13,9 @@ def attach_to_process(cli):
                   type=click.Choice([s.sorter_name for s in st.sorters.sorter_full_list]),
                   help='Spike sorter software to be used.',
                   )
-    def _phy_to_exdir(action_id, sorter):
-        curation.process_save_phy(project, action_id, sorter)
+    @click.option('--check-exists',
+                  is_flag=True,
+                  help='Check if the exdir unit_ids are the same as in phy.',
+                  )
+    def _phy_to_exdir(action_id, sorter, check_exists):
+        curation.process_save_phy(project, action_id, sorter, check_exists=check_exists)

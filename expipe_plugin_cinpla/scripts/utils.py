@@ -170,6 +170,8 @@ def _make_data_path(action, overwrite):
 
 
 def _get_data_path(action):
+    if 'main' not in action.data:
+        return
     try:
         data_path = action.data_path('main')
     except:
