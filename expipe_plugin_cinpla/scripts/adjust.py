@@ -126,6 +126,7 @@ def register_annotation(
     depth, message, tag, templates, correct_depth_answer):
     user = user or project.config.get('username')
     action = project.actions[action_id]
+    print('Action ', action_id)
     if user is None:
         print('Missing option "user".')
         return

@@ -9,6 +9,7 @@ from . import entity
 from . import surgery
 from . import psychopy as PS
 from . import misc
+from . import curation
 
 
 class CinplaPlugin(IPlugin):
@@ -36,3 +37,4 @@ class CinplaPlugin(IPlugin):
         IN.attach_to_process(process)
         AX.attach_to_register(register)
         AX.attach_to_process(process)
+        curation.attach_to_process(process)
