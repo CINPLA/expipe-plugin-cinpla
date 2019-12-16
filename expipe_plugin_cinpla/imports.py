@@ -1,5 +1,5 @@
 import click
-from expipecli.utils.misc import lazy_import
+from expipe.cliutils.misc import lazy_import
 
 @lazy_import
 def expipe():

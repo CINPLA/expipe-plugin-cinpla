@@ -1,5 +1,5 @@
 import expipe_plugin_cinpla
-from expipecli.utils.plugin import IPlugin
+from expipe.cliutils.plugin import IPlugin
 from expipe_plugin_cinpla.imports import *
 from . import adjust
 from . import axona as AX
