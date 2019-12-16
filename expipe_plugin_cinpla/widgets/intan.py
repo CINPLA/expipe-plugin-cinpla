@@ -92,7 +92,7 @@ def register_intan_view(project):
 
 
 def process_intan_view(project):
-    import spiketoolkit as st
+    import spikesorters as ss
 
     probe_path = SelectFileButton('.prb', description='*Select probe file', style={'description_width': 'initial'},
                                   layout={'width': 'initial'}, initialdir=str(project._backend.path))
@@ -100,7 +100,7 @@ def process_intan_view(project):
         project.actions, description='*Actions', layout={'width': 'initial'})
 
     sorter = ipywidgets.Dropdown(
-        description='Sorter', options=[s.sorter_name for s in st.sorters.sorter_full_list],
+        description='Sorter', options=[s.sorter_name for s in ss.sorter_full_list],
         style={'description_width': 'initial'}, layout={'width': 'initial'}
     )
 
@@ -237,7 +237,7 @@ def process_intan_view(project):
 
     def on_change(change):
         if change['type'] == 'change' and change['name'] == 'value':
-            for s in st.sorters.sorter_full_list:
+            for s in ss.sorter_full_list:
                 if s.sorter_name == sorter.value:
                     params = s.default_params()
             sorter_param.update_params(params)
@@ -296,7 +296,7 @@ def process_intan_view(project):
 
     def on_show(change):
         if change['type'] == 'change' and change['name'] == 'value':
-            for s in st.sorters.sorter_full_list:
+            for s in ss.sorter_full_list:
                 if s.sorter_name == sorter.value:
                     params = s.default_params()
             sorter_param.update_params(params)
