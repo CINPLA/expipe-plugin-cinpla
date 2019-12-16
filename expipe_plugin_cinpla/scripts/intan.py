@@ -276,7 +276,6 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 raise Exception("Spike sorting failed")
             print('Found ', len(sorting.get_unit_ids()), ' units!')
 
-        # extract waveforms
             # extract waveforms
             if spikesort:
                 # se.ExdirSortingExtractor.write_sorting(
@@ -293,7 +292,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 t_start_save = time.time()
                 st.postprocessing.export_to_phy(recording_rm_art, sorting_min, output_folder=phy_folder,
                                                 ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
-                                                grouping_property=sort_by, )
+                                                grouping_property=sort_by, recompute_info=False,
+                                                save_features_props=True)
                 print('Save to phy time:', time.time() - t_start_save)
             if compute_lfp:
                 print('Saving LFP to exdir format')
