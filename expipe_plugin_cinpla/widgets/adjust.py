@@ -59,7 +59,7 @@ def annotate_view(project):
     user = ipywidgets.Text(placeholder='*User', value=project.config.get('username'))
     date = DateTimePicker()
     depth = MultiInput(['Key', 'Probe', 'Depth', 'Unit'], 'Add depth')
-    location = ipywidgets.Text(placeholder='*Location', value=project.config.get('location'))
+    location = ipywidgets.Text(placeholder='Location', value=project.config.get('location'))
     entity_id = ipywidgets.Text(placeholder='Entity id')
     action_type = ipywidgets.Text(placeholder='Type (e.g. recording)')
     message = ipywidgets.Text(placeholder='Message')

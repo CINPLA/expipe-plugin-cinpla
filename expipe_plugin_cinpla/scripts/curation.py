@@ -31,7 +31,11 @@ def process_phy(project, action_id, sorter, restore=False):
     if not Path(sorting_phy.params['dat_path']).is_file():
         datfile = [x for x in phy_dir.iterdir() if x.suffix == '.dat'][0]
         new_params = sorting_phy.params
-        datfile = Path(PureWindowsPath(datfile))
+        datfile = Path(datfile)
+        if not datfile.is_file():
+            datfile = Path(PureWindowsPath(datfile))
+            if not datfile.is_file():
+                raise OSError('Unable to locate .dat file relative to operative system.')
         new_params['dat_path'] = str(datfile.absolute())
         write_python(str(phy_dir / 'params.py'), new_params)
         sorting_phy = se.PhySortingExtractor(phy_dir)
@@ -78,15 +82,23 @@ def process_consensus(project, action_id, sorters, min_agreement=None):
                                     ms_before=0.5, ms_after=2, verbose=True,
                                     grouping_property='group')
 
-def process_save_phy(project, action_id, sorter):
+def process_save_phy(project, action_id, sorter, check_exists=False):
     action = project.actions[action_id]
-    # if exdir_path is None:
     exdir_path = _get_data_path(action)
+    if exdir_path is None:
+        print('No "main" in data for action {}'.format(action.id))
+        return
     exdir_file = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
+    elphys = exdir_file['processing']['electrophysiology']
+    phy_folder = elphys['spikesorting'][sorter]['phy'].directory
 
-    print(exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory)
-
-    phy_folder = exdir_file['processing']['electrophysiology']['spikesorting'][sorter]['phy'].directory
+    print(elphys['spikesorting'][sorter]['phy'].directory)
+    if check_exists:
+        unit_ids = set([int(b) for a in elphys.values() if 'UnitTimes' in a for b in a['UnitTimes']])
+        sorting_ = se.PhySortingExtractor(phy_folder, exclude_groups=['noise'], load_waveforms=False, verbose=False)
+        if set(sorting_.get_unit_ids()) == unit_ids:
+            print('Unit ids are the same in phy and exdir.')
+            return
     sorting = se.PhySortingExtractor(phy_folder, exclude_cluster_groups=['noise'], load_waveforms=True, verbose=True)
     se.ExdirSortingExtractor.write_sorting(sorting, exdir_path, sampling_frequency=sorting.params['sample_rate'],
                                            save_waveforms=True, verbose=True)
