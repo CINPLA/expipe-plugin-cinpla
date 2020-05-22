@@ -220,7 +220,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             recording_mua = se.CacheRecordingExtractor(recording_mua)
             print('Filter time: ', time.time() - t_start)
 
-        print('Number of channels', recording_cmr.get_num_channels())
+        print('Number of channels', recording_rm_art.get_num_channels())
 
         if spikesort:
             try:
@@ -250,8 +250,6 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
 
             # extract waveforms
             if spikesort:
-                # se.ExdirSortingExtractor.write_sorting(
-                #     sorting, exdir_path, recording=recording_cmr, verbose=True)
                 print('Saving Phy output')
                 phy_folder = sorting_group.require_raw('phy').directory
                 if min_number_of_spikes > 0:
@@ -262,7 +260,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 else:
                     sorting_min = sorting
                 t_start_save = time.time()
-                st.postprocessing.export_to_phy(recording_cmr, sorting_min, output_folder=phy_folder,
+                st.postprocessing.export_to_phy(recording_rm_art, sorting_min, output_folder=phy_folder,
                                                 ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
                                                 grouping_property=sort_by, recompute_info=False,
                                                 save_as_property_or_feature=True)
