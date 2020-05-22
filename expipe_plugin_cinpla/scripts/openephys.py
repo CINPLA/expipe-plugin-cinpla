@@ -114,6 +114,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         probe_path = probe_path or project.config.get('probe')
         recording = se.OpenEphysRecordingExtractor(str(openephys_path))
+        recording = recording.load_probe_file(probe_path)
 
         if 'auto' not in bad_channels and len(bad_channels) > 0:
             recording_active = st.preprocessing.remove_bad_channels(recording, bad_channel_ids=bad_channels)
@@ -134,7 +135,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         recording_hp = st.preprocessing.bandpass_filter(
             recording_active, freq_min=freq_min_hp, freq_max=freq_max_hp,
-            type=type_hp, order=order_hp)
+            filter_type=type_hp, order=order_hp)
 
         if ref is not None:
             if ref.lower() == 'cmr':
@@ -170,46 +171,23 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             recording_lfp, freq_resample_lfp)
         recording_mua = st.preprocessing.resample(
             st.preprocessing.rectify(recording_active), freq_resample_mua)
-        tmpdir = Path(tempfile.mkdtemp(dir=os.getcwd()))
 
         if spikesort:
             print('Bandpass filter')
             t_start = time.time()
-            filt_filename = Path(tmpdir) / 'filt.dat'
-            se.BinDatRecordingExtractor.write_recording(
-                recording_cmr, save_path=filt_filename, dtype=np.float32)
-            recording_cmr = se.BinDatRecordingExtractor(
-                filt_filename, sampling_frequency=recording_cmr.get_sampling_frequency(),
-                numchan=len(recording_cmr.get_channel_ids()), dtype=np.float32,
-                recording_channels=recording_cmr.get_channel_ids())
+            recording_cmr = se.CacheRecordingExtractor(recording_cmr)
             print('Filter time: ', time.time() - t_start)
         if compute_lfp:
             print('Computing LFP')
             t_start = time.time()
-            lfp_filename = Path(tmpdir) / 'lfp.dat'
-            se.BinDatRecordingExtractor.write_recording(
-                recording_lfp, save_path=lfp_filename, dtype=np.float32)
-            recording_lfp = se.BinDatRecordingExtractor(
-                lfp_filename, sampling_frequency=recording_lfp.get_sampling_frequency(),
-                numchan=len(recording_lfp.get_channel_ids()), dtype=np.float32,
-                recording_channels=recording_lfp.get_channel_ids())
+            recording_lfp = se.CacheRecordingExtractor(recording_lfp)
             print('Filter time: ', time.time() - t_start)
 
         if compute_mua:
             print('Computing MUA')
             t_start = time.time()
-            mua_filename = Path(tmpdir) / 'mua.dat'
-            se.BinDatRecordingExtractor.write_recording(
-                recording_mua, save_path=mua_filename, dtype=np.float32)
-            recording_mua = se.BinDatRecordingExtractor(
-                mua_filename, sampling_frequency=recording_mua.get_sampling_frequency(),
-                numchan=len(recording_mua.get_channel_ids()), dtype=np.float32,
-                recording_channels=recording_mua.get_channel_ids())
+            recording_mua = se.CacheRecordingExtractor(recording_mua)
             print('Filter time: ', time.time() - t_start)
-
-        recording_cmr = se.load_probe_file(recording_cmr, probe_path)
-        recording_lfp = se.load_probe_file(recording_lfp, probe_path)
-        recording_mua = se.load_probe_file(recording_mua, probe_path)
 
         print('Number of channels', recording_cmr.get_num_channels())
 
@@ -221,15 +199,9 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                 spikesorting = ephys.require_group('spikesorting')
                 sorting_group = spikesorting.require_group(sorter)
                 output_folder = sorting_group.require_raw('output').directory
-                if 'kilosort' in sorter:
-                    sorting = ss.run_sorter(
-                        sorter, recording_cmr, verbose=True, output_folder=output_folder,
-                        delete_output_folder=True, **spikesorter_params)
-                else:
-                    sorting = ss.run_sorter(
-                        sorter, recording_cmr,  parallel=parallel,
-                        grouping_property=sort_by, verbose=True, output_folder=output_folder,
-                        delete_output_folder=True, **spikesorter_params)
+                sorting = ss.run_sorter(sorter, recording_cmr, parallel=parallel,
+                                        grouping_property=sort_by, verbose=True, output_folder=output_folder,
+                                        delete_output_folder=True, **spikesorter_params)
                 spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
                 filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
                                 'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp,
@@ -240,7 +212,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                                             'filter': filter_attrs,
                                             'reference': reference_attrs})
             except Exception as e:
-                shutil.rmtree(tmpdir)
                 print(e)
                 raise Exception("Spike sorting failed")
             print('Found ', len(sorting.get_unit_ids()), ' units!')
@@ -252,7 +223,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             print('Saving Phy output')
             phy_folder = sorting_group.require_raw('phy').directory
             if min_number_of_spikes > 0:
-                sorting_min = st.curation.threshold_num_spikes(sorting, min_number_of_spikes)
+                sorting_min = st.curation.threshold_num_spikes(sorting, min_number_of_spikes, 'less')
                 print("Removed ", (len(sorting.get_unit_ids())-len(sorting_min.get_unit_ids())), 'units with less than',
                       min_number_of_spikes, 'spikes')
             else:
@@ -261,7 +232,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             st.postprocessing.export_to_phy(recording_cmr, sorting_min, output_folder=phy_folder,
                                             ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
                                             grouping_property=sort_by, recompute_info=False,
-                                            save_features_props=True)
+                                            save_as_property_or_feature=True)
             print('Save to phy time:', time.time() - t_start_save)
         if compute_lfp:
             print('Saving LFP to exdir format')
@@ -271,16 +242,6 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             print('Saving MUA to exdir format')
             se.ExdirRecordingExtractor.write_recording(
                 recording_mua, exdir_path, mua=True)
-
-        print('Cleanup')
-        if not os.access(str(tmpdir), os.W_OK):
-            # Is the error an access error ?
-            os.chmod(str(tmpdir), stat.S_IWUSR)
-        try:
-            shutil.rmtree(str(tmpdir), ignore_errors=True)
-        except:
-            print('Could not remove ', str(tmpdir))
-
     else:
         config = expipe.config._load_config_by_name(None)
         assert server in [s['host'] for s in config.get('servers')]
