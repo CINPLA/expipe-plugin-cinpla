@@ -26,20 +26,7 @@ def process_phy(project, action_id, sorter, restore=False):
         if len(groups_file) == 1:
             print('Removing cluster file')
             os.remove(str(groups_file[0]))
-
     sorting_phy = se.PhySortingExtractor(phy_dir)
-    if not Path(sorting_phy.params['dat_path']).is_file():
-        datfile = [x for x in phy_dir.iterdir() if x.suffix == '.dat'][0]
-        new_params = sorting_phy.params
-        datfile = Path(datfile)
-        if not datfile.is_file():
-            datfile = Path(PureWindowsPath(datfile))
-            if not datfile.is_file():
-                raise OSError('Unable to locate .dat file relative to operative system.')
-        new_params['dat_path'] = str(datfile.absolute())
-        write_python(str(phy_dir / 'params.py'), new_params)
-        sorting_phy = se.PhySortingExtractor(phy_dir)
-        print("Changed absolute dat path to:", str(datfile.absolute()))
 
     if len(sorting_phy.get_unit_ids()) > 1:
         print('Running phy')
@@ -71,7 +58,7 @@ def process_consensus(project, action_id, sorters, min_agreement=None):
     if min_agreement is None:
         min_agreement = len(sorter_names) - 1
 
-    agr = mcmp.get_agreement_sorting(minimum_matching=min_agreement)
+    agr = mcmp.get_agreement_sorting(minimum_agreement_count=min_agreement)
     print(agr.get_unit_ids())
     for u in agr.get_unit_ids():
         print(agr.get_unit_property(u, 'sorter_unit_ids'))

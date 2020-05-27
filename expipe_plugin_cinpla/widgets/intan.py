@@ -211,11 +211,16 @@ def process_intan_view(project):
         style={'description_width': 'initial'})
     min_spikes.layout.visibility = 'hidden'
 
+    min_isi = ipywidgets.FloatText(
+        description='ISI violation threshold', value=0, placeholder='(e.g 0.5, default = 0)',
+        style={'description_width': 'initial'})
+    min_isi.layout.visibility = 'hidden'
+
     rightbox = ipywidgets.VBox([ipywidgets.Label('Processing options', style={'description_width': 'initial'},
                                                  layout={'width': 'initial'}),
                                 spikesort, compute_lfp, compute_mua, servers, other_settings,
-                                bad_channels, bad_threshold, min_spikes, remove_artifacts, reference, split_group,
-                                custom_split],
+                                bad_channels, bad_threshold, min_spikes, min_isi, remove_artifacts, reference,
+                                split_group, custom_split],
                                layout={'width': 'initial'})
 
     run = ipywidgets.Button(description='Process', layout={'width': '100%', 'height': '100px'})
@@ -288,7 +293,8 @@ def process_intan_view(project):
                     remove_artifact_channel=remove_artifacts.value - 1,
                     sort_by=sort_by_val,
                     bad_threshold=bad_threshold.value,
-                    min_number_of_spikes=min_spikes.value)
+                    number_of_spikes_threshold=min_spikes.value,
+                    isi_viol_threshold=min_isi.value)
             except Exception as e:
                 print('ERROR: unable to process', a)
                 print(str(e))
@@ -319,6 +325,7 @@ def process_intan_view(project):
                 if reference.value != 'none':
                     split_group.layout.visibility = 'visible'
                 min_spikes.layout.visibility = 'visible'
+                min_isi.layout.visibility = 'visible'
             else:
                 bad_channels.layout.visibility = 'hidden'
                 bad_threshold.layout.visibility = 'hidden'
@@ -326,6 +333,7 @@ def process_intan_view(project):
                 split_group.layout.visibility = 'hidden'
                 remove_artifacts.layout.visibility = 'hidden'
                 min_spikes.layout.visibility = 'hidden'
+                min_isi.layout.visibility = 'hidden'
 
     def on_split(change):
         if change['type'] == 'change' and change['name'] == 'value':

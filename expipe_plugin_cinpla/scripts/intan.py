@@ -84,7 +84,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                   exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
                   ms_before_wf=0.5, ms_after_wf=2, ms_before_stim=10, ms_after_stim=10,
                   spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
-                  bad_threshold=2, min_number_of_spikes=0):
+                  bad_threshold=2, number_of_spikes_threshold=0,  isi_viol_threshold=0):
     import spikeextractors as se
     import spiketoolkit as st
     import spikesorters as ss
@@ -123,6 +123,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
 
         probe_path = probe_path or project.config.get('probe')
         recording = se.IntanRecordingExtractor(str(intan_path), verbose=True)
+        recording = recording.load_probe_file(probe_path)
+
         if 'auto' not in bad_channels and len(bad_channels) > 0:
             recording_active = st.preprocessing.remove_bad_channels(recording, bad_channel_ids=bad_channels)
         else:
@@ -143,11 +145,9 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         type_hp = 'butter'
         order_hp = 5
 
-        recording_hp = st.preprocessing.bandpass_filter(recording_active,
-                                                        freq_min=freq_min_hp,
-                                                        freq_max=freq_max_hp,
-                                                        type=type_hp,
-                                                        order=order_hp)
+        recording_hp = st.preprocessing.bandpass_filter(
+            recording_active, freq_min=freq_min_hp, freq_max=freq_max_hp,
+            filter_type=type_hp, order=order_hp)
         freq_notch = _find_fmax_noise(recording_hp)
         print('Removing noise at', freq_notch)
         recording_hp = st.preprocessing.notch_filter(recording_hp, freq=freq_notch, q=q)
@@ -202,47 +202,25 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         recording_lfp = st.preprocessing.bandpass_filter(recording_active, freq_min=freq_min_lfp, freq_max=freq_max_lfp)
         recording_lfp = st.preprocessing.resample(recording_lfp, freq_resample_lfp)
         recording_mua = st.preprocessing.resample(st.preprocessing.rectify(recording_active), freq_resample_mua)
-        # tmpdir = Path('.')
-        tmpdir = Path(tempfile.mkdtemp(dir=os.getcwd()))
 
         if spikesort:
             print('Bandpass filter')
             t_start = time.time()
-
-            filt_filename = Path(tmpdir) / 'filt.dat'
-            se.BinDatRecordingExtractor.write_recording(recording_rm_art, save_path=filt_filename, dtype=np.float32)
-            recording_rm_art = se.BinDatRecordingExtractor(filt_filename,
-                                                           sampling_frequency=recording_rm_art.get_sampling_frequency(),
-                                                           numchan=len(recording_cmr.get_channel_ids()),
-                                                           dtype=np.float32,
-                                                           recording_channels=recording_active.get_channel_ids())
+            recording_rm_art = se.CacheRecordingExtractor(recording_rm_art)
             print('Filter time: ', time.time() - t_start)
-
         if compute_lfp:
             print('Computing LFP')
             t_start = time.time()
-            lfp_filename = Path(tmpdir) / 'lfp.dat'
-            se.BinDatRecordingExtractor.write_recording(recording_lfp, save_path=lfp_filename, dtype=np.float32)
-            recording_lfp = se.BinDatRecordingExtractor(lfp_filename,
-                                                        sampling_frequency=recording_lfp.get_sampling_frequency(),
-                                                        numchan=len(recording_lfp.get_channel_ids()), dtype=np.float32,
-                                                        recording_channels=recording_active.get_channel_ids())
+            recording_lfp = se.CacheRecordingExtractor(recording_lfp)
             print('Filter time: ', time.time() - t_start)
 
         if compute_mua:
             print('Computing MUA')
             t_start = time.time()
-            mua_filename =  Path(tmpdir) / 'mua.dat'
-            se.BinDatRecordingExtractor.write_recording(recording_mua, save_path=mua_filename, dtype=np.float32)
-            recording_mua = se.BinDatRecordingExtractor(mua_filename,
-                                                        sampling_frequency=recording_mua.get_sampling_frequency(),
-                                                        numchan=len(recording_mua.get_channel_ids()), dtype=np.float32,
-                                                        recording_channels=recording_active.get_channel_ids())
+            recording_mua = se.CacheRecordingExtractor(recording_mua)
             print('Filter time: ', time.time() - t_start)
 
-        recording_rm_art = se.load_probe_file(recording_rm_art, probe_path)
-        recording_lfp = se.load_probe_file(recording_lfp, probe_path)
-        recording_mua = se.load_probe_file(recording_mua, probe_path)
+        print('Number of channels', recording_rm_art.get_num_channels())
 
         if spikesort:
             try:
@@ -252,15 +230,9 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 spikesorting = ephys.require_group('spikesorting')
                 sorting_group = spikesorting.require_group(sorter)
                 output_folder = sorting_group.require_raw('output').directory
-                if 'kilosort' in sorter:
-                    sorting = ss.run_sorter(
-                        sorter, recording_rm_art, verbose=True, output_folder=output_folder,
-                        delete_output_folder=True, **spikesorter_params)
-                else:
-                    sorting = ss.run_sorter(
-                        sorter, recording_rm_art, parallel=parallel,
-                        grouping_property=sort_by, verbose=True, output_folder=output_folder,
-                        delete_output_folder=True, **spikesorter_params)
+                sorting = ss.run_sorter(sorter, recording_rm_art, parallel=parallel,
+                                        grouping_property=sort_by, verbose=True, output_folder=output_folder,
+                                        delete_output_folder=True, **spikesorter_params)
                 spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
                 filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
                                 'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp,
@@ -282,18 +254,25 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 #     sorting, exdir_path, recording=recording_cmr, verbose=True)
                 print('Saving Phy output')
                 phy_folder = sorting_group.require_raw('phy').directory
-                if min_number_of_spikes > 0:
-                    sorting_min = st.curation.threshold_num_spikes(sorting, min_number_of_spikes)
+                if number_of_spikes_threshold > 0:
+                    sorting_min = st.curation.threshold_num_spikes(sorting, number_of_spikes_threshold, 'less')
                     print("Removed ", (len(sorting.get_unit_ids()) - len(sorting_min.get_unit_ids())),
                           'units with less than',
-                          min_number_of_spikes, 'spikes')
+                          number_of_spikes_threshold, 'spikes')
                 else:
                     sorting_min = sorting
+                if isi_viol_threshold > 0:
+                    sorting_viol = st.curation.threshold_isi_violations(sorting_min, isi_viol_threshold, 'greater',
+                                                                        recording_cmr.get_num_frames())
+                    print("Removed ", (len(sorting_min.get_unit_ids()) - len(sorting_viol.get_unit_ids())),
+                          'units with ISI violation greater than', isi_viol_threshold)
+                else:
+                    sorting_viol = sorting_min
                 t_start_save = time.time()
-                st.postprocessing.export_to_phy(recording_rm_art, sorting_min, output_folder=phy_folder,
+                st.postprocessing.export_to_phy(recording_rm_art, sorting_viol, output_folder=phy_folder,
                                                 ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
                                                 grouping_property=sort_by, recompute_info=False,
-                                                save_features_props=True)
+                                                save_as_property_or_feature=True)
                 print('Save to phy time:', time.time() - t_start_save)
             if compute_lfp:
                 print('Saving LFP to exdir format')
@@ -316,16 +295,6 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         ephys.attrs.update({'spike_sorting': spike_sorting_attrs,
                             'filter': filter_attrs,
                             'reference': reference_attrs})
-
-        print('Cleanup')
-        if not os.access(str(tmpdir), os.W_OK):
-            # Is the error an access error ?
-            os.chmod(str(tmpdir), stat.S_IWUSR)
-        try:
-            shutil.rmtree(str(tmpdir), ignore_errors=True)
-        except:
-            print('Could not remove ', str(tmpdir))
-
     else:
         config = expipe.config._load_config_by_name(None)
         assert server in [s['host'] for s in config.get('servers')]
