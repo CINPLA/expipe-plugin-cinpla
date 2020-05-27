@@ -84,7 +84,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                   exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
                   ms_before_wf=0.5, ms_after_wf=2, ms_before_stim=10, ms_after_stim=10,
                   spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
-                  bad_threshold=2, min_number_of_spikes=0):
+                  bad_threshold=2, number_of_spikes_threshold=0,  isi_viol_threshold=None):
     import spikeextractors as se
     import spiketoolkit as st
     import spikesorters as ss
@@ -250,17 +250,26 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
 
             # extract waveforms
             if spikesort:
+                # se.ExdirSortingExtractor.write_sorting(
+                #     sorting, exdir_path, recording=recording_cmr, verbose=True)
                 print('Saving Phy output')
                 phy_folder = sorting_group.require_raw('phy').directory
-                if min_number_of_spikes > 0:
-                    sorting_min = st.curation.threshold_num_spikes(sorting, min_number_of_spikes, 'less')
+                if number_of_spikes_threshold > 0:
+                    sorting_min = st.curation.threshold_num_spikes(sorting, number_of_spikes_threshold, 'less')
                     print("Removed ", (len(sorting.get_unit_ids()) - len(sorting_min.get_unit_ids())),
                           'units with less than',
-                          min_number_of_spikes, 'spikes')
+                          number_of_spikes_threshold, 'spikes')
                 else:
                     sorting_min = sorting
+                if isi_viol_threshold > 0:
+                    sorting_viol = st.curation.threshold_isi_violations(sorting_min, isi_viol_threshold, 'greater',
+                                                                        recording_cmr.get_num_frames())
+                    print("Removed ", (len(sorting_min.get_unit_ids()) - len(sorting_viol.get_unit_ids())),
+                          'units with ISI violation greater than', isi_viol_threshold)
+                else:
+                    sorting_viol = sorting_min
                 t_start_save = time.time()
-                st.postprocessing.export_to_phy(recording_rm_art, sorting_min, output_folder=phy_folder,
+                st.postprocessing.export_to_phy(recording_rm_art, sorting_viol, output_folder=phy_folder,
                                                 ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
                                                 grouping_property=sort_by, recompute_info=False,
                                                 save_as_property_or_feature=True)
