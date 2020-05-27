@@ -89,7 +89,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                       exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
                       spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
                       ms_before_wf=1, ms_after_wf=2, bad_threshold=2, number_of_spikes_threshold=0,
-                      isi_viol_threshold=None):
+                      isi_viol_threshold=0):
     import spikeextractors as se
     import spiketoolkit as st
     import spikesorters as ss

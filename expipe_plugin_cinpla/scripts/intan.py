@@ -84,7 +84,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                   exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
                   ms_before_wf=0.5, ms_after_wf=2, ms_before_stim=10, ms_after_stim=10,
                   spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
-                  bad_threshold=2, number_of_spikes_threshold=0,  isi_viol_threshold=None):
+                  bad_threshold=2, number_of_spikes_threshold=0,  isi_viol_threshold=0):
     import spikeextractors as se
     import spiketoolkit as st
     import spikesorters as ss
