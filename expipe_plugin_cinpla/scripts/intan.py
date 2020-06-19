@@ -407,7 +407,9 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf) + \
                  ' --ms-before-stim ' + str(ms_before_stim) + ' --ms-after-stim ' + str(ms_after_stim)
 
-        ms_cmd = ' --min-spikes ' + str(min_number_of_spikes)
+        ms_cmd = ' --min-spikes ' + str(number_of_spikes_threshold)
+
+        isi_cmd = ' --min-isi ' + str(isi_viol_threshold)
 
         par_cmd = ''
         if not parallel:
@@ -445,12 +447,14 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process intan {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter,
-                                                                                   remote_yaml, remote_acq,
-                                                                                   remote_exdir, bad_channels_cmd,
-                                                                                   ref_cmd, split_cmd, remove_art_cmd,
-                                                                                   par_cmd, sortby_cmd,
-                                                                                   wf_cmd, extra_args, ms_cmd)
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {} {} {} {}".format(action_id, remote_probe, sorter,
+                                                                                      remote_yaml, remote_acq,
+                                                                                      remote_exdir, bad_channels_cmd,
+                                                                                      ref_cmd, split_cmd,
+                                                                                      remove_art_cmd,
+                                                                                      par_cmd, sortby_cmd,
+                                                                                      wf_cmd, extra_args, ms_cmd,
+                                                                                      isi_cmd)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 

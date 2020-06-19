@@ -358,7 +358,9 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
 
         wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf)
 
-        ms_cmd = ' --min-spikes ' + str(min_number_of_spikes)
+        ms_cmd = ' --min-spikes ' + str(number_of_spikes_threshold)
+
+        isi_cmd = ' --min-isi ' + str(isi_viol_threshold)
 
         try:
             pbar[0].close()
@@ -389,10 +391,10 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
         ###################### PROCESS #######################################
         print('Processing on server')
         cmd = "expipe process openephys {} --probe-path {} --sorter {} --spike-params {}  " \
-              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {} {}".format(
+              "--acquisition {} --exdir-path {} {} {} {} {} {} {} {} {} {}".format(
               action_id, remote_probe, sorter, remote_yaml, remote_acq,
               remote_exdir, bad_channels_cmd, ref_cmd, par_cmd, sortby_cmd,
-              split_cmd, wf_cmd, extra_args, ms_cmd)
+              split_cmd, wf_cmd, extra_args, ms_cmd, isi_cmd)
 
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 

@@ -158,6 +158,11 @@ def attach_to_process(cli):
                   default=None,
                   help="Minimum number of spikes per unit to retain.",
                   )
+    @click.option('--min-isi', '-mi',
+                  type=click.FLOAT,
+                  default=None,
+                  help="Maximum isi violation rate (if > 0).",
+                  )
     @click.option('--ref',
                   default='cmr',
                   type=click.Choice(['cmr', 'car', 'none']),
@@ -241,4 +246,5 @@ def attach_to_process(cli):
                             exdir_file_path=exdir_path, bad_channels=bad_channels, ref=ref, split=split_channels,
                             remove_artifact_channel=rm_art_channel, ms_before_wf=ms_before_wf, ms_after_wf=ms_after_wf,
                             ms_before_stim=ms_before_stim, ms_after_stim=ms_after_stim, parallel=parallel,
-                            sort_by=sort_by, bad_threshold=bad_threshold, min_number_of_spikes=min_spikes)
+                            sort_by=sort_by, bad_threshold=bad_threshold, number_of_spikes_threshold=min_spikes,
+                            isi_viol_threshold=min_isi)
