@@ -84,7 +84,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                   exdir_file_path=None, spikesort=True, compute_lfp=True, compute_mua=False, parallel=False,
                   ms_before_wf=0.5, ms_after_wf=2, ms_before_stim=10, ms_after_stim=10,
                   spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
-                  bad_threshold=2, number_of_spikes_threshold=0,  isi_viol_threshold=0):
+                  bad_threshold=2, firing_rate_threshold=0,  isi_viol_threshold=0):
     import spikeextractors as se
     import spiketoolkit as st
     import spikesorters as ss
@@ -124,6 +124,8 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         probe_path = probe_path or project.config.get('probe')
         recording = se.IntanRecordingExtractor(str(intan_path), verbose=True)
         recording = recording.load_probe_file(probe_path)
+
+        tmp_folder = Path(f"tmp_{action_id}_si")
 
         if 'auto' not in bad_channels and len(bad_channels) > 0:
             recording_active = st.preprocessing.remove_bad_channels(recording, bad_channel_ids=bad_channels)
@@ -206,18 +208,18 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         if spikesort:
             print('Bandpass filter')
             t_start = time.time()
-            recording_rm_art = se.CacheRecordingExtractor(recording_rm_art)
+            recording_rm_art = se.CacheRecordingExtractor(recording_rm_art, save_path=tmp_folder / 'filt.dat')
             print('Filter time: ', time.time() - t_start)
         if compute_lfp:
             print('Computing LFP')
             t_start = time.time()
-            recording_lfp = se.CacheRecordingExtractor(recording_lfp)
+            recording_lfp = se.CacheRecordingExtractor(recording_lfp, save_path=tmp_folder / 'lfp.dat')
             print('Filter time: ', time.time() - t_start)
 
         if compute_mua:
             print('Computing MUA')
             t_start = time.time()
-            recording_mua = se.CacheRecordingExtractor(recording_mua)
+            recording_mua = se.CacheRecordingExtractor(recording_mua, save_path=tmp_folder / 'mua.dat')
             print('Filter time: ', time.time() - t_start)
 
         print('Number of channels', recording_rm_art.get_num_channels())
@@ -230,9 +232,15 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 spikesorting = ephys.require_group('spikesorting')
                 sorting_group = spikesorting.require_group(sorter)
                 output_folder = sorting_group.require_raw('output').directory
-                sorting = ss.run_sorter(sorter, recording_rm_art, parallel=parallel,
-                                        grouping_property=sort_by, verbose=True, output_folder=output_folder,
-                                        delete_output_folder=True, **spikesorter_params)
+                if 'kilosort' in sorter:
+                    sorting = ss.run_sorter(sorter, recording_rm_art,
+                                            parallel=parallel,
+                                            delete_output_folder=True, **spikesorter_params)
+                else:
+                    sorting = ss.run_sorter(
+                        sorter, recording_rm_art, parallel=parallel,
+                        grouping_property=sort_by, verbose=True, output_folder=output_folder,
+                        delete_output_folder=True, **spikesorter_params)
                 spike_sorting_attrs = {'name': sorter, 'params': spikesorter_params}
                 filter_attrs = {'hp_filter': {'low': freq_min_hp, 'high': freq_max_hp},
                                 'lfp_filter': {'low': freq_min_lfp, 'high': freq_max_lfp,
@@ -243,45 +251,53 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                                             'filter': filter_attrs,
                                             'reference': reference_attrs})
             except Exception as e:
-                # shutil.rmtree(tmpdir)
+                try:
+                    shutil.rmtree(tmp_folder)
+                except:
+                    print(f'Could not tmp processing folder: {tmp_folder}')
                 print(e)
                 raise Exception("Spike sorting failed")
             print('Found ', len(sorting.get_unit_ids()), ' units!')
 
-            # extract waveforms
-            if spikesort:
-                # se.ExdirSortingExtractor.write_sorting(
-                #     sorting, exdir_path, recording=recording_cmr, verbose=True)
-                print('Saving Phy output')
-                phy_folder = sorting_group.require_raw('phy').directory
-                if number_of_spikes_threshold > 0:
-                    sorting_min = st.curation.threshold_num_spikes(sorting, number_of_spikes_threshold, 'less')
-                    print("Removed ", (len(sorting.get_unit_ids()) - len(sorting_min.get_unit_ids())),
-                          'units with less than',
-                          number_of_spikes_threshold, 'spikes')
-                else:
-                    sorting_min = sorting
-                if isi_viol_threshold > 0:
-                    sorting_viol = st.curation.threshold_isi_violations(sorting_min, isi_viol_threshold, 'greater',
-                                                                        recording_cmr.get_num_frames())
-                    print("Removed ", (len(sorting_min.get_unit_ids()) - len(sorting_viol.get_unit_ids())),
-                          'units with ISI violation greater than', isi_viol_threshold)
-                else:
-                    sorting_viol = sorting_min
-                t_start_save = time.time()
-                st.postprocessing.export_to_phy(recording_rm_art, sorting_viol, output_folder=phy_folder,
-                                                ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
-                                                grouping_property=sort_by, recompute_info=False,
-                                                save_as_property_or_feature=True)
-                print('Save to phy time:', time.time() - t_start_save)
-            if compute_lfp:
-                print('Saving LFP to exdir format')
-                se.ExdirRecordingExtractor.write_recording(
-                    recording_lfp, exdir_path, lfp=True)
-            if compute_mua:
-                print('Saving MUA to exdir format')
-                se.ExdirRecordingExtractor.write_recording(
-                    recording_mua, exdir_path, mua=True)
+        # extract waveforms
+        if spikesort:
+            # se.ExdirSortingExtractor.write_sorting(
+            #     sorting, exdir_path, recording=recording_cmr, verbose=True)
+            print('Saving Phy output')
+            phy_folder = sorting_group.require_raw('phy').directory
+            if firing_rate_threshold > 0:
+                sorting_min = st.curation.threshold_firing_rates(sorting,
+                                                                 threshold=firing_rate_threshold,
+                                                                 threshold_sign='less',
+                                                                 duration_in_frames=recording_cmr.get_num_frames())
+                print("Removed ", (len(sorting.get_unit_ids()) - len(sorting_min.get_unit_ids())),
+                      'units with less than',
+                      firing_rate_threshold, 'firing rate')
+                sorting_min = sorting
+            if isi_viol_threshold > 0:
+                sorting_viol = st.curation.threshold_isi_violations(sorting_min,
+                                                                    threshold=isi_viol_threshold,
+                                                                    threshold_sign='greater',
+                                                                    duration_in_frames=recording_rm_art.get_num_frames())
+                print("Removed ", (len(sorting_min.get_unit_ids()) - len(sorting_viol.get_unit_ids())),
+                      'units with ISI violation greater than', isi_viol_threshold)
+            else:
+                sorting_viol = sorting_min
+            t_start_save = time.time()
+            sorting_viol.set_tmp_folder(tmp_folder)
+            st.postprocessing.export_to_phy(recording_rm_art, sorting_viol, output_folder=phy_folder,
+                                            ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
+                                            grouping_property=sort_by, recompute_info=False,
+                                            save_as_property_or_feature=True)
+            print('Save to phy time:', time.time() - t_start_save)
+        if compute_lfp:
+            print('Saving LFP to exdir format')
+            se.ExdirRecordingExtractor.write_recording(
+                recording_lfp, exdir_path, lfp=True)
+        if compute_mua:
+            print('Saving MUA to exdir format')
+            se.ExdirRecordingExtractor.write_recording(
+                recording_mua, exdir_path, mua=True)
 
         # save attributes
         exdir_group = exdir.File(exdir_path, plugins=exdir.plugins.quantities)
@@ -295,6 +311,18 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         ephys.attrs.update({'spike_sorting': spike_sorting_attrs,
                             'filter': filter_attrs,
                             'reference': reference_attrs})
+
+        try:
+            if spikesort:
+                del recording_rm_art
+            if compute_lfp:
+                del recording_lfp
+            if compute_mua:
+                del recording_mua
+            shutil.rmtree(tmp_folder)
+        except:
+            print(f'Could not tmp processing folder: {tmp_folder}')
+
     else:
         config = expipe.config._load_config_by_name(None)
         assert server in [s['host'] for s in config.get('servers')]
@@ -407,7 +435,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
         wf_cmd = ' --ms-before-wf ' + str(ms_before_wf) + ' --ms-after-wf ' + str(ms_after_wf) + \
                  ' --ms-before-stim ' + str(ms_before_stim) + ' --ms-after-stim ' + str(ms_after_stim)
 
-        ms_cmd = ' --min-spikes ' + str(number_of_spikes_threshold)
+        ms_cmd = ' --min-fr ' + str(firing_rate_threshold)
 
         isi_cmd = ' --min-isi ' + str(isi_viol_threshold)
 
@@ -504,7 +532,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
             print('Could not remove: ', local_proc_tar)
         # sftp_client.remove(remote_proc_tar)
         print('Deleting remote process folder')
-        cmd = "rm -r " + process_folder
+        cmd = "rm -rf " + process_folder
         stdin, stdout, stderr = remote_shell.execute(cmd, print_lines=True)
 
         #################### CLOSE UP #############################
