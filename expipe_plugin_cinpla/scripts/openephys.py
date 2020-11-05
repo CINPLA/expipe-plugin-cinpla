@@ -256,8 +256,7 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
             sorting_viol.set_tmp_folder(tmp_folder)
             st.postprocessing.export_to_phy(recording_cmr, sorting_viol, output_folder=phy_folder,
                                             ms_before=ms_before_wf, ms_after=ms_after_wf, verbose=True,
-                                            compute_amplitudes=False, 
-                                            grouping_property=sort_by, recompute_info=False,
+                                            grouping_property=sort_by, recompute_info=True,
                                             save_as_property_or_feature=True)
             print('Save to phy time:', time.time() - t_start_save)
         if compute_lfp:
