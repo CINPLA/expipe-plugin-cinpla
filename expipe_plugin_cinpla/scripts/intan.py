@@ -234,7 +234,7 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                 output_folder = sorting_group.require_raw('output').directory
                 if 'kilosort' in sorter:
                     sorting = ss.run_sorter(sorter, recording_rm_art,
-                                            parallel=parallel,
+                                            parallel=parallel, verbose=True,
                                             delete_output_folder=True, **spikesorter_params)
                 else:
                     sorting = ss.run_sorter(
