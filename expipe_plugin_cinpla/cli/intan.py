@@ -154,7 +154,7 @@ def attach_to_process(cli):
                   help="bad channels to ground.",
                   )
     @click.option('--min-fr', '-mfr',
-                  type=click.INT,
+                  type=click.FLOAT,
                   default=None,
                   help="Minimum firing rate per unit to retain.",
                   )
