@@ -222,10 +222,10 @@ def process_openephys_view(project):
         style={'description_width': 'initial'})
     bad_threshold.layout.visibility = 'hidden'
 
-    min_spikes = ipywidgets.IntText(
-        description='Minumum spikes threshold', value=0, placeholder='(e.g 100, default = 0)',
+    min_fr = ipywidgets.FloatText(
+        description='Minumum FR threshold', value=0.1, placeholder='(e.g 0.1, default = 0.1)',
         style={'description_width': 'initial'})
-    min_spikes.layout.visibility = 'hidden'
+    min_fr.layout.visibility = 'hidden'
 
     min_isi = ipywidgets.FloatText(
         description='ISI violation threshold', value=0, placeholder='(e.g 0.5, default = 0)',
@@ -312,7 +312,7 @@ def process_openephys_view(project):
                     split=split,
                     sort_by=sort_by_val,
                     bad_threshold=bad_threshold.value,
-                    number_of_spikes_threshold=min_spikes.value,
+                    firing_rate_threshold=min_fr.value,
                     isi_viol_threshold=min_isi.value)
             except Exception as e:
                 print('ERROR: unable to process', a)
@@ -341,14 +341,14 @@ def process_openephys_view(project):
                 bad_threshold.layout.visibility = 'visible'
                 reference.layout.visibility = 'visible'
                 split_group.layout.visibility = 'visible'
-                min_spikes.layout.visibility = 'visible'
+                min_fr.layout.visibility = 'visible'
                 min_isi.layout.visibility = 'visible'
             else:
                 bad_channels.layout.visibility = 'hidden'
                 bad_threshold.layout.visibility = 'hidden'
                 reference.layout.visibility = 'hidden'
                 split_group.layout.visibility = 'hidden'
-                min_spikes.layout.visibility = 'hidden'
+                min_fr.layout.visibility = 'hidden'
                 min_isi.layout.visibility = 'hidden'
 
     def on_split(change):
