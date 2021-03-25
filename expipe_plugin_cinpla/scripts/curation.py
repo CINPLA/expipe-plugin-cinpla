@@ -82,11 +82,11 @@ def process_save_phy(project, action_id, sorter, check_exists=False):
     print(elphys['spikesorting'][sorter]['phy'].directory)
     if check_exists:
         unit_ids = set([int(b) for a in elphys.values() if 'UnitTimes' in a for b in a['UnitTimes']])
-        sorting_ = se.PhySortingExtractor(phy_folder, exclude_groups=['noise'], verbose=False)
+        sorting_ = se.PhySortingExtractor(phy_folder, exclude_groups=['noise'])
         if set(sorting_.get_unit_ids()) == unit_ids:
             print('Unit ids are the same in phy and exdir.')
             return
-    sorting = se.PhySortingExtractor(phy_folder, exclude_cluster_groups=['noise'], verbose=True)
+    sorting = se.PhySortingExtractor(phy_folder, exclude_cluster_groups=['noise'])
     se.ExdirSortingExtractor.write_sorting(sorting, exdir_path, sampling_frequency=sorting.params['sample_rate'],
                                            save_waveforms=True, verbose=True)
 
