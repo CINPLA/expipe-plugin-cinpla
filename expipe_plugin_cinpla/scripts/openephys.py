@@ -90,9 +90,9 @@ def process_openephys(project, action_id, probe_path, sorter, acquisition_folder
                       spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
                       ms_before_wf=1, ms_after_wf=2, bad_threshold=2, firing_rate_threshold=0,
                       isi_viol_threshold=0):
-    import spikeextractors as se
-    import spiketoolkit as st
-    import spikesorters as ss
+    import spikeinterface.extractors as se
+    import spikeinterface.toolkit as st
+    import spikeinterface.sorters as ss
     bad_channels = bad_channels or []
     proc_start = time.time()
 

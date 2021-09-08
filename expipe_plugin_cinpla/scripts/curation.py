@@ -6,9 +6,9 @@ import time
 from pathlib import Path, PureWindowsPath
 import shlex
 from subprocess import Popen, PIPE
-import spikeextractors as se
-import spiketoolkit as st
-import spikecomparison as sc
+import spikeinterface.extractors as se
+import spikeinterface.toolkit as st
+import spikeinterface.comparison as sc
 import os
 
 

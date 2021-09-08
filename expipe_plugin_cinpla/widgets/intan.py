@@ -92,7 +92,7 @@ def register_intan_view(project):
 
 
 def process_intan_view(project):
-    import spikesorters as ss
+    import spikeinterface.sorters as ss
 
     probe_path = SelectFileButton('.prb', description='*Select probe file', style={'description_width': 'initial'},
                                   layout={'width': 'initial'}, initialdir=str(project._backend.path))

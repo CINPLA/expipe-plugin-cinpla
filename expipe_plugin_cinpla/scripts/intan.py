@@ -85,9 +85,9 @@ def process_intan(project, action_id, probe_path, sorter, acquisition_folder=Non
                   ms_before_wf=0.5, ms_after_wf=2, ms_before_stim=10, ms_after_stim=10,
                   spikesorter_params=None, server=None, bad_channels=None, ref=None, split=None, sort_by=None,
                   bad_threshold=2, firing_rate_threshold=0,  isi_viol_threshold=0):
-    import spikeextractors as se
-    import spiketoolkit as st
-    import spikesorters as ss
+    import spikeinterface.extractors as se
+    import spikeinterface.toolkit as st
+    import spikeinterface.sorters as ss
 
     bad_channels = bad_channels or []
     proc_start = time.time()

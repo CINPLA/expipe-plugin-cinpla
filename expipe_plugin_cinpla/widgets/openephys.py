@@ -95,8 +95,8 @@ def register_openephys_view(project):
 
 
 def process_openephys_view(project):
-    import spiketoolkit as st
-    import spikesorters as ss
+    import spikeinterface.toolkit as st
+    import spikeinterface.sorters as ss
 
     probe_path = SelectFileButton(
         '.prb', initialdir=str(project._backend.path),

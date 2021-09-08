@@ -1,6 +1,6 @@
 from expipe_plugin_cinpla.imports import *
 from expipe_plugin_cinpla.scripts import intan
-import spikesorters as ss
+import spikeinterface.sorters as ss
 from . import utils
 from distutils.version import StrictVersion
 
