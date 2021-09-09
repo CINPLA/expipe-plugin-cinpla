@@ -92,7 +92,7 @@ def process_save_phy(project, action_id, sorter, save_waveforms=True, check_exis
 
         # workaround to avoid grouping in windows
         waveforms = st.postprocessing.get_unit_waveforms(recording, sorting, max_spikes_per_unit=None, memmap=False,
-                                                         save_property_or_features=False, verbose=True)
+                                                         save_property_or_features=False, n_jobs=8, verbose=True)
 
         if "group" in sorting.get_shared_unit_property_names():
             channel_groups = recording.get_channel_groups()
