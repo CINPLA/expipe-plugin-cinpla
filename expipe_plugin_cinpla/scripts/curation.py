@@ -9,6 +9,7 @@ from subprocess import Popen, PIPE
 import spikeextractors as se
 import spiketoolkit as st
 import spikecomparison as sc
+import numpy as np
 import os
 
 
@@ -69,7 +70,7 @@ def process_consensus(project, action_id, sorters, min_agreement=None):
                                     ms_before=0.5, ms_after=2, verbose=True,
                                     grouping_property='group')
 
-def process_save_phy(project, action_id, sorter, check_exists=False):
+def process_save_phy(project, action_id, sorter, save_waveforms=True, check_exists=False):
     action = project.actions[action_id]
     exdir_path = _get_data_path(action)
     if exdir_path is None:
@@ -79,7 +80,6 @@ def process_save_phy(project, action_id, sorter, check_exists=False):
     elphys = exdir_file['processing']['electrophysiology']
     phy_folder = elphys['spikesorting'][sorter]['phy'].directory
 
-    print(elphys['spikesorting'][sorter]['phy'].directory)
     if check_exists:
         unit_ids = set([int(b) for a in elphys.values() if 'UnitTimes' in a for b in a['UnitTimes']])
         sorting_ = se.PhySortingExtractor(phy_folder, exclude_groups=['noise'])
@@ -87,6 +87,25 @@ def process_save_phy(project, action_id, sorter, check_exists=False):
             print('Unit ids are the same in phy and exdir.')
             return
     sorting = se.PhySortingExtractor(phy_folder, exclude_cluster_groups=['noise'])
+    if save_waveforms:
+        recording = se.PhyRecordingExtractor(phy_folder)
+
+        # workaround to avoid grouping in windows
+        waveforms = st.postprocessing.get_unit_waveforms(recording, sorting, max_spikes_per_unit=None, memmap=False,
+                                                         save_property_or_features=False, verbose=True)
+
+        if "group" in sorting.get_shared_unit_property_names():
+            channel_groups = recording.get_channel_groups()
+            for (wf, unit) in zip(waveforms, sorting.get_unit_ids()):
+                unit_group = sorting.get_unit_property(unit, "group")
+                channel_unit_group = np.where(channel_groups == int(unit_group))[0]
+
+                waveform_group = wf[:, channel_unit_group]
+                sorting.set_unit_spike_features(unit, "waveforms", waveform_group)
+        else:
+            for (wf, unit) in zip(waveforms, sorting.get_unit_ids()):
+                sorting.set_unit_spike_features(unit, "waveforms", wf)
+
     se.ExdirSortingExtractor.write_sorting(sorting, exdir_path, sampling_frequency=sorting.params['sample_rate'],
                                            save_waveforms=True, verbose=True)
 
