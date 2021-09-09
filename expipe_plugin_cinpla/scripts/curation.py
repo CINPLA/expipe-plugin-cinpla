@@ -98,7 +98,7 @@ def process_save_phy(project, action_id, sorter, save_waveforms=True, check_exis
             channel_groups = recording.get_channel_groups()
             for (wf, unit) in zip(waveforms, sorting.get_unit_ids()):
                 unit_group = sorting.get_unit_property(unit, "group")
-                channel_unit_group = np.where(channel_groups == unit_group)[0]
+                channel_unit_group = np.where(channel_groups == int(unit_group))[0]
 
                 waveform_group = wf[:, channel_unit_group]
                 sorting.set_unit_spike_features(unit, "waveforms", waveform_group)
