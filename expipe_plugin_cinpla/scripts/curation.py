@@ -27,10 +27,10 @@ def process_phy(project, action_id, sorter, restore=False):
         if len(spike_clusters_file) == 1:
             print('Removing spike_clusters.npy file')
             os.remove(str(spike_clusters_file[0]))
-        cluster_groups_file = [p for p in phy_dir.iterdir() if 'cluster_groups' in p.name]
-        if len(cluster_groups_file) == 1:
-            print('Removing cluster_groups.tsv file')
-            os.remove(str(cluster_groups_file[0]))
+        cluster_group_file = [p for p in phy_dir.iterdir() if 'cluster_group' in p.name]
+        if len(cluster_group_file) == 1:
+            print('Removing cluster_group.tsv file')
+            os.remove(str(cluster_group_file[0]))
     sorting_phy = se.PhySortingExtractor(phy_dir)
 
     if len(sorting_phy.get_unit_ids()) > 1:
