@@ -1,0 +1,10 @@
+expipe>=0.5.1
+neuroconv>=0.4.6
+ipywidgets>=8.1.1
+jupyter_contrib_nbextensions>=0.7.0
+jupyterlab==3.6.5
+pyopenephys>=1.2.0
+tbb>=2021.11.0
+spikeinterface[full,widgets]>=0.100.0
+pynwb>=2.6.0
+neuroconv>=0.4.6

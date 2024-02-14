@@ -1,0 +1,73 @@
+[project]
+name = "expipe_plugin_cinpla"
+version = "0.2.0"
+authors = [
+  { name="Mikkel Lepperod", email="smikkel@simula.no" },
+  { name="Alessio Buccino", email="alessiop.buccino@gmail.com" },
+]
+
+description = "Expipe plugins for the CINPLA lab."
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "expipe>=0.6.0", 
+    "neuroconv>=0.4.6",
+    "pyopenephys>=1.2.0",
+    "spikeinterface[full,widgets]>=0.100.0",
+    "pynwb>=2.5.0",
+    "neuroconv>=0.4.6",
+    "ipywidgets>=8.1.1",
+    "nwbwidgets>=0.11.3",
+    "tbb>=2021.11.0",
+]
+
+[project.urls]
+homepage = "https://github.com/CINPLA/expipe-plugin-cinpla"
+repository = "https://github.com/CINPLA/expipe-plugin-cinpla"
+
+
+[build-system]
+requires = ["setuptools>=62.0"]
+build-backend = "setuptools.build_meta"
+
+
+[tool.setuptools]
+packages = ["expipe_plugin_cinpla"]
+package-dir = {"expipe_plugin_cinpla" = "src/expipe_plugin_cinpla"}
+
+
+[project.optional-dependencies]
+
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-dependency",
+    "black"
+]
+
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-dependency",
+    "mountainsort5"
+]
+
+docs = [
+    "sphinx-gallery",
+    "sphinx_rtd_theme",
+]
+
+[tool.coverage.run]
+omit = [
+    "tests/*",
+]
+
+
+[tool.black]
+line-length = 120
