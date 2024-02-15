@@ -46,9 +46,17 @@ def convert_to_nwb(project, action, openephys_path, probe_path, entity_id, user,
     # Subject
     metadata["Subject"]["subject_id"] = entity_id
     if "species" not in entity.attributes:
-        entity.attributes["species"] = "Rattus norvegicus"
-    metadata["Subject"]["species"] = entity.attributes["species"]
-    metadata["Subject"]["sex"] = entity.attributes["sex"]
+        warnings.warn("Species not found in entity attributes, using default Rattus norvegicus")
+        species = "Rattus norvegicus"
+    else:
+        species = entity.attributes["species"]
+    metadata["Subject"]["species"] = species
+    if "sex" not in entity.attributes:
+        warnings.warn("Sec not found in entity attributes, using default M")
+        sex = "M"
+    else:
+        sex = entity.attributes["sex"]
+    metadata["Subject"]["sex"] = sex
     metadata["Subject"]["age"] = f"P{(action.datetime - entity.datetime).days}D"
     # Ecephys
     metadata["Ecephys"]["Device"][0]["description"] = "Axona Implant - Open Ephys acquisition system"

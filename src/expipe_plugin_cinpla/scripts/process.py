@@ -2,6 +2,7 @@ import shutil
 import contextlib
 import time
 import json
+import os
 import numpy as np
 
 from expipe_plugin_cinpla.scripts import utils
@@ -29,6 +30,7 @@ def process_ecephys(
     singularity_image=None,
     n_components=5,
     plot_sortingview=True,
+    verbose=True
 ):
     import warnings
     import spikeinterface as si
@@ -57,7 +59,8 @@ def process_ecephys(
     si.set_global_job_kwargs(n_jobs=-1, progress_bar=False)
 
     if overwrite:
-        print("\nCleaning up existing NWB file")
+        if verbose:
+            print("\nCleaning up existing NWB file")
         # trick to get rid of open synchronous files issue
         nwb_path2 = nwb_path.parent / "main2_tmp.nwb"
         shutil.copy(nwb_path, nwb_path2)
@@ -67,26 +70,30 @@ def process_ecephys(
             nwbfile = read_io.read()
             # delete main unit table
             if nwbfile.units is not None:
-                print("Deleting main unit table")
+                if verbose:
+                    print("Deleting main unit table")
                 nwbfile.units.reset_parent()
                 nwbfile.fields["units"] = None
             # remove processed timeseries
             if "ecephys" in nwbfile.processing:
                 for data_interface in nwbfile.processing["ecephys"].data_interfaces.copy():
                     if compute_lfp and "LFP" in data_interface:
-                        print(f"\tRemoving {data_interface}")
+                        if verbose:
+                            print(f"\tRemoving {data_interface}")
                         di = nwbfile.processing["ecephys"].data_interfaces.pop(data_interface)
                         di.reset_parent()
                         for child in di.children:
                             child.reset_parent()
                     if compute_mua and "Processed" in data_interface:
-                        print(f"\tRemoving {data_interface}")
+                        if verbose:
+                            print(f"\tRemoving {data_interface}")
                         di = nwbfile.processing["ecephys"].data_interfaces.pop(data_interface)
                         di.reset_parent()
                         for child in di.children:
                             child.reset_parent()
                     if spikesort and sorter in data_interface:
-                        print(f"\tRemoving {data_interface}")
+                        if verbose:
+                            print(f"\tRemoving {data_interface}")
                         di = nwbfile.processing["ecephys"].data_interfaces.pop(data_interface)
                         di.reset_parent()
                         for child in di.children:
@@ -111,7 +118,8 @@ def process_ecephys(
         recording_active = recording
 
     # apply filtering and cmr
-    print("\nPreprocessing")
+    if verbose:
+        print("\nPreprocessing")
     si_folder = nwb_path.parent / "spikeinterface"
     output_base_folder = si_folder / sorter
 
@@ -152,14 +160,21 @@ def process_ecephys(
         recording_cmr = recording
 
     if auto_detection:
-        bad_channel_ids, _ = spre.detect_bad_channels(recording_cmr, method="std", std_mad_threshold=bad_threshold)
+        bad_channel_ids, _ = spre.detect_bad_channels(
+            recording_cmr,
+            method="std",
+            std_mad_threshold=bad_threshold
+        )
         if len(bad_channel_ids) > 0:
-            print(f"\tDetected bad channels: {bad_channel_ids}")
+            if verbose:
+                print(f"\tDetected bad channels: {bad_channel_ids}")
             recording_cmr = recording_cmr.remove_channels(bad_channel_ids)
             recording_active = recording.channel_slice(channel_ids=recording_cmr.channel_ids)
 
-    print(f"\tActive channels: {len(recording_active.channel_ids)}")
-    print("\tSaving preprocessed recording")
+    if verbose:
+        print(f"\tActive channels: {len(recording_active.channel_ids)}")
+    if verbose:
+        print("\tSaving preprocessed recording")
     recording_cmr = recording_cmr.save(folder=output_base_folder / "recording_cmr", overwrite=True, verbose=False)
 
     if compute_lfp:
@@ -175,11 +190,20 @@ def process_ecephys(
     if spikesort:
         if spikesorter_params is None:
             spikesorter_params = {}
+        output_folder = output_base_folder / "spikesorting"
         try:
             # save in data/processing
-            print("\nSpike sorting")
-            with contextlib.redirect_stdout(None):
-                output_folder = output_base_folder / "spikesorting"
+            if singularity_image:
+                if verbose:
+                    print(f"\nSpike sorting with {sorter} using Singularity")
+                # the redirect stdout doesn't work nicely with singularity
+                context = contextlib.nullcontext()
+            else:
+                if verbose:
+                    print("\nSpike sorting locally")
+                context = contextlib.redirect_stdout(None)
+            
+            with context:
                 if spikesort_by_group:
                     sorting = ss.run_sorter_by_property(
                         sorter,
@@ -207,13 +231,16 @@ def process_ecephys(
             try:
                 shutil.rmtree(output_folder)
             except:
-                print(f"\tCould not tmp processing folder: {output_folder}")
+                if verbose:
+                    print(f"\tCould not tmp processing folder: {output_folder}")
             raise Exception(f"Spike sorting failed:\n\n{e}")
-        print(f"\tFound {len(sorting.get_unit_ids())} units!")
+        if verbose:
+            print(f"\tFound {len(sorting.get_unit_ids())} units!")
 
         # extract waveforms
-        print("\nPostprocessing")
-        print("\tExtracting waveforms")
+        if verbose:
+            print("\nPostprocessing")
+            print("\tExtracting waveforms")
         # if not sort by group, extract dense and estimate group
         if "group" not in sorting.get_property_keys():
             compute_and_set_unit_groups(sorting, recording_cmr)
@@ -238,10 +265,12 @@ def process_ecephys(
         _ = spost.compute_isi_histograms(we)
         _ = spost.compute_principal_components(we, n_components=n_components)
         _ = spost.compute_template_metrics(we)
-        print("\tComputing QC metrics")
+        if verbose:
+            print("\tComputing QC metrics")
         qm = sqm.compute_quality_metrics(we, metric_names=metric_names)
 
-        print("\tExporting to phy")
+        if verbose:
+            print("\tExporting to phy")
         phy_folder = output_base_folder / f"phy"
         if phy_folder.is_dir():
             shutil.rmtree(phy_folder)
@@ -256,7 +285,8 @@ def process_ecephys(
         utils.generate_phy_restore_files(phy_folder)
 
         if plot_sortingview:
-            print("\tGenerating sortingview link")
+            if verbose:
+                print("\tGenerating sortingview link")
             unit_table_properties = ["group"]
             if "firing_rate" in qm:
                 we.sorting.set_property("firing_rate", np.round(qm["firing_rate"], 2))
@@ -282,12 +312,14 @@ def process_ecephys(
             with open(si_folder / sorter / "sortingview_links.json", "w") as f:
                 json.dump(visualization_dict, f, indent=4)
 
-        print("\nWriting to NWB")
+        if verbose:
+            print("\nWriting to NWB")
         nwb_path.unlink()
         try:
             with NWBHDF5IO(nwb_path_tmp, mode="r") as read_io:
                 nwbfile_out = read_io.read()
-                print("\tAdding units table")
+                if verbose:
+                    print("\tAdding units table")
                 add_units_from_waveform_extractor(
                     we=we,
                     nwbfile=nwbfile_out,
@@ -304,11 +336,13 @@ def process_ecephys(
                     ]
                 }
                 if compute_lfp:
-                    print("\tAdding LFP")
+                    if verbose:
+                        print("\tAdding LFP")
                     recording_lfp.set_property("group_name", recording_lfp.get_channel_groups())
                     add_recording(recording_lfp, nwbfile=nwbfile_out, write_as="lfp", metadata=metadata_ecephys)
                 if compute_mua:
-                    print("\tAdding MUA")
+                    if verbose:
+                        print("\tAdding MUA")
                     # Add metadata about new electrical series
                     metadata_ecephys["Ecephys"]["ElectricalSeriesMUA"] = {
                         "name": "ElectricalSeriesMUA",
@@ -327,13 +361,15 @@ def process_ecephys(
                     export_io.export(src_io=read_io, nwbfile=nwbfile_out)
         except Exception as e:
             # restore NWB file
-            print(f"Error exporting to NWB: {e}")
+            if verbose:
+                print(f"Error exporting to NWB: {e}")
             if nwb_path.is_file():
                 nwb_path.unlink()
             shutil.copy(nwb_path_tmp, nwb_path)
 
     # clean up
-    print("Cleaning up")
+    if verbose:
+        print("Cleaning up")
     with open(output_base_folder / "recording_cmr" / "provenance.json", "r") as f:
         provenance = json.load(f)
     provenance_str = json.dumps(provenance)
@@ -348,8 +384,9 @@ def process_ecephys(
         print(f"Could not remove: {nwb_path_tmp}")
         raise Exception
 
-    print("\tSaved to NWB: ", nwb_path)
-    print(f"Total processing time: {np.round(time.time() - t_start)}s")
+    if verbose:
+        print("\tSaved to NWB: ", nwb_path)
+        print(f"Total processing time: {np.round(time.time() - t_start)}s")
 
 
 def clean_up(project, action_id, sorter):

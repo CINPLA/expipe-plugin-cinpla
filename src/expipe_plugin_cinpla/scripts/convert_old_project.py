@@ -67,7 +67,8 @@ def convert_old_project(
     # copy everything, will prune later
     # TODO: remove later
     if new_project_path.is_dir():
-        raise FileExistsError(f"Project {new_project_path} already exists!")
+        pass
+        # raise FileExistsError(f"Project {new_project_path} already exists!")
     else:
         print("Copying entire project")
         shutil.copytree(old_project_path, new_project_path, ignore=shutil.ignore_patterns("**/*main.exdir", ".git"))
@@ -81,7 +82,7 @@ def convert_old_project(
 
     # copy actions
     for action_id in old_actions:
-        print(f"Processing action {action_id}")
+        print(f"*****************\nProcessing action {action_id}\n*****************")
         old_action = old_actions[action_id]
         new_action = new_project.actions[action_id]
         old_data_folder = _get_data_path(old_action).parent
@@ -135,3 +136,5 @@ def convert_old_project(
         sorting_curator.load_from_phy(sorter=sorter_name)
         # save main units
         sorting_curator.save_to_nwb()
+
+    print(f"*****************\nALL DONE!\n*****************")

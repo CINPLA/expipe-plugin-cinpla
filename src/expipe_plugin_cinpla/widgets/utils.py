@@ -197,8 +197,6 @@ class ParameterSelectList(ipywidgets.VBox):
             elif not isinstance(v, dict):
                 wid = ipywidgets.Text(description=k, value=str(v), layout=layout)
                 children.append(wid)
-            else:
-                print("not showing dictionary")
         self.children = children
 
     @property

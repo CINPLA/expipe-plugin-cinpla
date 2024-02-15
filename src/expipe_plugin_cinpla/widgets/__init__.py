@@ -1,1 +1,1 @@
-from .browser import display
+from .browser import display_browser

@@ -14,7 +14,7 @@ from .curation import CurationView
 from .viewer import NwbViewer
 
 
-def display(project_path):
+def display_browser(project_path):
     import ipywidgets
 
     project = expipe.get_project(project_path)

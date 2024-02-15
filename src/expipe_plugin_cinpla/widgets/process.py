@@ -44,9 +44,13 @@ def process_ecephys_view(project):
 
     overwrite = ipywidgets.Checkbox(description="Overwrite", value=True)
 
+    available_sorters = ss.available_sorters()
+    # klusta and YASS are legacy
+    available_sorters.remove("klusta")
+    available_sorters.remove("yass")
     sorter = ipywidgets.Dropdown(
         description="Sorter",
-        options=[s for s in ss.installed_sorters()],
+        options=available_sorters,
         value="mountainsort5",
         layout={"width": "initial"},
     )
@@ -60,6 +64,7 @@ def process_ecephys_view(project):
     sorter_param.layout.visibility = "hidden"
 
     spikesort_by_group = ipywidgets.ToggleButton(description="Sort by group", value=True, layout={"width": "initial"})
+    use_singularity = ipywidgets.ToggleButton(description="Use singularity", value=False, layout={"width": "initial"})
 
     compute_lfp = ipywidgets.ToggleButton(
         value=True,
@@ -177,7 +182,7 @@ def process_ecephys_view(project):
     )
     run_box = ipywidgets.HBox([run_button, run_status_label])
 
-    left_box = ipywidgets.VBox([sorter, spikesort_by_group, show_params, sorter_param])
+    left_box = ipywidgets.VBox([sorter, spikesort_by_group, use_singularity, show_params, sorter_param])
 
     middle_box = ipywidgets.VBox([action_ids, quality_metrics])
 
@@ -264,6 +269,7 @@ def process_ecephys_view(project):
                 print(f"Processing {action_id}")
                 run_status_label.description = "Status: Processing"
                 run_status_label.style.button_color = "yellow"
+
                 process.process_ecephys(
                     project=project,
                     action_id=action_id,
@@ -279,7 +285,10 @@ def process_ecephys_view(project):
                     bad_threshold=bad_threshold.value,
                     metric_names=quality_metrics.value,
                     overwrite=overwrite.value,
+                    singularity_image=use_singularity.value,
+                    verbose=False
                 )
+                    
                 run_status_label.description = "Status: Done"
                 run_status_label.style.button_color = "green"
             except Exception as e:
