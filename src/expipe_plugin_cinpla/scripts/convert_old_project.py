@@ -22,6 +22,7 @@ def convert_old_project(
     default_age_days=60,
     default_location="IBV Animal Facility",
     debug_n_actions=None,
+    overwrite=False,
 ):
     """
     Convert an expipe CINPLA project from an old version to the current version.
@@ -46,8 +47,11 @@ def convert_old_project(
         * bad_threshold=None
         * ms_before=1
         * ms_after=2
-    preferred_sorter : str, optional
+    preferred_sorter : str, default: None
         Name of the preferred sorter to use for processing. Required if there are multiple sorters in the old project.
+    default_species : str, default: "Rattus norvegicus"
+        Default species for the entities (if entity is not registered in old project and needs to be registered in new project)
+    default_sex : str, optional
     debug_n_actions : int, optional
         Number of actions to process for debugging.
     """
@@ -72,11 +76,12 @@ def convert_old_project(
     old_project = expipe.get_project(old_project_path)
     old_actions = old_project.actions
 
-    # copy everything, will prune later
-    # TODO: remove later
+    # copy everything, except main and .git
     if new_project_path.is_dir():
-        # raise FileExistsError(f"Project {new_project_path} already exists!")
-        pass
+        if not overwrite:
+            raise FileExistsError(f"Project {new_project_path} already exists!")
+        else:
+            shutil.rmtree(new_project_path)
     else:
         print("Copying entire project")
         shutil.copytree(old_project_path, new_project_path, ignore=shutil.ignore_patterns("main.exdir", ".git"))
@@ -107,7 +112,6 @@ def convert_old_project(
         new_action = new_project.actions[action_id]
         old_data_folder = _get_data_path(old_action).parent
         new_data_folder = _get_data_path(new_action).parent
-        print("New data folder", new_data_folder)
 
         # main.exdir
         old_exdir_folder = old_data_folder / "main.exdir"
@@ -151,7 +155,6 @@ def convert_old_project(
         old_spikesorting = old_exdir_folder / "processing" / "electrophysiology" / "spikesorting"
         new_si_folder = new_data_folder / "spikeinterface"
         new_si_folder.mkdir(exist_ok=True)
-        print("New SI folder", new_si_folder)
         old_sorters = [p for p in old_spikesorting.iterdir() if p.is_dir()]
         for sorter_folder in old_sorters:
             new_sorter_folder = new_si_folder / sorter_folder.name
@@ -159,8 +162,12 @@ def convert_old_project(
             # copy phy folder
             old_phy_folder = sorter_folder / "phy"
             new_phy_folder = new_sorter_folder / "phy"
-            if not new_phy_folder.is_dir():
-                shutil.copytree(old_phy_folder, new_phy_folder)
+            if new_phy_folder.is_dir():
+                if overwrite:
+                    shutil.rmtree(new_phy_folder)
+                else:
+                    raise FileExistsError(f"Phy folder {new_phy_folder} already exists!")
+            shutil.copytree(old_phy_folder, new_phy_folder)
 
         # Run processing only (no spike sorting)
         if len(old_sorters) == 1:

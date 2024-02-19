@@ -41,11 +41,11 @@ class UnitWaveformsWidget(widgets.VBox):
         out_fig = interactive_output(plot_func, self.controls)
 
         self.children = [unit_controls, out_fig]
-        print(self.children)
 
         self.layout = Layout(width="100%")
 
         self.unit_list.observe(self.on_unit_change, names="value")
+        self.on_unit_change(None)
 
     def on_unit_change(self, change):
         unit_name = self.units["unit_name"][self.unit_list.value]
@@ -176,6 +176,7 @@ class UnitRateMapWidget(widgets.VBox):
         self.unit_list.observe(self.on_unit_change, names="value")
         self.spatial_series_selector.observe(self.on_spatial_series_change, names="value")
         self.num_bins_slider.observe(self.on_num_bins_change, names="value")
+        self.on_unit_change(None)
 
     def on_unit_change(self, change):
         unit_name = self.units["unit_name"][self.unit_list.value]

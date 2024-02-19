@@ -181,12 +181,11 @@ class CurationView(BaseViewWithLog):
         )
         units_dropdown = ipywidgets.Dropdown(
             options=["Raw", "Main", "Curated"],
-            description="Units:",
+            description="Display:",
             disabled=False,
-            layout={"width": "100%"},
+            layout={"width": "500px"},
             value="Raw",
         )
-
         units_col = ipywidgets.VBox([units_dropdown, units_placeholder])
 
         curation_box = ipywidgets.HBox([actions_panel, curation_panel], layout={"width": "100%"})
@@ -275,10 +274,7 @@ class CurationView(BaseViewWithLog):
         def on_choose_units(change):
             units_widget = units_viewers[units_dropdown.value.lower()]
             if units_widget is not None:
-                print(f"Displaying {units_dropdown.value} units")
                 units_col.children = [units_dropdown, units_widget]
-
-        units_dropdown.observe(on_choose_units)
 
         @self.output.capture()
         def on_set_default_qms(change):
@@ -337,6 +333,9 @@ class CurationView(BaseViewWithLog):
         set_default_qms.on_click(on_set_default_qms)
         apply_qm_curation.on_click(on_apply_qm_curation)
         apply_sv_curation.on_click(on_curated_link)
+        units_dropdown.observe(on_choose_units)
+        units_dropdown.observe(on_sorter)
+        units_dropdown.observe(on_action)
 
         add_metric_button.on_click(on_add_metric)
         remove_metric_button.on_click(on_remove_metric)

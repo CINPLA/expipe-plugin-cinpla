@@ -37,10 +37,11 @@ def process_ecephys_view(project):
         data_path = _get_data_path(action)
         if data_path is not None:
             si_path = data_path.parent / "spikeinterface"
-            if si_path.is_dir():
-                action_names.append(f"{action_name} -- (P)")
-            else:
-                action_names.append(f"{action_name} -- (U)")
+            if data_path.name == "main.nwb":
+                if si_path.is_dir():
+                    action_names.append(f"{action_name} -- (P)")
+                else:
+                    action_names.append(f"{action_name} -- (U)")
 
     action_ids = SearchSelectMultiple(action_names, description="*Actions")
 
@@ -288,7 +289,7 @@ def process_ecephys_view(project):
                     metric_names=quality_metrics.value,
                     overwrite=overwrite.value,
                     singularity_image=use_singularity.value,
-                    verbose=False,
+                    verbose=True,
                 )
 
                 run_status_label.description = "Status: Done"

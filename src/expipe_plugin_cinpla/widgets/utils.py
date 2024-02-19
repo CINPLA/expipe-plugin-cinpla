@@ -58,14 +58,22 @@ class BaseViewWithLog(ipywidgets.VBox):
         clear_log = ipywidgets.Button(description="Clear log", layout={"width": "50%"})
         log_row = ipywidgets.HBox([show_log, clear_log])
 
+        super().__init__(list(self.main_box.children) + [log_row, output_box])
+        self.output = output
+        self.show_log = show_log
+
+        def on_show_log(change):
+            if not self.show_log.value:
+                self.children = list(self.main_box.children) + [log_row]
+            else:
+                self.children = list(self.main_box.children) + [log_row, output_box]
+
+        show_log.observe(on_show_log)
+
         def on_clear_log(change):
             output.clear_output()
 
         clear_log.on_click(on_clear_log)
-
-        super().__init__(list(self.main_box.children) + [log_row, output_box])
-        self.output = output
-        self.show_log = show_log
 
     def refresh(self, project):
         self.project = expipe.get_project(project.path)

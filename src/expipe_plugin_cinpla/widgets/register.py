@@ -134,7 +134,6 @@ def register_adjustment_view(project):
         MultiInput,
         required_values_filled,
         SearchSelect,
-        make_output_and_show,
     )
 
     entity_id = SearchSelect(options=project.entities, description="*Entities")
