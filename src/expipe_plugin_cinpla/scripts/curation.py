@@ -94,6 +94,11 @@ class SortingCurator:
             units = None
         return units
 
+    def load_main_units(self):
+        self.io = NWBHDF5IO(self.nwb_path_main, "r")
+        nwbfile = self.io.read()
+        return nwbfile.units
+
     def construct_curated_units(self):
         nwbfile_mock = mock_NWBFile()
         add_units_from_waveform_extractor(

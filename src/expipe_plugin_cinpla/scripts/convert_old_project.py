@@ -1,10 +1,11 @@
 import shutil
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import expipe
 
 from .utils import _get_data_path
-from .register import convert_to_nwb
+from .register import convert_to_nwb, register_entity
 from .process import process_ecephys
 from .curation import SortingCurator
 
@@ -16,6 +17,11 @@ def convert_old_project(
     include_events: bool = True,
     process_ecephys_params: dict | None = None,
     preferred_sorter: str | None = None,
+    default_species="Rattus norvegicus",
+    default_sex="M",
+    default_age_days=60,
+    default_location="IBV Animal Facility",
+    debug_n_actions=None,
 ):
     """
     Convert an expipe CINPLA project from an old version to the current version.
@@ -42,6 +48,8 @@ def convert_old_project(
         * ms_after=2
     preferred_sorter : str, optional
         Name of the preferred sorter to use for processing. Required if there are multiple sorters in the old project.
+    debug_n_actions : int, optional
+        Number of actions to process for debugging.
     """
     if process_ecephys_params is None:
         process_ecephys_params = dict(
@@ -67,26 +75,39 @@ def convert_old_project(
     # copy everything, will prune later
     # TODO: remove later
     if new_project_path.is_dir():
-        pass
         # raise FileExistsError(f"Project {new_project_path} already exists!")
+        pass
     else:
         print("Copying entire project")
-        shutil.copytree(old_project_path, new_project_path, ignore=shutil.ignore_patterns("**/*main.exdir", ".git"))
+        shutil.copytree(old_project_path, new_project_path, ignore=shutil.ignore_patterns("main.exdir", ".git"))
 
-    expipe_str = (new_project_path / "expipe.yaml").read_text()
-    expipe_str = expipe_str.replace(old_project_name, new_project_name)
-    (new_project_path / "expipe.yaml").write_text(expipe_str)
+        expipe_str = (new_project_path / "expipe.yaml").read_text()
+        expipe_str = expipe_str.replace(old_project_name, new_project_name)
+        (new_project_path / "expipe.yaml").write_text(expipe_str)
+
     new_project = expipe.get_project(new_project_path)
 
+    # find actions with main.exdir that needs conversion
+    actions_to_convert = []
+    for action_id in old_actions:
+        old_data_folder = old_actions[action_id].path / "data"
+        if (old_data_folder / "main.exdir").is_dir():
+            actions_to_convert.append(action_id)
+
+    if debug_n_actions:
+        actions_to_convert = actions_to_convert[:debug_n_actions]
+
     print(f"Found {len(old_actions)} actions in {old_project_name}\n")
+    print(f"Actions to convert: {len(actions_to_convert)}")
 
     # copy actions
-    for action_id in old_actions:
+    for action_id in actions_to_convert:
         print(f"*****************\nProcessing action {action_id}\n*****************")
         old_action = old_actions[action_id]
         new_action = new_project.actions[action_id]
         old_data_folder = _get_data_path(old_action).parent
         new_data_folder = _get_data_path(new_action).parent
+        print("New data folder", new_data_folder)
 
         # main.exdir
         old_exdir_folder = old_data_folder / "main.exdir"
@@ -98,8 +119,27 @@ def convert_old_project(
             print(f"Found {len(openephys_folders)} openephys folders in {acquisition_folder}!")
             continue
         openephys_path = openephys_folders[0]
+        # here we assume the following action name: {entity_id}-{date}-{session}
         entity_id = action_id.split("-")[0]
         user = old_action.attributes["users"][0]
+
+        if entity_id not in new_project.entities:
+            print(f"\tRegistering missing entity: {entity_id}")
+            action_date = datetime.strptime("200619", "%y%M%d")
+            birthday = action_date - timedelta(days=default_age_days)
+            register_entity(
+                new_project,
+                entity_id,
+                user,
+                species=default_species,
+                sex=default_sex,
+                message=None,
+                location=default_location,
+                tags=None,
+                overwrite=False,
+                birthday=birthday,
+                templates=None,
+            )
 
         print("\tConverting to NWB")
         convert_to_nwb(
@@ -111,6 +151,7 @@ def convert_old_project(
         old_spikesorting = old_exdir_folder / "processing" / "electrophysiology" / "spikesorting"
         new_si_folder = new_data_folder / "spikeinterface"
         new_si_folder.mkdir(exist_ok=True)
+        print("New SI folder", new_si_folder)
         old_sorters = [p for p in old_spikesorting.iterdir() if p.is_dir()]
         for sorter_folder in old_sorters:
             new_sorter_folder = new_si_folder / sorter_folder.name
@@ -118,7 +159,8 @@ def convert_old_project(
             # copy phy folder
             old_phy_folder = sorter_folder / "phy"
             new_phy_folder = new_sorter_folder / "phy"
-            shutil.copytree(old_phy_folder, new_phy_folder)
+            if not new_phy_folder.is_dir():
+                shutil.copytree(old_phy_folder, new_phy_folder)
 
         # Run processing only (no spike sorting)
         if len(old_sorters) == 1:

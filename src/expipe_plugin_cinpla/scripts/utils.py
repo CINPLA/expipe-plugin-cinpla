@@ -162,7 +162,10 @@ def _make_data_path(action, overwrite, suffix=".nwb"):
     data_path = data_path / f"main{suffix}"
     if data_path.exists():
         if overwrite:
-            shutil.rmtree(str(data_path))
+            if data_path.is_dir():
+                shutil.rmtree(data_path)
+            else:
+                data_path.unlink()
         else:
             raise FileExistsError(
                 'The data path to this action "' + str(data_path) + '" exists, optionally use "--overwrite"'

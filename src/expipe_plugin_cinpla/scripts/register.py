@@ -52,7 +52,7 @@ def convert_to_nwb(project, action, openephys_path, probe_path, entity_id, user,
         species = entity.attributes["species"]
     metadata["Subject"]["species"] = species
     if "sex" not in entity.attributes:
-        warnings.warn("Sec not found in entity attributes, using default M")
+        warnings.warn("Sex not found in entity attributes, using default M")
         sex = "M"
     else:
         sex = entity.attributes["sex"]
@@ -366,7 +366,8 @@ def register_entity(
     register_templates(entity, templates)
     entity.datetime = datetime.now()
     entity.type = "Subject"
-    entity.tags.extend(list(tags))
+    if tags:
+        entity.tags.extend(list(tags))
     entity.location = location
 
     if sex in ("male", "Male", "m", "M"):

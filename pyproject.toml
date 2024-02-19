@@ -25,6 +25,7 @@ dependencies = [
     "ipywidgets>=8.1.1",
     "nwbwidgets>=0.11.3",
     "tbb>=2021.11.0",
+    "pynapple>=0.5.1",
     "spython>=0.3.13",
 ]
 

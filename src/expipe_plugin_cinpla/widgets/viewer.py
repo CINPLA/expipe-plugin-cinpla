@@ -14,8 +14,7 @@ class NwbViewer(ipywidgets.VBox):
         super().__init__(**kwargs)
         self.project = project
 
-        options = [action for action in project.actions]
-
+        options = self.get_options()
         self.actions_list = ipywidgets.Select(
             options=options, value=None, rows=10, description="Actions: ", disabled=False, layout={"width": "80%"}
         )
@@ -24,6 +23,16 @@ class NwbViewer(ipywidgets.VBox):
         self.actions_list.observe(self.on_change)
         self.ios = dict()
         self.nwbfile = None
+
+    def get_options(self):
+        options = []
+        all_actions = self.project.actions
+        for action_name in all_actions:
+            action = all_actions[action_name]
+            data_path = _get_data_path(action)
+            if data_path is not None and data_path.name == "main.nwb":
+                options.append(action_name)
+        return options
 
     def on_change(self, change):
         if change["type"] == "change" and change["name"] == "value":
@@ -48,7 +57,7 @@ class NwbViewer(ipywidgets.VBox):
 
     def refresh(self, project):
         self.project = expipe.get_project(project.path)
-        options = [action for action in self.project.actions]
+        options = self.get_options()
 
         self.actions_list = ipywidgets.Select(
             options=options, value=None, rows=10, description="Actions: ", disabled=False, layout={"width": "80%"}

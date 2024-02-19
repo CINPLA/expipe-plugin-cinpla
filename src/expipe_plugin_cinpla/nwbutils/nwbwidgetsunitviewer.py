@@ -13,7 +13,7 @@ from nwbwidgets.view import default_neurodata_vis_spec
 color_wheel = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
 
-class UnitWaveformsWidget(widgets.HBox):
+class UnitWaveformsWidget(widgets.VBox):
     def __init__(
         self,
         units: Units,
@@ -33,7 +33,7 @@ class UnitWaveformsWidget(widgets.HBox):
 
         self.unit_name_text = widgets.Label("Unit:    ", layout=dict(width="200px"))
         self.unit_group_text = widgets.Label("Group:     ", layout=dict(width="200px"))
-        unit_controls = widgets.VBox([self.unit_list, self.unit_name_text, self.unit_group_text])
+        unit_controls = widgets.HBox([self.unit_list, self.unit_name_text, self.unit_group_text])
         self.controls = dict(unit_index=self.unit_list)
 
         plot_func = partial(show_unit_waveforms, units=self.units)
@@ -41,6 +41,7 @@ class UnitWaveformsWidget(widgets.HBox):
         out_fig = interactive_output(plot_func, self.controls)
 
         self.children = [unit_controls, out_fig]
+        print(self.children)
 
         self.layout = Layout(width="100%")
 
@@ -149,7 +150,7 @@ class UnitRateMapWidget(widgets.VBox):
             step=1,
             description="Bins:",
         )
-        left_panel = widgets.VBox(
+        top_panel = widgets.VBox(
             [
                 self.unit_list,
                 self.unit_name_text,
@@ -168,7 +169,7 @@ class UnitRateMapWidget(widgets.VBox):
 
         out_fig = interactive_output(self.show_unit_rate_maps, self.controls)
 
-        self.children = [left_panel, out_fig]
+        self.children = [top_panel, out_fig]
 
         self.layout = Layout(width="100%")
 

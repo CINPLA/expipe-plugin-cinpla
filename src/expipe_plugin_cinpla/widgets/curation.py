@@ -52,6 +52,9 @@ class CurationView(BaseViewWithLog):
         custom_raw_unit_vis = {
             Units: OrderedDict({"Raw Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget})
         }
+        custom_main_unit_vis = {
+            Units: OrderedDict({"Main Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget})
+        }
         custom_curated_unit_vis = {
             Units: OrderedDict({"Curated Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget})
         }
@@ -62,9 +65,11 @@ class CurationView(BaseViewWithLog):
         for action_name in all_actions:
             # if exdir_path is None:
             action = all_actions[action_name]
-            si_path = _get_data_path(action).parent / "spikeinterface"
-            if si_path.is_dir():
-                actions_processed.append(action_name)
+            data_path = _get_data_path(action)
+            if data_path is not None:
+                si_path = data_path.parent / "spikeinterface"
+                if si_path.is_dir():
+                    actions_processed.append(action_name)
 
         actions_list = ipywidgets.Select(
             options=actions_processed, rows=10, description="Actions: ", disabled=False, layout={"width": "300px"}
@@ -140,14 +145,6 @@ class CurationView(BaseViewWithLog):
         apply_qm_curation.style.button_color = "pink"
         qc_controls = ipywidgets.HBox([add_metric_button, remove_metric_button, set_default_qms, apply_qm_curation])
 
-        # # Consensus
-        # min_agreement = ipywidgets.IntText(
-        #     description="Minumum agreement",
-        #     value=2,
-        #     tooltip="Minimum agreement for consensus-based",
-        # )
-        # consensus_panel = min_agreement
-
         actions_panel = ipywidgets.VBox([actions_list, sorter_list, run_save])
 
         phy_panel = ipywidgets.VBox(
@@ -169,20 +166,31 @@ class CurationView(BaseViewWithLog):
 
         curation_panel = ipywidgets.VBox([strategy, phy_panel])
 
-        raw_units_placeholder = ipywidgets.Output(layout={"width": "300px", "height": "500px"})
-        curated_units_placeholder = ipywidgets.Output(layout={"width": "300px", "height": "500px"})
+        units_placeholder = ipywidgets.Output(layout={"width": "300px", "height": "500px"})
+        units_viewers = dict(
+            raw=None,
+            main=None,
+            curated=None,
+        )
         sorting_not_found = ipywidgets.ToggleButton(
             value=False,
-            description="Raw sorting not found",
+            description="Sorting not found",
             disabled=True,
             button_style="warning",  # 'success', 'info', 'warning', 'danger' or ''
             layout={"width": "100%"},
         )
+        units_dropdown = ipywidgets.Dropdown(
+            options=["Raw", "Main", "Curated"],
+            description="Units:",
+            disabled=False,
+            layout={"width": "100%"},
+            value="Raw",
+        )
 
-        units_row = ipywidgets.HBox([raw_units_placeholder, curated_units_placeholder])
+        units_col = ipywidgets.VBox([units_dropdown, units_placeholder])
 
         curation_box = ipywidgets.HBox([actions_panel, curation_panel], layout={"width": "100%"})
-        main_box = ipywidgets.VBox([curation_box, units_row])
+        main_box = ipywidgets.VBox([curation_box, units_col])
         super().__init__(main_box=main_box, project=project)
 
         self.sorting_curator = curation.SortingCurator(project)
@@ -205,12 +213,19 @@ class CurationView(BaseViewWithLog):
                 print("Select one spike sorting output at a time")
             else:
                 if len(sorter_list.value) == 1:
-                    units = self.sorting_curator.load_raw_units(sorter_list.value[0])
-                    if units is not None:
-                        w = nwb2widget(units, custom_raw_unit_vis)
-                        units_row.children = [w, curated_units_placeholder]
+                    units_raw = self.sorting_curator.load_raw_units(sorter_list.value[0])
+                    if units_raw is not None:
+                        w = nwb2widget(units_raw, custom_raw_unit_vis)
+                        units_viewers["raw"] = w
                     else:
-                        units_row.children = [sorting_not_found, curated_units_placeholder]
+                        units_viewers["raw"] = sorting_not_found
+                    units_main = self.sorting_curator.load_main_units()
+                    if units_main is not None:
+                        w = nwb2widget(units_main, custom_main_unit_vis)
+                        units_viewers["main"] = w
+                    else:
+                        units_viewers["main"] = sorting_not_found
+                    units_viewers["curated"] = sorting_not_found
                     if strategy.value == "Sortingview":
                         # load visualization link
                         sv_visualization_link.value = self.sorting_curator.get_sortingview_link(sorter_list.value[0])
@@ -242,7 +257,7 @@ class CurationView(BaseViewWithLog):
                 self.sorting_curator.apply_sortingview_curation(sorter_list.value[0], sv_curated_link.value)
                 units = self.sorting_curator.construct_curated_units()
                 w = nwb2widget(units, custom_curated_unit_vis)
-                units_row.children = [units_row.children[0], w]
+                units_viewers["curated"] = w
 
         def on_add_metric(change):
             action = project.actions[actions_list.value]
@@ -256,6 +271,14 @@ class CurationView(BaseViewWithLog):
         def on_remove_metric(change):
             if len(qc_metrics.children) > 1:
                 qc_metrics.children = qc_metrics.children[:-1]
+
+        def on_choose_units(change):
+            units_widget = units_viewers[units_dropdown.value.lower()]
+            if units_widget is not None:
+                print(f"Displaying {units_dropdown.value} units")
+                units_col.children = [units_dropdown, units_widget]
+
+        units_dropdown.observe(on_choose_units)
 
         @self.output.capture()
         def on_set_default_qms(change):
@@ -277,7 +300,7 @@ class CurationView(BaseViewWithLog):
                 self.sorting_curator.load_from_phy(sorter_list.value[0])
                 units = self.sorting_curator.construct_curated_units()
                 w = nwb2widget(units, custom_curated_unit_vis)
-                units_row.children = [units_row.children[0], w]
+                units_viewers["curated"] = w
 
         @self.output.capture()
         def on_restore_phy(change):
@@ -298,7 +321,7 @@ class CurationView(BaseViewWithLog):
                 self.sorting_curator.apply_qc_curator(sorter_list.value[0], query)
                 units = self.sorting_curator.construct_curated_units()
                 w = nwb2widget(units, custom_curated_unit_vis)
-                units_row.children = [units_row.children[0], w]
+                units_viewers["curated"] = w
 
         @self.output.capture()
         def on_save_to_nwb(change):
