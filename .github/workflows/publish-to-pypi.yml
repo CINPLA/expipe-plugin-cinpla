@@ -6,7 +6,6 @@ on:
        - '*'
 jobs:
   release:
-    environment: pypi
     runs-on: ubuntu-latest
 
     steps:

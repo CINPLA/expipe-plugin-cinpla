@@ -51,13 +51,23 @@ def process_ecephys_view(project):
     # klusta and YASS are legacy
     available_sorters.remove("klusta")
     available_sorters.remove("yass")
+    installed_sorters = ss.installed_sorters()
+
+    sorters_string_to_name = dict()
+    for sorter in available_sorters:
+        if sorter in installed_sorters:
+            sorters_string_to_name[f"{sorter} (I)"] = sorter
+        else:
+            sorters_string_to_name[f"{sorter} (U)"] = sorter
+    options = list(sorters_string_to_name.keys())
+    initial_value = [s for s in options if "mountainsort5" in s][0]
     sorter = ipywidgets.Dropdown(
         description="Sorter",
-        options=available_sorters,
-        value="mountainsort5",
+        options=options,
+        value=initial_value,
         layout={"width": "initial"},
     )
-    sorter_initial_params = ss.get_default_sorter_params(sorter.value)
+    sorter_initial_params = ss.get_default_sorter_params(sorters_string_to_name[sorter.value])
     num_params = len(sorter_initial_params)
     sorter_param = ParameterSelectList(
         description="Spike sorting options",
@@ -197,14 +207,14 @@ def process_ecephys_view(project):
     def on_change(change):
         if change["type"] == "change" and change["name"] == "value":
             for s in ss.sorter_full_list:
-                if s.sorter_name == sorter.value:
+                if s.sorter_name == sorters_string_to_name[sorter.value]:
                     params = s.default_params()
             sorter_param.update_params(params)
 
     def on_show(change):
         if change["type"] == "change" and change["name"] == "value":
             for s in ss.sorter_full_list:
-                if s.sorter_name == sorter.value:
+                if s.sorter_name == sorters_string_to_name[sorter.value]:
                     params = s.default_params()
             sorter_param.update_params(params)
             if show_params.value:
@@ -245,6 +255,10 @@ def process_ecephys_view(project):
             if v == "None":
                 spikesorter_params[k] = None
 
+        sorter_name = sorters_string_to_name[sorter.value]
+        if sorter_name not in installed_sorters and not use_singularity.value:
+            raise ValueError(f"Sorter {sorter_name} not installed. Use singularity to run.")
+
         if bad_channel_ids.value not in ["", "auto"]:
             bad_chans = [str(b) for b in bad_channel_ids.value.split(",")]
         elif bad_channel_ids.value == "auto":
@@ -276,7 +290,7 @@ def process_ecephys_view(project):
                 process.process_ecephys(
                     project=project,
                     action_id=action_id,
-                    sorter=sorter.value,
+                    sorter=sorter_name,
                     spikesort=spikesort.value,
                     compute_lfp=compute_lfp.value,
                     compute_mua=compute_mua.value,
@@ -302,7 +316,7 @@ def process_ecephys_view(project):
                 run_status_label.style.button_color = "red"
                 print(f"ERROR: unable to process {action_id}")
                 print(str(error))
-                process.clean_up(project, action_id, sorter.value)
+                process.clean_up(project, action_id, sorters_string_to_name[sorter.value])
 
     sorter.observe(on_change)
     run_button.on_click(on_run)

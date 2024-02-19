@@ -119,7 +119,10 @@ def process_ecephys(
 
     # apply filtering and cmr
     if verbose:
-        print("\nPreprocessing")
+        duration = np.round(recording.get_total_duration(), 2)
+        print(
+            f"\nPreprocessing recording:\n\tNum channels: {recording.get_num_channels()}\n\tDuration: {duration} s"
+        )
     si_folder = nwb_path.parent / "spikeinterface"
     output_base_folder = si_folder / sorter
 
