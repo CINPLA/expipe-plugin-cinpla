@@ -2,7 +2,7 @@ name: Test on Ubuntu
 
 on:
   pull_request:
-      branches: [master]
+      branches: [dev]
       types: [synchronize, opened, reopened]
 
 
