@@ -117,7 +117,7 @@ def register_openephys_view(project):
             session=session.value,
             location=location.value,
             message=none_if_empty(message.value),
-            tag=tags,
+            tags=tags,
             delete_raw_data=delete_raw_data.value,
             correct_depth_answer=True,
         )
@@ -217,7 +217,7 @@ def register_annotate_view(project):
                 date=date.value,
                 location=location.value,
                 message=message.value,
-                tag=tags,
+                tags=tags,
                 depth=depth.value,
                 entity_id=entity_id.value,
                 templates=templates.value,
@@ -272,7 +272,7 @@ def register_entity_view(project):
             birthday=birthday.datetime,
             overwrite=overwrite,
             location=location.value,
-            tag=tags,
+            tags=tags,
             templates=templates.value,
         )
 
@@ -336,7 +336,7 @@ def register_surgery_view(project):
             position=position.value,
             angle=angle.value,
             message=none_if_empty(message.value),
-            tag=tags,
+            tags=tags,
         )
 
     register.on_click(on_register)
