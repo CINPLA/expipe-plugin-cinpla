@@ -74,7 +74,7 @@ def attach_to_register(cli):
     )
     @click.option(
         "-t",
-        "--tag",
+        "--tags",
         multiple=True,
         type=click.STRING,
         help="Add tags to action.",
@@ -151,7 +151,7 @@ def attach_to_register(cli):
     )
     @click.option(
         "-t",
-        "--tag",
+        "--tags",
         multiple=True,
         type=click.STRING,
         help="Add tags to action.",
@@ -403,7 +403,7 @@ def attach_to_register(cli):
     )
     @click.option(
         "-t",
-        "--tag",
+        "--tags",
         multiple=True,
         type=click.STRING,
         help="Add tags to entity.",
@@ -495,7 +495,7 @@ def attach_to_register(cli):
     )
     @click.option(
         "-t",
-        "--tag",
+        "--tags",
         multiple=True,
         type=click.STRING,
         help="Add tags to action.",

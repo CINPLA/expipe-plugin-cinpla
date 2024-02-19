@@ -41,7 +41,7 @@ def test_annotate():
             pytest.ACTION_ID,
             "--project-path",
             pytest.PROJECT_PATH,
-            "--tag",
+            "--tags",
             pytest.POSSIBLE_TAGS[0],
             "-t",
             pytest.POSSIBLE_TAGS[1],
