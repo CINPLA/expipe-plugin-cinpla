@@ -82,13 +82,13 @@ def convert_old_project(
             raise FileExistsError(f"Project {new_project_path} already exists!")
         else:
             shutil.rmtree(new_project_path)
-    else:
-        print("Copying entire project")
-        shutil.copytree(old_project_path, new_project_path, ignore=shutil.ignore_patterns("main.exdir", ".git"))
 
-        expipe_str = (new_project_path / "expipe.yaml").read_text()
-        expipe_str = expipe_str.replace(old_project_name, new_project_name)
-        (new_project_path / "expipe.yaml").write_text(expipe_str)
+    print("Copying entire project")
+    shutil.copytree(old_project_path, new_project_path, ignore=shutil.ignore_patterns("main.exdir", ".git"))
+
+    expipe_str = (new_project_path / "expipe.yaml").read_text()
+    expipe_str = expipe_str.replace(old_project_name, new_project_name)
+    (new_project_path / "expipe.yaml").write_text(expipe_str)
 
     new_project = expipe.get_project(new_project_path)
 

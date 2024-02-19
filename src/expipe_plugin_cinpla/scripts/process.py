@@ -28,7 +28,7 @@ def process_ecephys(
     metric_names=None,
     overwrite=False,
     singularity_image=None,
-    n_components=5,
+    n_components=3,
     plot_sortingview=True,
     verbose=True,
 ):
@@ -197,7 +197,7 @@ def process_ecephys(
                 context = contextlib.nullcontext()
             else:
                 if verbose:
-                    print("\nSpike sorting locally")
+                    print(f"\nSpike sorting with {sorter} using installed sorter")
                 context = contextlib.redirect_stdout(None)
 
             with context:
