@@ -99,11 +99,12 @@ def convert_old_project(
         if (old_data_folder / "main.exdir").is_dir():
             actions_to_convert.append(action_id)
 
+    print(f"Found {len(old_actions)} actions in {old_project_name}\n")
+    print(f"Actions that need conversion: {len(actions_to_convert)}")
+
     if debug_n_actions:
         actions_to_convert = actions_to_convert[:debug_n_actions]
-
-    print(f"Found {len(old_actions)} actions in {old_project_name}\n")
-    print(f"Actions to convert: {len(actions_to_convert)}")
+    print(f"Actions that will be converted: {len(actions_to_convert)}")
 
     # copy actions
     for action_id in actions_to_convert:
