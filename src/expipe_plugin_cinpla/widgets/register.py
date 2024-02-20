@@ -18,11 +18,9 @@ def register_openephys_view(project):
     layout_auto = ipywidgets.Layout(width="300px")
     openephys_path = ipywidgets.Text(placeholder="Path to Open Ephys folder", layout=layout_auto)
     default_probe = project.config.get("probe_path", None)
-    cwd = Path.cwd().absolute()
-    probe_placeholder = (
-        str(Path(default_probe).relative_to(cwd)) if default_probe is not None else "*Path to probeinterface .json file"
-    )
-    probe_path = ipywidgets.Text(placeholder=probe_placeholder, layout=layout_auto, default=default_probe)
+    probe_path = ipywidgets.Text(placeholder="Path to probe JSON file", layout=layout_auto)
+    if default_probe is not None:
+        probe_path.value = default_probe
     user = ipywidgets.Text(placeholder="*User", value=project.config.get("username"), layout=layout_auto)
     session = ipywidgets.Text(placeholder="Session", layout=layout_auto)
     location = ipywidgets.Text(placeholder="*Location", value=project.config.get("location"), layout=layout_auto)

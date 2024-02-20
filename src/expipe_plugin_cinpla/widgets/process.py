@@ -35,13 +35,12 @@ def process_ecephys_view(project):
         # if exdir_path is None:
         action = all_actions[action_name]
         data_path = _get_data_path(action)
-        if data_path is not None:
+        if data_path is not None and data_path.name == "main.nwb":
             si_path = data_path.parent / "spikeinterface"
-            if data_path.name == "main.nwb":
-                if si_path.is_dir():
-                    action_names.append(f"{action_name} -- (P)")
-                else:
-                    action_names.append(f"{action_name} -- (U)")
+            if si_path.is_dir():
+                action_names.append(f"{action_name} -- (P)")
+            else:
+                action_names.append(f"{action_name} -- (U)")
 
     action_ids = SearchSelectMultiple(action_names, description="*Actions")
 
@@ -254,6 +253,13 @@ def process_ecephys_view(project):
         for k, v in spikesorter_params.items():
             if v == "None":
                 spikesorter_params[k] = None
+            elif isinstance(v, str):
+                if "[" in v and "]" in v:
+                    # this is needed to properly parse lists
+                    spikesorter_params[k] = eval(v)
+                elif "(" in v and ")" in v:
+                    # this is needed to properly parse tuples
+                    spikesorter_params[k] = eval(v)
 
         sorter_name = sorters_string_to_name[sorter.value]
         if sorter_name not in installed_sorters and not use_singularity.value:

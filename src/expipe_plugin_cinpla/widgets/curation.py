@@ -66,7 +66,7 @@ class CurationView(BaseViewWithLog):
             # if exdir_path is None:
             action = all_actions[action_name]
             data_path = _get_data_path(action)
-            if data_path is not None:
+            if data_path is not None and data_path.name == "main.nwb":
                 si_path = data_path.parent / "spikeinterface"
                 if si_path.is_dir():
                     actions_processed.append(action_name)
