@@ -338,8 +338,6 @@ class CurationView(BaseViewWithLog):
         apply_qm_curation.on_click(on_apply_qm_curation)
         apply_sv_curation.on_click(on_curated_link)
         units_dropdown.observe(on_choose_units)
-        units_dropdown.observe(on_sorter)
-        units_dropdown.observe(on_action)
 
         add_metric_button.on_click(on_add_metric)
         remove_metric_button.on_click(on_remove_metric)
