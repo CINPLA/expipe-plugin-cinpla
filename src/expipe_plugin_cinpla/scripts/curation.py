@@ -102,6 +102,9 @@ class SortingCurator:
         return nwbfile.units
 
     def construct_curated_units(self):
+        if len(self.curated_we.unit_ids) == 0:
+            print("No units left after curation.")
+            return
         self.io = NWBHDF5IO(self.nwb_path_main, "r")
         nwbfile = self.io.read()
         add_units_from_waveform_extractor(

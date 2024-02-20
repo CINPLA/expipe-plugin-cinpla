@@ -254,8 +254,9 @@ class CurationView(BaseViewWithLog):
                 print(f"Applying curation from {sv_curated_link.value}")
                 self.sorting_curator.apply_sortingview_curation(sorter_list.value[0], sv_curated_link.value)
                 units = self.sorting_curator.construct_curated_units()
-                w = nwb2widget(units, custom_curated_unit_vis)
-                units_viewers["curated"] = w
+                if units:
+                    w = nwb2widget(units, custom_curated_unit_vis)
+                    units_viewers["curated"] = w
 
         def on_add_metric(change):
             action = project.actions[actions_list.value]
@@ -296,8 +297,9 @@ class CurationView(BaseViewWithLog):
             else:
                 self.sorting_curator.load_from_phy(sorter_list.value[0])
                 units = self.sorting_curator.construct_curated_units()
-                w = nwb2widget(units, custom_curated_unit_vis)
-                units_viewers["curated"] = w
+                if units:
+                    w = nwb2widget(units, custom_curated_unit_vis)
+                    units_viewers["curated"] = w
 
         @self.output.capture()
         def on_restore_phy(change):
@@ -317,8 +319,9 @@ class CurationView(BaseViewWithLog):
                 query = " and ".join([qm.get_query() for qm in qc_metrics.children])
                 self.sorting_curator.apply_qc_curator(sorter_list.value[0], query)
                 units = self.sorting_curator.construct_curated_units()
-                w = nwb2widget(units, custom_curated_unit_vis)
-                units_viewers["curated"] = w
+                if units:
+                    w = nwb2widget(units, custom_curated_unit_vis)
+                    units_viewers["curated"] = w
 
         @self.output.capture()
         def on_save_to_nwb(change):
