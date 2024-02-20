@@ -16,6 +16,9 @@ from spikeinterface.extractors.nwbextractors import _retrieve_unit_table_pynwb
 
 from .utils import _get_data_path, add_units_from_waveform_extractor, compute_and_set_unit_groups
 
+warnings.filterwarnings("ignore", category=ResourceWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 
 metric_metric_str_to_si_metric_name = {
     "amplitude_cutoff": "amplitude_cutoff",
@@ -55,7 +58,6 @@ class SortingCurator:
         nwb_path_tmp = nwb_path.parent / "main_tmp.nwb"
         if nwb_path_tmp.is_file():
             nwb_path_tmp.unlink()
-        shutil.copy(nwb_path, nwb_path_tmp)
         self.nwb_path_tmp = nwb_path_tmp
         self.nwb_path_main = nwb_path
         self.si_path = self.nwb_path_tmp.parent / "spikeinterface"
@@ -246,7 +248,7 @@ class SortingCurator:
             print("No curation was performed.")
             return
 
-        # trick to get rid of open synchronous files issue
+        # trick to get rid of Units first
         with NWBHDF5IO(self.nwb_path_main, mode="r") as read_io:
             nwbfile_in = read_io.read()
 
@@ -256,16 +258,22 @@ class SortingCurator:
                 nwbfile_in.units.reset_parent()
                 nwbfile_in.fields["units"] = None
 
+            with NWBHDF5IO(self.nwb_path_tmp, mode="w") as export_io:
+                export_io.export(src_io=read_io, nwbfile=nwbfile_in)
+
+        # write new units
+        with NWBHDF5IO(self.nwb_path_tmp, mode="a") as io:
+            nwbfile_out = io.read()
             print("Adding curated units table")
             add_units_from_waveform_extractor(
                 we=self.curated_we,
-                nwbfile=nwbfile_in,
+                nwbfile=nwbfile_out,
                 unit_table_name="units",
                 unit_table_description=self.curation_description,
                 write_in_processing_module=False,
             )
-            with NWBHDF5IO(self.nwb_path_tmp, mode="w") as export_io:
-                export_io.export(src_io=read_io, nwbfile=nwbfile_in)
+            io.write(nwbfile_out)
+
         self.nwb_path_main.unlink()
         self.nwb_path_tmp.rename(self.nwb_path_main)
         print("Done saving to NWB")

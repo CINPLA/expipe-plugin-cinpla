@@ -2,6 +2,9 @@ import ipywidgets
 import numpy as np
 import datetime as dt
 import expipe
+import warnings
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def required_values_filled(*widgets):
