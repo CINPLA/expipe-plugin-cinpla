@@ -115,7 +115,7 @@ class UnitRateMapWidget(widgets.VBox):
         if spatial_series is None:
             self.spatial_series = self.get_spatial_series()
             if len(self.spatial_series) == 0:
-                self.children = [widgets.HTML("No trials present")]
+                self.children = [widgets.HTML("No sparial series present")]
                 return
             elif len(self.spatial_series) > 1:
                 self.spatial_series_selector = widgets.Dropdown(

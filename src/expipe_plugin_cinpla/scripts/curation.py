@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 from pynwb import NWBHDF5IO
 from pynwb.testing.mock.file import mock_NWBFile
+import warnings
 
 import spikeinterface.full as si
 import spikeinterface.extractors as se
@@ -15,6 +16,7 @@ from spikeinterface.extractors.nwbextractors import _retrieve_unit_table_pynwb
 
 from .utils import _get_data_path, add_units_from_waveform_extractor, compute_and_set_unit_groups
 
+warnings.filterwarnings("ignore", category=ResourceWarning)
 
 metric_metric_str_to_si_metric_name = {
     "amplitude_cutoff": "amplitude_cutoff",
@@ -100,16 +102,17 @@ class SortingCurator:
         return nwbfile.units
 
     def construct_curated_units(self):
-        nwbfile_mock = mock_NWBFile()
+        self.io = NWBHDF5IO(self.nwb_path_main, "r")
+        nwbfile = self.io.read()
         add_units_from_waveform_extractor(
             self.curated_we,
-            nwbfile_mock,
-            unit_table_name="units",
+            nwbfile,
+            unit_table_name="curated units",
             unit_table_description=self.curation_description,
-            write_in_processing_module=False,
+            write_in_processing_module=True,
             write_electrodes_column=False,
         )
-        return nwbfile_mock.units
+        return nwbfile.units
 
     def load_processed_recording(self, sorter):
         preprocessed_json = self.si_path / sorter / "preprocessed.json"
@@ -184,7 +187,7 @@ class SortingCurator:
     def get_sortingview_link(self, sorter):
         visualization_json = self.si_path / sorter / "sortingview_links.json"
         if not visualization_json.is_file():
-            return ""
+            return "Sorting view link not found."
         with open(visualization_json, "r") as f:
             sortingview_links = json.load(f)
         return sortingview_links["raw"]

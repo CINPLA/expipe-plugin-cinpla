@@ -205,6 +205,8 @@ class CurationView(BaseViewWithLog):
                     sv_visualization_link.value = self.sorting_curator.get_sortingview_link(sorter_list.value[0])
                 elif strategy.value == "Phy":
                     run_phy_command.value = self.sorting_curator.get_phy_run_command(sorter_list.value[0])
+                units_dropdown.value = "Raw"
+                on_choose_units(None)
 
         def on_sorter(change):
             required_values_filled(actions_list)
@@ -216,20 +218,17 @@ class CurationView(BaseViewWithLog):
                     if units_raw is not None:
                         w = nwb2widget(units_raw, custom_raw_unit_vis)
                         units_viewers["raw"] = w
-                    else:
-                        units_viewers["raw"] = sorting_not_found
                     units_main = self.sorting_curator.load_main_units()
                     if units_main is not None:
                         w = nwb2widget(units_main, custom_main_unit_vis)
                         units_viewers["main"] = w
-                    else:
-                        units_viewers["main"] = sorting_not_found
-                    units_viewers["curated"] = sorting_not_found
                     if strategy.value == "Sortingview":
                         # load visualization link
                         sv_visualization_link.value = self.sorting_curator.get_sortingview_link(sorter_list.value[0])
                     elif strategy.value == "Phy":
                         run_phy_command.value = self.sorting_curator.get_phy_run_command(sorter_list.value[0])
+                    units_dropdown.value = "Raw"
+                    on_choose_units(None)
 
         def on_change_strategy(change):
             if change["new"] == "Phy":
@@ -275,6 +274,8 @@ class CurationView(BaseViewWithLog):
             units_widget = units_viewers[units_dropdown.value.lower()]
             if units_widget is not None:
                 units_col.children = [units_dropdown, units_widget]
+            else:
+                units_col.children = [units_dropdown, sorting_not_found]
 
         @self.output.capture()
         def on_set_default_qms(change):
