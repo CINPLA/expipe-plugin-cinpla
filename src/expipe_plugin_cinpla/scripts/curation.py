@@ -16,7 +16,6 @@ from spikeinterface.extractors.nwbextractors import _retrieve_unit_table_pynwb
 
 from .utils import _get_data_path, add_units_from_waveform_extractor, compute_and_set_unit_groups
 
-warnings.filterwarnings("ignore", category=ResourceWarning)
 
 metric_metric_str_to_si_metric_name = {
     "amplitude_cutoff": "amplitude_cutoff",
