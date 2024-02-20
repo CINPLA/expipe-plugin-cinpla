@@ -1,144 +1,62 @@
 
-# Getting started
+# Expipe plugin CINPLA
 
-- make a github user [github](https://github.com/)
-- download and install [Anaconda](https://www.anaconda.com/download/) version 3.7, command line version
-- download and install [github desktop](https://desktop.github.com/)
-- (optional) download and install [atom](https://atom.io/)
+Expipe plugin for CINPLA laboratory
+
 
 ## Installation
 
-Set up access to Norstore first:
+You can install the package with pip:
 
-- [Setup Norstore](https://github.com/CINPLA/expipe/wiki/Setup-Norstore)
-
-Then follow the installation instructions for your operating system:
-
-- [Installation on Linux](https://github.com/CINPLA/expipe/wiki/Installation-on-Linux)
-- [Installation on Windows](https://github.com/CINPLA/expipe/wiki/Installation-on-Windows)
-
-## Documentation
-
-(old)
-See the [wiki](https://github.com/CINPLA/expipe-plugin-cinpla/wiki/) or the [documentation](http://expipe-plugin-cinpla.readthedocs.io/en/latest/) 
-for more information on how to use expipe.
-
-(new)
-### Clone cinpla-base
-
-First we need to clone the cinpla-base repository.
-Open Github Desktop, hit Clone Repository --> URL --> paste `https://github.com/CINPLA/cinpla-base` and choose the folder in which you want to save this repository (you will need it later).
-It is reccommended to create a new folder called `apps` in your local disk (not kant!).
-
-### Get Anaconda ready
-
-Open the Anaconda prompt and navigate to the cinpla-base folder (`cd path-to-cinpla-base` - e.g. `cd C:\\apps\cinpla-base`)
-
-Now we need to create a new anaconda environment:
-
-``` 
-conda create -n expipe python=3.5
-source activate expipe
+```bash
+>>> pip install expipe-plugin-cinpla
 ```
 
-If you plan to use electrophysiology and spike sorting also run this:
+or from sources:
 
-```
-conda install pyqt=4
-```
-
-Then we can get all the python packages needed by:
-
-```
-pip install -r requirements.txt
+```bash
+git clone
+cd expipe-plugin-cinpla
+pip install -e .
 ```
 
-Now run expipe:
-```
-expipe
-```
+## Usage
 
-(in Windows, if it fails, run:
-```
-pip uninstall numpy
-pip install numpy
-```
-and try again!)
+The starting point is a valid `expipe` project. Refer to the [expipe docs]() to read more on how
+to create one.
 
-### Clone the templates
+The recommended usage is via Jupyter Notebook / Lab, using the interactive widgets to Register, Process,
+Curate, and View your actions.
 
-Templates are used to create modules in expipe actions. Use github desktop to clone https://github.com/CINPLA/expipe-templates-cinpla.git.
-This is a collection of templates used by the group that can be loaded into each project's templates folder.
+To launch the interactive browser, you can run:
+```python
+from expipe_plugin_cinpla import display_browser
 
-### Create a project
+project_path = "path-to-my-project"
 
-The project will contain the data and relative information. You can make a folder called `data` or `projects`, for example, and create you projects there.
-
-First change directory to your projects directory
-```
-cd path-to-data (or path-to-projects)
-```
-
-Then create a new project:
-```
-expipe create project_name
-```
-
-Now we can interact with the project by running:
-```
-jupyter notebook
-```
-
-This will open a browser window (e.g. in Chrome). To create a new notebook (used to write and run code) press `New`-->`Python 3`. This will create an ipython notebook file (`.ipynb`).
-
-In the first cell type and import the expipe packages:
-```
-from expipe_plugin_cinpla.widgets import browser
-import expipe
-```
-
-In the second cell type:
-```
-browser.display('project_name')
-```
-
-This will display an interactive widget to register actions (such as surgery, adjustment, perfusion, recordings, analysis), entities (such as animals) and process them, and saving them in `exdir` format.
-
-## Get started with spike sorting (SpikeInterface)
-
-In order to process extracellular data
-
-## Get started with Gitea
-
-Gitea allows to handle large file sizes (LFS). We use NIRD to store those files at https://gitea.expipe.sigma2.no/
-If you don't have an account contact Mikkel Lepperød.
-
-If you already created a project following the previous information, from the terminal go into the repository and type:
-```
-cd path-to-project
-git init
-```
-
-Then you have to create a repository on Gitea with **the same name** by `Add repository`. Once this is done, you have to tell Gitea that the repository you created needs to be connected to your local repository. Copy the gitea url of your repository (e.g. https://gitea.expipe.sigma2.no/your-user-name/your-project-name.git) and run:
+display_browser(project_path)
 
 ```
-git remote add origin https://gitea.expipe.sigma2.no/your-user-name/your-project-name.git
+
+![alt text](docs/images/browser.png)
+
+
+
+## Updating old projects
+
+The current version uses Neurodata Without Borders as backend instead of Exdir. If you have an existing
+project created with the old version, you can convert it to a new project as follows:
+
+```python
+from expipe_plugin_cinpla import convert_old_project
+
+old_project_path = "path-to-old-project"
+new_project_path = "path-to-new-project"
+
+probe_path = "path-to-probe-path.json" # see probes/ folder
+
+convert_old_project(old_project_path, new_project_path, probe_path)
 ```
 
-Then we have to add the files that expipe created (actions, templates, modules, etc.).
-
-```
-expipe init-lfs
-git add -A
-git commit -m "loading first files (or any other message)"
-git pull
-git branch --set-upstream-to=origin/master master
-git push
-```
-
-
-
-
-
-
+To check out other options, use `convert_old_project?`
 

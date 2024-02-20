@@ -1,0 +1,11 @@
+
+name: cinpla
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - expipe-plugin-cinpla
+    - jupyter_contrib_nbextensions>=0.7.0
+    - jupyterlab==3.6.5
