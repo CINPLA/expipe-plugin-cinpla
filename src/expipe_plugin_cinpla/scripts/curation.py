@@ -173,15 +173,12 @@ class SortingCurator:
     def load_from_phy(self, sorter):
         phy_path = self.si_path / sorter / "phy"
 
-        if not (phy_path / "spike_clusters.npy").is_file():
-            print(f"No curation found for {sorter}. Run phy first.")
-        else:
-            sorting_phy = se.read_phy(phy_path, exclude_cluster_groups=["noise"])
-            sorting_phy = sorting_phy.rename_units(sorting_phy.unit_ids.astype(str))
-            print(f"Loaded Phy-curated sorting for {sorter}:\n{sorting_phy}")
-            sorting_phy.set_property("group", sorting_phy.get_property("channel_group"))
-            self.apply_curation(sorter, sorting_phy)
-            self.curation_description = "Curation manually performed in Phy."
+        sorting_phy = se.read_phy(phy_path, exclude_cluster_groups=["noise"])
+        sorting_phy = sorting_phy.rename_units(sorting_phy.unit_ids.astype(str))
+        print(f"Loaded Phy-curated sorting for {sorter}:\n{sorting_phy}")
+        sorting_phy.set_property("group", sorting_phy.get_property("channel_group"))
+        self.apply_curation(sorter, sorting_phy)
+        self.curation_description = "Curation manually performed in Phy."
 
     def get_phy_run_command(self, sorter):
         phy_path = (self.si_path / sorter / "phy" / "params.py").absolute()
