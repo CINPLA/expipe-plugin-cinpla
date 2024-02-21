@@ -1,6 +1,6 @@
 [project]
 name = "expipe_plugin_cinpla"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
   { name="Mikkel Lepperod", email="mikkel@simula.no" },
   { name="Alessio Buccino", email="alessiop.buccino@gmail.com" },
@@ -40,9 +40,12 @@ build-backend = "setuptools.build_meta"
 
 
 [tool.setuptools]
-packages = ["expipe_plugin_cinpla"]
-package-dir = {"expipe_plugin_cinpla" = "src/expipe_plugin_cinpla"}
+include-package-data = true
 
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["expipe_plugin_cinpla*"]
+namespaces = false
 
 [project.optional-dependencies]
 
@@ -69,7 +72,6 @@ docs = [
 omit = [
     "tests/*",
 ]
-
 
 [tool.black]
 line-length = 120
