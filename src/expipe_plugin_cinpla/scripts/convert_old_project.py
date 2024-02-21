@@ -1,6 +1,7 @@
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
+import time
 
 import expipe
 
@@ -55,6 +56,7 @@ def convert_old_project(
     debug_n_actions : int, optional
         Number of actions to process for debugging.
     """
+    t_start_all = time.perf_counter()
     if process_ecephys_params is None:
         process_ecephys_params = dict(
             compute_lfp=True,
@@ -108,11 +110,12 @@ def convert_old_project(
 
     # copy actions
     for action_id in actions_to_convert:
-        print(f"*****************\nProcessing action {action_id}\n*****************")
+        t_start_action = time.perf_counter()
+        print(f"\n*****************\nProcessing action {action_id}\n*****************\n")
         old_action = old_actions[action_id]
         new_action = new_project.actions[action_id]
-        old_data_folder = _get_data_path(old_action).parent
-        new_data_folder = _get_data_path(new_action).parent
+        old_data_folder = old_project.path / "actions" / action_id / "data"
+        new_data_folder = new_project.path / "actions" / action_id / "data"
 
         # main.exdir
         old_exdir_folder = old_data_folder / "main.exdir"
@@ -151,12 +154,22 @@ def convert_old_project(
             new_project, new_action, openephys_path, probe_path, entity_id, user, include_events, overwrite=True
         )
 
-        # Copy Phy folder
-        print("\tCopying Phy folder")
+        # Process
         old_spikesorting = old_exdir_folder / "processing" / "electrophysiology" / "spikesorting"
         new_si_folder = new_data_folder / "spikeinterface"
         new_si_folder.mkdir(exist_ok=True)
         old_sorters = [p for p in old_spikesorting.iterdir() if p.is_dir()]
+
+        # Run processing only (no spike sorting)
+        if len(old_sorters) == 1:
+            sorter_name = old_sorters[0].name
+        else:
+            assert preferred_sorter is not None
+            sorter_name = preferred_sorter
+        print("\tRunning processing")
+        process_ecephys(new_project, action_id, sorter=sorter_name, spikesort=False, **process_ecephys_params)
+
+        print("\tCopying Phy folders")
         for sorter_folder in old_sorters:
             new_sorter_folder = new_si_folder / sorter_folder.name
             new_sorter_folder.mkdir(exist_ok=True)
@@ -168,16 +181,8 @@ def convert_old_project(
                     shutil.rmtree(new_phy_folder)
                 else:
                     raise FileExistsError(f"Phy folder {new_phy_folder} already exists!")
+            print(f"\t\tCopying folder for {sorter_folder.name}: from {old_phy_folder} to {new_phy_folder}")
             shutil.copytree(old_phy_folder, new_phy_folder)
-
-        # Run processing only (no spike sorting)
-        if len(old_sorters) == 1:
-            sorter_name = old_sorters[0].name
-        else:
-            assert preferred_sorter is not None
-            sorter_name = preferred_sorter
-        print("\tRunning processing")
-        process_ecephys(new_project, action_id, sorter=sorter_name, spikesort=False, **process_ecephys_params)
 
         print("\tApplying Phy curation and set main units")
         # Generate new main unit table from Phy (with preprocessed data)
@@ -187,4 +192,9 @@ def convert_old_project(
         # save main units
         sorting_curator.save_to_nwb()
 
+        t_stop_action = time.perf_counter()
+        print(f"Action {action_id} done in {t_stop_action - t_start_action:.2f} s")
+
+    t_stop_all = time.perf_counter()
+    print(f"Total time: {t_stop_all - t_start_all:.2f} s")
     print(f"*****************\nALL DONE!\n*****************")
