@@ -170,9 +170,6 @@ def process_ecephys(
 
     if verbose:
         print(f"\tActive channels: {len(recording_active.channel_ids)}")
-    if verbose:
-        print("\tSaving preprocessed recording")
-    recording_cmr = recording_cmr.save(folder=output_base_folder / "recording_cmr", overwrite=True, verbose=False)
 
     if compute_lfp:
         recording_lfp = spre.bandpass_filter(recording_active, freq_min=freq_min_lfp, freq_max=freq_max_lfp)
@@ -185,6 +182,10 @@ def process_ecephys(
         recording_mua.set_property("group_name", [f"tetrode{gr}" for gr in recording_lfp.get_channel_groups()])
 
     if spikesort:
+        if verbose:
+            print("\tSaving preprocessed recording")
+        recording_cmr = recording_cmr.save(folder=output_base_folder / "recording_cmr", overwrite=True, verbose=False)
+
         if spikesorter_params is None:
             spikesorter_params = {}
         output_folder = output_base_folder / "spikesorting"

@@ -1,6 +1,7 @@
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
+import time
 
 import expipe
 
@@ -55,6 +56,7 @@ def convert_old_project(
     debug_n_actions : int, optional
         Number of actions to process for debugging.
     """
+    t_start_all = time.perf_counter()
     if process_ecephys_params is None:
         process_ecephys_params = dict(
             compute_lfp=True,
@@ -108,6 +110,7 @@ def convert_old_project(
 
     # copy actions
     for action_id in actions_to_convert:
+        t_start_action = time.perf_counter()
         print(f"\n*****************\nProcessing action {action_id}\n*****************\n")
         old_action = old_actions[action_id]
         new_action = new_project.actions[action_id]
@@ -189,4 +192,9 @@ def convert_old_project(
         # save main units
         sorting_curator.save_to_nwb()
 
+        t_stop_action = time.perf_counter()
+        print(f"Action {action_id} done in {t_stop_action - t_start_action:.2f} s")
+
+    t_stop_all = time.perf_counter()
+    print(f"Total time: {t_stop_all - t_start_all:.2f} s")
     print(f"*****************\nALL DONE!\n*****************")
