@@ -1,0 +1,8 @@
+CA2L:
+  probe_0:
+    value: 2.9
+    unit: mm
+CA2R:
+  probe_0:
+    value: 2.85
+    unit: mm

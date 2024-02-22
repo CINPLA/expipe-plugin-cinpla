@@ -1,0 +1,28 @@
+spike_sorting:
+  name: "mountainsort4"
+  params:
+    adjacency_radius: -1
+    clip_size: 50
+    curation: false
+    detect_interval: 10
+    detect_sign: -1
+    detect_threshold: 6
+    filter: true
+    freq_max: 6000
+    freq_min: 150
+    noise_overlap_threshold: 0.15
+    num_workers:
+    whiten: true
+filter:
+  hp_filter:
+    low: 300
+    high: 3000
+  lfp_filter:
+    low: 1
+    high: 300
+    resample: 1000
+  mua_filter:
+    resample: 1000
+reference:
+  type: "cmr"
+  split: "half"

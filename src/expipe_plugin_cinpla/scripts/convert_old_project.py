@@ -114,6 +114,13 @@ def convert_old_project(
         print(f"\n*****************\nProcessing action {action_id}\n*****************\n")
         old_action = old_actions[action_id]
         new_action = new_project.actions[action_id]
+
+        # replace file in attributes.yaml
+        attributes_file = new_project.path / "actions" / action_id / "attributes.yaml"
+        attributes_str = attributes_file.read_text()
+        attributes_str = attributes_str.replace("main.exdir", "main.nwb")
+        attributes_file.write_text(attributes_str)
+
         old_data_folder = old_project.path / "actions" / action_id / "data"
         new_data_folder = new_project.path / "actions" / action_id / "data"
 
