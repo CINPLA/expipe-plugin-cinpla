@@ -379,6 +379,10 @@ def process_ecephys(
     # clean up
     if verbose:
         print("Cleaning up")
+    provenance_file = output_base_folder / "recording_cmr" / "provenance.json"
+    if not provenance_file.is_file():
+        (output_base_folder / "recording_cmr").mkdir(parents=True, exist_ok=True)
+        recording_cmr.dump_to_json(output_base_folder / "recording_cmr" / "provenance.json")
     with open(output_base_folder / "recording_cmr" / "provenance.json", "r") as f:
         provenance = json.load(f)
     provenance_str = json.dumps(provenance)
