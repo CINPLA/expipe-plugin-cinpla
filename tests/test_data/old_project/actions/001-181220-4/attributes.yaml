@@ -1,0 +1,29 @@
+registered: '2022-05-24T16:19:00'
+datetime: '2020-12-18T20:49:22'
+type: Recording
+tags:
+- open-ephys
+- ca2_t0-t3
+- t0=ca2
+- t1=ca2
+- t2=ca2
+- t3=ca2
+- t4=miss
+- t5=miss
+- t6=miss
+- t7=miss
+- trial_id_t3
+- 5trials
+- social_1
+- familiar_t2_tr
+- corner_s_tl_nobox_e
+- corner_s_tr_box_e
+- corner_s_bl_box_f
+- corner_s_br_nobox_e
+entities:
+- '001'
+users:
+- sarah
+location: ibv
+data:
+  main: actions\001-181220-4\data\main.exdir

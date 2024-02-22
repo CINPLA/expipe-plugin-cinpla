@@ -1,0 +1,6 @@
+exdir:
+  type: dataset
+  version: 1
+plugins:
+  quantities:
+    required: true
