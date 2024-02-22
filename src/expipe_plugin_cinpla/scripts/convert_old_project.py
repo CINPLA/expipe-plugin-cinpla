@@ -173,7 +173,7 @@ def convert_old_project(
             if exist_ok and (new_data_folder / "main.nwb").is_file():
                 print(f"NWB file already exists for action {action_id}")
             else:
-                print(">>> Converting to NWB\n")
+                print("\n>>> Converting to NWB\n")
                 convert_to_nwb(
                     new_project, new_action, openephys_path, probe_path, entity_id, user, include_events, overwrite=True
                 )
@@ -193,10 +193,10 @@ def convert_old_project(
                 else:
                     assert preferred_sorter is not None
                     sorter_name = preferred_sorter
-                print(">>> Running processing\n")
+                print("\n>>> Running processing\n")
                 process_ecephys(new_project, action_id, sorter=sorter_name, spikesort=False, **process_ecephys_params)
 
-                print(">>> Copying Phy folders\n")
+                print("\n>>> Copying Phy folders\n")
                 for sorter_folder in old_sorters:
                     new_sorter_folder = new_si_folder / sorter_folder.name
                     new_sorter_folder.mkdir(exist_ok=True)
@@ -208,7 +208,7 @@ def convert_old_project(
                     print(f"\tCopying folder for {sorter_folder.name}")
                     shutil.copytree(old_phy_folder, new_phy_folder)
 
-                print(">>> Applying Phy curation and set main units\n")
+                print("\n>>> Applying Phy curation and set main units\n")
                 # Generate new main unit table from Phy (with preprocessed data)
                 sorting_curator = SortingCurator(new_project)
                 sorting_curator.set_action(action_id)
@@ -225,7 +225,8 @@ def convert_old_project(
                 shutil.rmtree(new_action_folder)
 
     t_stop_all = time.perf_counter()
-    print(f"Total time: {t_stop_all - t_start_all:.2f} s")
+    print(f"\nTotal time: {t_stop_all - t_start_all:.2f} s")
     done_msg = f"ALL DONE!"
     delimeter = "*" * len(done_msg)
-    print(f"\n\n{delimeter}\n{done_msg}\n{delimeter}\n")
+    print(f"\n{delimeter}\n{done_msg}\n{delimeter}\n")
+

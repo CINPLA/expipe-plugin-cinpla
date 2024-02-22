@@ -221,6 +221,7 @@ def add_units_from_waveform_extractor(
     from neuroconv.tools.spikeinterface import add_units_table
 
     sorting = we.sorting
+    sorting.register_recording(we.recording)
     # Take care of uneven sparsity
     if "group" in we.sorting.get_property_keys():
         waveform_means, waveform_sds, unit_electrode_indices = [], [], []
