@@ -1,6 +1,6 @@
 [project]
 name = "expipe_plugin_cinpla"
-version = "0.1.2"
+version = "0.1.3"
 authors = [
   { name="Mikkel Lepperod", email="mikkel@simula.no" },
   { name="Alessio Buccino", email="alessiop.buccino@gmail.com" },
