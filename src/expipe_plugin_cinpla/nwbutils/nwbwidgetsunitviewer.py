@@ -217,7 +217,7 @@ class UnitRateMapWidget(widgets.VBox):
         # Load the unit spike times into a pynapple TsGroup
         unit_names = self.units["unit_name"][:]
         unit_spike_times = self.units["spike_times"][:]
-        nap_units = nap.TsGroup({i: unit_spike_times[i] for i in range(len(unit_names))})
+        nap_units = nap.TsGroup({i: np.array(unit_spike_times[i]) for i in range(len(unit_names))})
         self.rate_maps, self.binsxy = nap.compute_2d_tuning_curves(nap_units, nap_position, self.num_bins_slider.value)
         self.nap_position = nap_position
         self.nap_units = nap_units

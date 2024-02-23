@@ -120,6 +120,7 @@ def convert_old_project(
     print(f"Actions that will be converted: {len(actions_to_convert)}")
 
     # copy actions
+    actions_failed = []
     for action_id in actions_to_convert:
         try:
             t_start_action = time.perf_counter()
@@ -223,10 +224,14 @@ def convert_old_project(
             new_action_folder = new_project.path / "actions" / action_id
             if new_action_folder.is_dir():
                 shutil.rmtree(new_action_folder)
+            actions_failed.append(action_id)
 
     t_stop_all = time.perf_counter()
     print(f"\nTotal time: {t_stop_all - t_start_all:.2f} s")
     done_msg = f"ALL DONE!"
     delimeter = "*" * len(done_msg)
     print(f"\n{delimeter}\n{done_msg}\n{delimeter}\n")
-
+    print(f"\tSuccessful: {len(actions_to_convert) - len(actions_failed)}\n")
+    print(f"\tActions failed: {len(actions_failed)}")
+    for action_id in actions_failed:
+        print(f"\t\t{action_id}")

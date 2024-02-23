@@ -111,12 +111,12 @@ class SortingCurator:
         add_units_from_waveform_extractor(
             self.curated_we,
             nwbfile,
-            unit_table_name="curated units",
+            unit_table_name="CuratedUnits",
             unit_table_description=self.curation_description,
             write_in_processing_module=True,
             write_electrodes_column=False,
         )
-        return nwbfile.units
+        return nwbfile.processing["ecephys"].data_interfaces["CuratedUnits"]
 
     def load_processed_recording(self, sorter):
         preprocessed_json = self.si_path / sorter / "preprocessed.json"
@@ -199,7 +199,6 @@ class SortingCurator:
         sorting_raw = sorting_raw.save(format="memory")
 
         # delete NWB-specific properties: id, waveform_mean, and waveform_sd properties
-        sorting_raw.delete_property("id")
         sorting_raw.delete_property("waveform_mean")
         sorting_raw.delete_property("waveform_sd")
         sorting_raw.delete_property("electrodes")
