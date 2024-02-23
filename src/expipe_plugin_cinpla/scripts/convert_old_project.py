@@ -206,8 +206,16 @@ def convert_old_project(
                     new_phy_folder = new_sorter_folder / "phy"
                     if new_phy_folder.is_dir():
                         shutil.rmtree(new_phy_folder)
-                    print(f"\tCopying folder for {sorter_folder.name}")
+                    print(f"\tCopying folder for {sorter_folder.name}")                    
                     shutil.copytree(old_phy_folder, new_phy_folder)
+                    # update the recording.dat in params.py
+                    params_file = new_phy_folder / "params.py"
+                    params_str = params_file.read_text()
+                    idx_n_channels = params_str.find("n_channels_dat")
+                    rest = params_file[idx_n_channels:]
+                    new_head = f"dat_path = '{str(new_phy_folder / 'recording.dat')}'\n"
+                    new_params_str = new_head + rest
+                    params_file.write_text(new_params_str)
 
                 print("\n>>> Applying Phy curation and set main units\n")
                 # Generate new main unit table from Phy (with preprocessed data)
