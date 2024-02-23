@@ -206,13 +206,13 @@ def convert_old_project(
                     new_phy_folder = new_sorter_folder / "phy"
                     if new_phy_folder.is_dir():
                         shutil.rmtree(new_phy_folder)
-                    print(f"\tCopying folder for {sorter_folder.name}")                    
+                    print(f"\tCopying folder for {sorter_folder.name}")
                     shutil.copytree(old_phy_folder, new_phy_folder)
                     # update the recording.dat in params.py
                     params_file = new_phy_folder / "params.py"
                     params_str = params_file.read_text()
                     idx_n_channels = params_str.find("n_channels_dat")
-                    rest = params_file[idx_n_channels:]
+                    rest = params_str[idx_n_channels:]
                     new_head = f"dat_path = '{str(new_phy_folder / 'recording.dat')}'\n"
                     new_params_str = new_head + rest
                     params_file.write_text(new_params_str)
@@ -239,7 +239,7 @@ def convert_old_project(
     done_msg = f"ALL DONE!"
     delimeter = "*" * len(done_msg)
     print(f"\n{delimeter}\n{done_msg}\n{delimeter}\n")
-    print(f"\tSuccessful: {len(actions_to_convert) - len(actions_failed)}\n")
-    print(f"\tActions failed: {len(actions_failed)}")
+    print(f"Successful: {len(actions_to_convert) - len(actions_failed)}\n")
+    print(f"Actions failed: {len(actions_failed)}")
     for action_id in actions_failed:
-        print(f"\t\t{action_id}")
+        print(f"\t{action_id}")
