@@ -179,6 +179,7 @@ class CurationView(BaseViewWithLog):
             button_style="warning",  # 'success', 'info', 'warning', 'danger' or ''
             layout={"width": "100%"},
         )
+        units_number = ipywidgets.Label(value="Number of units: ", layout={"width": "500px"})
         units_dropdown = ipywidgets.Dropdown(
             options=["Raw", "Main", "Curated"],
             description="Display:",
@@ -186,7 +187,7 @@ class CurationView(BaseViewWithLog):
             layout={"width": "500px"},
             value="Raw",
         )
-        units_col = ipywidgets.VBox([units_dropdown, units_placeholder])
+        units_col = ipywidgets.VBox([units_dropdown, units_number, units_placeholder])
 
         curation_box = ipywidgets.HBox([actions_panel, curation_panel], layout={"width": "100%"})
         main_box = ipywidgets.VBox([curation_box, units_col])
@@ -274,7 +275,8 @@ class CurationView(BaseViewWithLog):
         def on_choose_units(change):
             units_widget = units_viewers[units_dropdown.value.lower()]
             if units_widget is not None:
-                units_col.children = [units_dropdown, units_widget]
+                units_number.value = f"Number of units: {len(units_widget.children[0].units)}"
+                units_col.children = [units_dropdown, units_number, units_widget]
             else:
                 units_col.children = [units_dropdown, sorting_not_found]
 

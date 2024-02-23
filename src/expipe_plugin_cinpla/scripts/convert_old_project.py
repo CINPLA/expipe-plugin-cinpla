@@ -120,6 +120,7 @@ def convert_old_project(
     print(f"Actions that will be converted: {len(actions_to_convert)}")
 
     # copy actions
+    actions_failed = []
     for action_id in actions_to_convert:
         try:
             t_start_action = time.perf_counter()
@@ -207,6 +208,14 @@ def convert_old_project(
                         shutil.rmtree(new_phy_folder)
                     print(f"\tCopying folder for {sorter_folder.name}")
                     shutil.copytree(old_phy_folder, new_phy_folder)
+                    # update the recording.dat in params.py
+                    params_file = new_phy_folder / "params.py"
+                    params_str = params_file.read_text()
+                    idx_n_channels = params_str.find("n_channels_dat")
+                    rest = params_str[idx_n_channels:]
+                    new_head = f"dat_path = '{str(new_phy_folder / 'recording.dat')}'\n"
+                    new_params_str = new_head + rest
+                    params_file.write_text(new_params_str)
 
                 print("\n>>> Applying Phy curation and set main units\n")
                 # Generate new main unit table from Phy (with preprocessed data)
@@ -223,10 +232,14 @@ def convert_old_project(
             new_action_folder = new_project.path / "actions" / action_id
             if new_action_folder.is_dir():
                 shutil.rmtree(new_action_folder)
+            actions_failed.append(action_id)
 
     t_stop_all = time.perf_counter()
     print(f"\nTotal time: {t_stop_all - t_start_all:.2f} s")
     done_msg = f"ALL DONE!"
     delimeter = "*" * len(done_msg)
     print(f"\n{delimeter}\n{done_msg}\n{delimeter}\n")
-
+    print(f"Successful: {len(actions_to_convert) - len(actions_failed)}\n")
+    print(f"Actions failed: {len(actions_failed)}")
+    for action_id in actions_failed:
+        print(f"\t{action_id}")
