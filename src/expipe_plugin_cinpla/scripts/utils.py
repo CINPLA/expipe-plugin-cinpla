@@ -176,19 +176,18 @@ def _make_data_path(action, overwrite, suffix=".nwb"):
 
 
 def _get_data_path(action):
-    if "main" not in action.data:
-        return
     try:
+        if "main" not in action.data:
+            return
         data_path = action.data_path("main")
+        if not data_path.is_dir():
+            action_path = action._backend.path
+            project_path = action_path.parent.parent
+            # data_path = action.data['main']
+            data_path = project_path / str(Path(PureWindowsPath(action.data["main"])))
+        return data_path
     except:
-        data_path = Path("None")
-        pass
-    if not data_path.is_dir():
-        action_path = action._backend.path
-        project_path = action_path.parent.parent
-        # data_path = action.data['main']
-        data_path = project_path / str(Path(PureWindowsPath(action.data["main"])))
-    return data_path
+        return
 
 
 def register_templates(action, templates, overwrite=False):
