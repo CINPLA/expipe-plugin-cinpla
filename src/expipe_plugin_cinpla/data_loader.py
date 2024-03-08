@@ -7,7 +7,7 @@ import spikeinterface as si
 import spikeinterface.extractors as se
 
 from pynwb import NWBHDF5IO
-from .utils import _get_data_path
+from .scripts.utils import _get_data_path
 
 
 def get_data_path(action):
