@@ -142,7 +142,7 @@ def register_adjustment_view(project):
     depth_from_surgery = ipywidgets.Checkbox(description="Get depth from surgery", value=True)
     register_button = ipywidgets.Button(description="Register")
 
-    fields = ipywidgets.VBox([user, date, adjustment, register])
+    fields = ipywidgets.VBox([user, date, adjustment, register_button])
     main_box = ipywidgets.VBox([depth_from_surgery, ipywidgets.HBox([fields, entity_id])])
 
     def on_manual_depth(change):
@@ -198,7 +198,7 @@ def register_annotate_view(project):
     templates = SearchSelectMultiple(project.templates, description="Templates")
     register_button = ipywidgets.Button(description="Register")
 
-    fields = ipywidgets.VBox([user, date, location, message, action_type, tag, depth, entity_id, register])
+    fields = ipywidgets.VBox([user, date, location, message, action_type, tag, depth, entity_id, register_button])
     main_box = ipywidgets.VBox([ipywidgets.HBox([fields, action_id, templates])])
 
     def on_register(change):
@@ -249,7 +249,7 @@ def register_entity_view(project):
 
     overwrite = ipywidgets.Checkbox(description="Overwrite", value=False)
     register_button = ipywidgets.Button(description="Register")
-    fields = ipywidgets.VBox([entity_id, user, species, sex, location, birthday, message, tag, register])
+    fields = ipywidgets.VBox([entity_id, user, species, sex, location, birthday, message, tag, register_button])
 
     main_box = ipywidgets.VBox([overwrite, ipywidgets.HBox([fields, templates])])
     view = BaseViewWithLog(main_box=main_box, project=project)
@@ -309,7 +309,7 @@ def register_surgery_view(project):
     overwrite = ipywidgets.Checkbox(description="Overwrite", value=False)
     register_button = ipywidgets.Button(description="Register")
 
-    fields = ipywidgets.VBox([user, location, date, weight, position, angle, message, procedure, tag, register])
+    fields = ipywidgets.VBox([user, location, date, weight, position, angle, message, procedure, tag, register_button])
     main_box = ipywidgets.VBox([overwrite, ipywidgets.HBox([fields, ipywidgets.VBox([entity_id, templates])])])
 
     view = BaseViewWithLog(main_box=main_box, project=project)
@@ -368,7 +368,7 @@ def register_perfuse_view(project):
     overwrite = ipywidgets.Checkbox(description="Overwrite", value=False)
 
     register_button = ipywidgets.Button(description="Register")
-    fields = ipywidgets.VBox([user, location, date, weight, message, register])
+    fields = ipywidgets.VBox([user, location, date, weight, message, register_button])
     main_box = ipywidgets.VBox([overwrite, ipywidgets.HBox([fields, entity_id, templates])])
     view = BaseViewWithLog(main_box=main_box, project=project)
 
