@@ -276,6 +276,7 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
         st = neo.SpikeTrain(
             times=times, t_start=t_start, t_stop=t_stop, sampling_rate=sorting.sampling_frequency * pq.Hz
         )
+        st.annotations.update({"name": unit})
         for p in sorting.get_property_keys():
             st.annotations.update({p: sorting.get_unit_property(unit, p)})
         sptr.append(st)
@@ -313,7 +314,7 @@ def load_unit_annotations(data_path, channel_group=None):
         ]
 
     for unit in unit_ids:
-        annotations = {}
+        annotations = {"name": unit}
         for p in sorting.get_property_keys():
             annotations.update({p: sorting.get_unit_property(unit, p)})
         units.append(annotations)
