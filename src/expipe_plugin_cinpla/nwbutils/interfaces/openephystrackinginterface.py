@@ -78,12 +78,11 @@ class OpenEphysTrackingInterface(BaseDataInterface):
                             rising = rising[:-1]
 
                         if len(rising) == len(falling):
-                            if "channel" not in nwbfile.trials.colnames:
+                            if nwbfile.trials is None:
                                 nwbfile.add_trial_column(
                                     name="channel",
                                     description="Open Ephys channel",
                                 )
-                            if "processor" not in nwbfile.trials.colnames:
                                 nwbfile.add_trial_column(
                                     name="processor",
                                     description="Open Ephys processor that recorded the event",
