@@ -130,17 +130,22 @@ def convert_old_project(
             old_action = old_actions[action_id]
             new_action = new_project.actions[action_id]
 
+            old_data_folder = old_project.path / "actions" / action_id / "data"
+            new_data_folder = new_project.path / "actions" / action_id / "data"
+            # main.exdir
+            old_exdir_folder = old_data_folder / "main.exdir"
+
+            if exist_ok and not (new_project.path / "actions" / action_id).is_dir():
+                # Copy action that previously failed
+                print(f">>> Re-copying action {action_id} to new project\n")
+                shutil.copytree(old_data_folder.parent, new_data_folder.parent,
+                                ignore=shutil.ignore_patterns("main.exdir", ".git"))
+
             # replace file in attributes.yaml
             attributes_file = new_project.path / "actions" / action_id / "attributes.yaml"
             attributes_str = attributes_file.read_text()
             attributes_str = attributes_str.replace("main.exdir", "main.nwb")
             attributes_file.write_text(attributes_str)
-
-            old_data_folder = old_project.path / "actions" / action_id / "data"
-            new_data_folder = new_project.path / "actions" / action_id / "data"
-
-            # main.exdir
-            old_exdir_folder = old_data_folder / "main.exdir"
 
             # find open-ephys folder
             acquisition_folder = old_exdir_folder / "acquisition"
