@@ -78,14 +78,15 @@ class OpenEphysTrackingInterface(BaseDataInterface):
                             rising = rising[:-1]
 
                         if len(rising) == len(falling):
-                            nwbfile.add_trial_column(
-                                name="channel",
-                                description="Open Ephys channel",
-                            )
-                            nwbfile.add_trial_column(
-                                name="processor",
-                                description="Open Ephys processor that recorded the event",
-                            )
+                            if nwbfile.trials is None:
+                                nwbfile.add_trial_column(
+                                    name="channel",
+                                    description="Open Ephys channel",
+                                )
+                                nwbfile.add_trial_column(
+                                    name="processor",
+                                    description="Open Ephys processor that recorded the event",
+                                )
                             start_times = times[rising].rescale("s").magnitude
                             stop_times = times[falling].rescale("s").magnitude
                             for start, stop in zip(start_times, stop_times):
