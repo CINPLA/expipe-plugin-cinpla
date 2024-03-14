@@ -158,6 +158,9 @@ def register_adjustment_view(project):
 
     depth_from_surgery.observe(on_manual_depth, names="value")
 
+    view = BaseViewWithLog(main_box=main_box, project=project)
+
+    @view.output.capture()
     def on_register(change):
         if not required_values_filled(entity_id, user, adjustment):
             return
@@ -172,7 +175,8 @@ def register_adjustment_view(project):
         )
 
     register_button.on_click(on_register)
-    return main_box
+
+    return view
 
 
 ### Annotation ###
@@ -201,6 +205,9 @@ def register_annotate_view(project):
     fields = ipywidgets.VBox([user, date, location, message, action_type, tag, depth, entity_id, register_button])
     main_box = ipywidgets.VBox([ipywidgets.HBox([fields, action_id, templates])])
 
+    view = BaseViewWithLog(main_box=main_box, project=project)
+
+    @view.output.capture()
     def on_register(change):
         if not required_values_filled(action_id, user):
             return
@@ -222,7 +229,7 @@ def register_annotate_view(project):
             )
 
     register_button.on_click(on_register)
-    return main_box
+    return view
 
 
 ### Entity ###
