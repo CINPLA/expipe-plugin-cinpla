@@ -1,6 +1,6 @@
 import sys
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path, PureWindowsPath
 import numpy as np
 
@@ -47,7 +47,7 @@ def query_yes_no(question, default="yes", answer=None):
 
 
 def deltadate(adjustdate, regdate):
-    delta = regdate - adjustdate if regdate > adjustdate else datetime.timedelta.max
+    delta = regdate - adjustdate if regdate > adjustdate else timedelta.max
     return delta
 
 
