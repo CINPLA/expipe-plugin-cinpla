@@ -143,6 +143,7 @@ class SortingCurator:
                 compute_and_set_unit_groups(curated_sorting, recording)
 
             # remove excess spikes
+            print("Removing excess spikes from curated sorting")
             curated_sorting = sc.remove_excess_spikes(curated_sorting, recording=recording)
 
             print("Extracting waveforms on curated sorting")
