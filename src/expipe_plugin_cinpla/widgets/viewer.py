@@ -32,6 +32,7 @@ class NwbViewer(ipywidgets.VBox):
             data_path = _get_data_path(action)
             if data_path is not None and data_path.name == "main.nwb":
                 options.append(action_name)
+        options = sorted(options)
         return options
 
     def on_change(self, change):

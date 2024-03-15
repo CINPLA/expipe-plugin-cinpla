@@ -41,7 +41,7 @@ def process_ecephys_view(project):
                 action_names.append(f"{action_name} -- (P)")
             else:
                 action_names.append(f"{action_name} -- (U)")
-
+    action_names = sorted(action_names)
     action_ids = SearchSelectMultiple(action_names, description="*Actions")
 
     overwrite = ipywidgets.Checkbox(description="Overwrite", value=True)

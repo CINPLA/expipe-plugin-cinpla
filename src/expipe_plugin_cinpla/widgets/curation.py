@@ -70,7 +70,7 @@ class CurationView(BaseViewWithLog):
                 si_path = data_path.parent / "spikeinterface"
                 if si_path.is_dir():
                     actions_processed.append(action_name)
-
+        actions_processed = sorted(actions_processed)
         actions_list = ipywidgets.Select(
             options=actions_processed, rows=10, description="Actions: ", disabled=False, layout={"width": "300px"}
         )
