@@ -260,9 +260,9 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
             unit_id for unit_index, unit_id in enumerate(sorting.unit_ids) if groups[unit_index] == channel_group
         ]
     sptr = []
-    # build neo pbjects
-    for unit in unit_ids:
-        times = sorting.get_unit_spike_train(unit, return_times=True) * pq.s
+    # build neo objects
+    for unit in sorting.unit_ids:
+        spike_times = sorting.get_unit_spike_train(unit, return_times=True) * pq.s
         if lim is None:
             times = recording.get_times() * pq.s
             t_start = times[0]
@@ -270,11 +270,11 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
         else:
             t_start = pq.Quantity(lim[0], "s")
             t_stop = pq.Quantity(lim[1], "s")
-        mask = (times >= t_start) & (times <= t_stop)
-        times = times[mask]
+        mask = (spike_times >= t_start) & (spike_times <= t_stop)
+        spike_times = spike_times[mask]
 
         st = neo.SpikeTrain(
-            times=times, t_start=t_start, t_stop=t_stop, sampling_rate=sorting.sampling_frequency * pq.Hz
+            times=spike_times, t_start=t_start, t_stop=t_stop, sampling_rate=sorting.sampling_frequency * pq.Hz
         )
         st.annotations.update({"name": unit})
         for p in sorting.get_property_keys():

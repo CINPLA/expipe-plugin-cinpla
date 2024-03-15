@@ -139,8 +139,9 @@ def convert_old_project(
             if exist_ok and not new_action_folder.is_dir():
                 # Copy action that previously failed
                 print(f">>> Re-copying action {action_id} to new project\n")
-                shutil.copytree(old_action_folder, new_action_folder,
-                                ignore=shutil.ignore_patterns("main.exdir", ".git"))
+                shutil.copytree(
+                    old_action_folder, new_action_folder, ignore=shutil.ignore_patterns("main.exdir", ".git")
+                )
             new_action = new_project.actions[action_id]
 
             # replace file in attributes.yaml
