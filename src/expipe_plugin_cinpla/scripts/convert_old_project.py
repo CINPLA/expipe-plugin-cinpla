@@ -154,7 +154,7 @@ def convert_old_project(
             openephys_folders = [p for p in acquisition_folder.iterdir() if p.is_dir()]
             if len(openephys_folders) != 1:
                 print(f"Found {len(openephys_folders)} openephys folders in {acquisition_folder}!")
-                continue
+                raise ValueError("Expected to find exactly one openephys folder")
             openephys_path = openephys_folders[0]
             # here we assume the following action name: {entity_id}-{date}-{session}
             entity_id = action_id.split("-")[0]
