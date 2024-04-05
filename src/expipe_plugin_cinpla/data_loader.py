@@ -261,7 +261,7 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
         ]
     sptr = []
     # build neo objects
-    for unit in sorting.unit_ids:
+    for unit in unit_ids:
         spike_times = sorting.get_unit_spike_train(unit, return_times=True) * pq.s
         if lim is None:
             times = recording.get_times() * pq.s

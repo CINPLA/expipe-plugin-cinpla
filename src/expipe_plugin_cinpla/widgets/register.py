@@ -31,7 +31,7 @@ def register_openephys_view(project):
     # buttons
     depth = MultiInput(["Key", "Probe", "Depth", "Unit"], "Add depth")
     register_depth = ipywidgets.Checkbox(description="Register depth", value=False)
-    include_events = ipywidgets.Checkbox(description="Include events", value=False)
+    include_events = ipywidgets.Checkbox(description="Include events", value=True)
     register_depth_from_adjustment = ipywidgets.Checkbox(description="Find adjustments", value=True)
     register_depth_from_adjustment.layout.visibility = "hidden"
 
