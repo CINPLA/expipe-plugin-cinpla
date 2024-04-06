@@ -54,8 +54,9 @@ def dissimilarity_weighted(templates_0, templates_1):
 
     templates_0 /= max_val
     templates_1 /= max_val
-
-    return np.sqrt(np.sum([(templates_0[i] - templates_1[i])**2 for i in range(templates_0.shape[0])], axis=0)).mean()
+    # root sum square, averaged over channels
+    weighted = np.sqrt(np.sum([(templates_0[:,i] - templates_1[:,i])**2 for i in range(templates_0.shape[1])], axis=0)).mean()
+    return weighted
 
 
 def make_dissimilary_matrix(comp_object, channel_group):
