@@ -27,7 +27,6 @@ def dissimilarity(template_0, template_1):
     t_i_lin = template_0.ravel()
     t_j_lin = template_1.ravel()
 
-
     return np.mean(np.abs(t_i_lin / max_val - t_j_lin / max_val))
     # return np.mean(np.abs(t_i_lin - t_j_lin))
 
@@ -55,24 +54,23 @@ def dissimilarity_weighted(templates_0, templates_1):
     templates_0 /= max_val
     templates_1 /= max_val
     # root sum square, averaged over channels
-    weighted = np.sqrt(np.sum([(templates_0[:,i] - templates_1[:,i])**2 for i in range(templates_0.shape[1])], axis=0)).mean()
+    weighted = np.sqrt(
+        np.sum([(templates_0[:, i] - templates_1[:, i]) ** 2 for i in range(templates_0.shape[1])], axis=0)
+    ).mean()
     return weighted
 
 
 def make_dissimilary_matrix(comp_object, channel_group):
     templates_0, templates_1 = comp_object.templates[channel_group]
     diss_matrix = np.zeros((len(templates_0), len(templates_1)))
-    
+
     unit_ids_0, unit_ids_1 = comp_object.unit_ids[channel_group]
 
     for i, w0 in enumerate(templates_0):
         for j, w1 in enumerate(templates_1):
             diss_matrix[i, j] = dissimilarity_weighted(w0, w1)
 
-    diss_matrix = pd.DataFrame(
-        diss_matrix,
-        index=unit_ids_0,
-        columns=unit_ids_1)
+    diss_matrix = pd.DataFrame(diss_matrix, index=unit_ids_0, columns=unit_ids_1)
 
     return diss_matrix
 
@@ -146,7 +144,7 @@ def make_best_match(dissimilarity_scores, max_dissimilarity):
 
     scores = dissimilarity_scores.values.copy()
 
-    best_match_12 = pd.Series(index=unit1_ids, dtype='int64')
+    best_match_12 = pd.Series(index=unit1_ids, dtype="int64")
     for i1, u1 in enumerate(unit1_ids):
         ind_min = np.argmin(scores[i1, :])
         if scores[i1, ind_min] <= max_dissimilarity:
@@ -154,7 +152,7 @@ def make_best_match(dissimilarity_scores, max_dissimilarity):
         else:
             best_match_12[u1] = -1
 
-    best_match_21 = pd.Series(index=unit2_ids, dtype='int64')
+    best_match_21 = pd.Series(index=unit2_ids, dtype="int64")
     for i2, u2 in enumerate(unit2_ids):
         ind_min = np.argmin(scores[:, i2])
         if scores[ind_min, i2] <= max_dissimilarity:
@@ -193,9 +191,9 @@ def make_hungarian_match(dissimilarity_scores, max_dissimilarity):
 
     [inds1, inds2] = linear_sum_assignment(scores)
 
-    hungarian_match_12 = pd.Series(index=unit1_ids, dtype='int64')
+    hungarian_match_12 = pd.Series(index=unit1_ids, dtype="int64")
     hungarian_match_12[:] = -1
-    hungarian_match_21 = pd.Series(index=unit2_ids, dtype='int64')
+    hungarian_match_21 = pd.Series(index=unit2_ids, dtype="int64")
     hungarian_match_21[:] = -1
 
     for i1, i2 in zip(inds1, inds2):

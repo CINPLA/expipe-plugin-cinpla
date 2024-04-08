@@ -2,17 +2,9 @@ import shutil
 import json
 from pathlib import Path
 import numpy as np
-from pynwb import NWBHDF5IO
-from pynwb.testing.mock.file import mock_NWBFile
 import warnings
 
-import spikeinterface.full as si
-import spikeinterface.extractors as se
-import spikeinterface.postprocessing as spost
-import spikeinterface.qualitymetrics as sqm
-import spikeinterface.curation as sc
-
-from spikeinterface.extractors.nwbextractors import _retrieve_unit_table_pynwb
+import spikeinterface as si
 
 from .utils import _get_data_path, add_units_from_waveform_extractor, compute_and_set_unit_groups
 
@@ -75,6 +67,8 @@ class SortingCurator:
         return True
 
     def load_raw_sorting(self, sorter):
+        import spikeinterface.extractors as se
+
         raw_units_path = f"processing/ecephys/RawUnits-{sorter}"
         try:
             sorting_raw = se.read_nwb_sorting(
@@ -88,6 +82,9 @@ class SortingCurator:
         return sorting_raw
 
     def load_raw_units(self, sorter):
+        from pynwb import NWBHDF5IO
+        from spikeinterface.extractors.nwbextractors import _retrieve_unit_table_pynwb
+
         raw_units_path = f"processing/ecephys/RawUnits-{sorter}"
         self.io = NWBHDF5IO(self.nwb_path_main, "r")
         nwbfile = self.io.read()
@@ -98,6 +95,8 @@ class SortingCurator:
         return units
 
     def load_main_units(self):
+        from pynwb import NWBHDF5IO
+
         self.io = NWBHDF5IO(self.nwb_path_main, "r")
         nwbfile = self.io.read()
         return nwbfile.units
@@ -106,6 +105,8 @@ class SortingCurator:
         if len(self.curated_we.unit_ids) == 0:
             print("No units left after curation.")
             return
+        from pynwb import NWBHDF5IO
+
         self.io = NWBHDF5IO(self.nwb_path_main, "r")
         nwbfile = self.io.read()
         add_units_from_waveform_extractor(
@@ -136,6 +137,10 @@ class SortingCurator:
             print(f"No curation was performed for {sorter}. Using raw sorting")
             self.curated_we = None
         else:
+            import spikeinterface.postprocessing as spost
+            import spikeinterface.qualitymetrics as sqm
+            import spikeinterface.curation as sc
+
             recording = self.load_processed_recording(sorter)
 
             # remove excess spikes
@@ -175,6 +180,8 @@ class SortingCurator:
             print("Done applying curation")
 
     def load_from_phy(self, sorter):
+        import spikeinterface.extractors as se
+
         phy_path = self.si_path / sorter / "phy"
 
         sorting_phy = se.read_phy(phy_path, exclude_cluster_groups=["noise"])
@@ -198,6 +205,8 @@ class SortingCurator:
         return sortingview_links["raw"]
 
     def apply_sortingview_curation(self, sorter, curated_link):
+        import spikeinterface.curation as sc
+
         sorting_raw = self.load_raw_sorting(sorter)
         assert sorting_raw is not None, f"Could not load raw sorting for {sorter}."
         sorting_raw = sorting_raw.save(format="memory")
@@ -247,6 +256,7 @@ class SortingCurator:
         if self.curated_we is None:
             print("No curation was performed.")
             return
+        from pynwb import NWBHDF5IO
 
         # trick to get rid of Units first
         with NWBHDF5IO(self.nwb_path_main, mode="r") as read_io:

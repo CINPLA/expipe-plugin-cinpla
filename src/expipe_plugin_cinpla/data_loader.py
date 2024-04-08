@@ -6,7 +6,6 @@ import neo
 import spikeinterface as si
 import spikeinterface.extractors as se
 
-from pynwb import NWBHDF5IO
 from .scripts.utils import _get_data_path
 
 
@@ -92,6 +91,8 @@ def load_leds(data_path):
     x1, y1, t1, x2, y2, t2, stop_time: tuple
         The x and y positions of the red and green LEDs, the timestamps and the stop time
     """
+    from pynwb import NWBHDF5IO
+
     io = NWBHDF5IO(str(data_path), "r")
     nwbfile = io.read()
 
@@ -190,6 +191,8 @@ def load_epochs(data_path, label_column=None):
     epochs: neo.Epoch
         The trials as NEO epochs
     """
+    from pynwb import NWBHDF5IO
+
     with NWBHDF5IO(str(data_path), "r") as io:
         nwbfile = io.read()
         trials = nwbfile.trials.to_dataframe()

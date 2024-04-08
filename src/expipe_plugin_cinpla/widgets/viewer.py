@@ -1,5 +1,4 @@
 import ipywidgets
-from pynwb import NWBHDF5IO
 
 import expipe
 
@@ -38,6 +37,7 @@ class NwbViewer(ipywidgets.VBox):
     def on_change(self, change):
         if change["type"] == "change" and change["name"] == "value":
             from nwbwidgets import nwb2widget
+            from pynwb import NWBHDF5IO
 
             action_id = change["new"]
             if action_id is None:

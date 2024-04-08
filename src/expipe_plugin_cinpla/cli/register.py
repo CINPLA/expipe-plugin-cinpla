@@ -8,9 +8,6 @@ from expipe_plugin_cinpla.scripts import register
 from expipe_plugin_cinpla.cli.utils import validate_depth, validate_position, validate_angle, validate_adjustment
 
 
-import spikeinterface.sorters as ss
-
-
 def attach_to_register(cli):
     ### OpenEphys ###
     @cli.command("openephys", short_help="Register an open-ephys recording-action to database.")
