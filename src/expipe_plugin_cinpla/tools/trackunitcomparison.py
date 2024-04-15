@@ -1,9 +1,9 @@
-from .track_units_tools import make_dissimilary_matrix, make_possible_match, make_best_match, make_hungarian_match
+from .track_units_tools import dissimilarity_weighted, make_possible_match, make_best_match, make_hungarian_match
 from expipe_plugin_cinpla.data_loader import get_data_path, load_spiketrains, get_channel_groups
 import matplotlib.pylab as plt
 import numpy as np
 from pathlib import Path
-
+import pandas as pd
 
 class TrackingSession:
     """
@@ -15,7 +15,7 @@ class TrackingSession:
         action_id_0,
         action_id_1,
         actions,
-        channel_group=None,
+        channel_groups=None,
         max_dissimilarity=10,
         dissimilarity_function=None,
         verbose=False,
@@ -26,47 +26,45 @@ class TrackingSession:
         self._actions = actions
         self.action_id_0 = action_id_0
         self.action_id_1 = action_id_1
-        self._channel_group = channel_group
+        self.channel_groups = channel_groups
         self.action_ids = [action_id_0, action_id_1]
         self.max_dissimilarity = max_dissimilarity
         self.dissimilarity_function = dissimilarity_function
         self._verbose = verbose
 
-        if channel_group is None:
-            channel_groups = get_channel_groups(data_path_0)
-            self.matches = {}
-            self.templates = {}
-            self.unit_ids = {}
-            for chan in channel_groups:
-                self.matches[chan] = dict()
-                self.templates[chan] = list()
-                self.unit_ids[chan] = list()
-        else:
-            self.matches = {channel_group: dict()}
-            self.templates = {channel_group: list()}
-            self.unit_ids = {channel_group: list()}
+        if self.channel_groups is None:
+            self.channel_groups = get_channel_groups(data_path_0)
+        self.matches = {}
+        self.templates = {}
+        self.unit_ids = {}
+        for chan in self.channel_groups:
+            self.matches[chan] = dict()
+            self.templates[chan] = list()
+            self.unit_ids[chan] = list()
 
-        units_0 = load_spiketrains(data_path_0)
-        units_1 = load_spiketrains(data_path_1)
-        for channel_group in self.matches.keys():
-            units_0 = [unit for unit in units_0 if unit.annotations["group"] == channel_group]
-            units_1 = [unit for unit in units_1 if unit.annotations["group"] == channel_group]
+        self.units_0 = load_spiketrains(data_path_0)
+        self.units_1 = load_spiketrains(data_path_1)
+        for channel_group in self.channel_groups:
+            us_0 = [u for u in self.units_0 if u.annotations["group"] == channel_group]
+            us_1 = [u for u in self.units_1 if u.annotations["group"] == channel_group]
 
             self.unit_ids[channel_group] = [
-                np.array([int(st.annotations["name"]) for st in units_0]),
-                np.array([int(st.annotations["name"]) for st in units_1]),
+                [int(u.annotations["name"]) for u in us_0],
+                [int(u.annotations["name"]) for u in us_1],
             ]
             self.templates[channel_group] = [
-                [st.annotations["waveform_mean"] for st in units_0],
-                [st.annotations["waveform_mean"] for st in units_1],
+                [u.annotations["waveform_mean"] for u in us_0],
+                [u.annotations["waveform_mean"] for u in us_1],
             ]
-            if len(units_0) > 0 and len(units_1) > 0:
+            if len(us_0) > 0 and len(us_1) > 0:
                 self._do_dissimilarity(channel_group)
                 self._do_matching(channel_group)
+            elif self._verbose:
+                print(f'Found no units in {channel_group}')
 
     def save_dissimilarity_matrix(self, path=None):
         path = path or Path.cwd()
-        for channel_group in self.matches:
+        for channel_group in self.channel_groups:
             if "dissimilarity_scores" not in self.matches[channel_group]:
                 continue
             filename = f"{self.action_id_0}_{self.action_id_1}_{channel_group}"
@@ -79,13 +77,27 @@ class TrackingSession:
     @property
     def session_1_name(self):
         return self.name_list[1]
+    
+    def make_dissimilary_matrix(self, channel_group):
+        templates_0, templates_1 = self.templates[channel_group]
+        diss_matrix = np.zeros((len(templates_0), len(templates_1)))
+
+        unit_ids_0, unit_ids_1 = self.unit_ids[channel_group]
+
+        for i, w0 in enumerate(templates_0):
+            for j, w1 in enumerate(templates_1):
+                diss_matrix[i, j] = dissimilarity_weighted(w0, w1)
+
+        diss_matrix = pd.DataFrame(diss_matrix, index=unit_ids_0, columns=unit_ids_1)
+
+        return diss_matrix
 
     def _do_dissimilarity(self, channel_group):
         if self._verbose:
             print("Agreement scores...")
 
         # agreement matrix score for each pair
-        self.matches[channel_group]["dissimilarity_scores"] = make_dissimilary_matrix(self, channel_group)
+        self.matches[channel_group]["dissimilarity_scores"] = self.make_dissimilary_matrix(channel_group)
 
     def _do_matching(self, channel_group):
         # must be implemented in subclass
@@ -103,73 +115,3 @@ class TrackingSession:
             self.matches[channel_group]["hungarian_match_01"],
             self.matches[channel_group]["hungarian_match_10"],
         ) = make_hungarian_match(self.matches[channel_group]["dissimilarity_scores"], self.max_dissimilarity)
-
-    def plot_matched_units(self, match_mode="hungarian", channel_group=None, ylim=[-200, 50], figsize=(15, 15)):
-        """
-
-        Parameters
-        ----------
-        match_mode
-
-        Returns
-        -------
-
-        """
-        if channel_group is None:
-            ch_groups = self.matches.keys()
-        else:
-            ch_groups = [channel_group]
-
-        for ch_group in ch_groups:
-            if "hungarian_match_01" not in self.matches[ch_group].keys():
-                print("Not units for group", ch_group)
-                continue
-
-            if match_mode == "hungarian":
-                match12 = self.matches[ch_group]["hungarian_match_01"]
-            elif match_mode == "best":
-                match12 = self.matches[ch_group]["best_match_01"]
-
-            num_matches = len(np.where(match12 != -1)[0])
-
-            if num_matches > 0:
-                fig, ax_list = plt.subplots(nrows=2, ncols=num_matches, figsize=figsize)
-                fig.suptitle("Channel group " + str(ch_group))
-
-                if num_matches == 1:
-                    i = np.where(match12 != -1)[0][0]
-                    j = match12.iloc[i]
-                    i1 = np.where(self.matches[ch_group]["unit_ids_0"] == match12.index[i])
-                    i2 = np.where(self.matches[ch_group]["unit_ids_1"] == j)
-                    template1 = np.squeeze(self.matches[ch_group]["templates_0"][i1])
-                    ax_list[0].plot(template1, color="C0")
-                    ax_list[0].set_title("Unit " + str(match12.index[i]))
-                    template2 = np.squeeze(self.matches[ch_group]["templates_1"][i2])
-                    ax_list[1].plot(template2, color="C0")
-                    ax_list[1].set_title("Unit " + str(j))
-                    ax_list[0].set_ylabel(self.name_list[0])
-                    ax_list[1].set_ylabel(self.name_list[1])
-                    ax_list[0].set_ylim(ylim)
-                    ax_list[1].set_ylim(ylim)
-                else:
-                    id_ax = 0
-                    for i, j in enumerate(match12):
-                        if j != -1:
-                            i1 = np.where(self.matches[ch_group]["unit_ids_0"] == match12.index[i])
-                            i2 = np.where(self.matches[ch_group]["unit_ids_1"] == j)
-
-                            if id_ax == 0:
-                                ax_list[0, id_ax].set_ylabel(self.name_list[0])
-                                ax_list[1, id_ax].set_ylabel(self.name_list[1])
-                            template1 = np.squeeze(self.matches[ch_group]["templates_0"][i1])
-                            ax_list[0, id_ax].plot(template1, color="C" + str(id_ax))
-                            ax_list[0, id_ax].set_title("Unit " + str(match12.index[i]))
-                            template2 = np.squeeze(self.matches[ch_group]["templates_1"][i1])
-                            ax_list[1, id_ax].plot(template2, color="C" + str(id_ax))
-                            ax_list[1, id_ax].set_title("Unit " + str(j))
-                            ax_list[0, id_ax].set_ylim(ylim)
-                            ax_list[1, id_ax].set_ylim(ylim)
-                            id_ax += 1
-            else:
-                print("No matched units for group", ch_group)
-                continue

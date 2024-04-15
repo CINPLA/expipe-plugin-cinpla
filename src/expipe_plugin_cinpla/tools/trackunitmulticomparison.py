@@ -18,7 +18,7 @@ class TrackMultipleSessions:
         self,
         actions,
         action_list=None,
-        channel_group=None,
+        channel_groups=None,
         max_dissimilarity=None,
         max_timedelta=None,
         verbose=False,
@@ -29,19 +29,17 @@ class TrackMultipleSessions:
         self.data_path.mkdir(parents=True, exist_ok=True)
         self.action_list = [a for a in actions] if action_list is None else action_list
         self._actions = actions
-        self._channel_group = channel_group
+        self.channel_groups = channel_groups
         self.max_dissimilarity = max_dissimilarity or np.inf
         self.max_timedelta = max_timedelta or datetime.MAXYEAR
         self._verbose = verbose
         self._pbar = tqdm if progress_bar is None else progress_bar
         self._templates = {}
-        if self._channel_group is None:
+        if self.channel_groups is None:
             dp = get_data_path(self._actions[self.action_list[0]])
-            self._channel_groups = get_channel_groups(dp)
-            if len(self._channel_groups) == 0:
+            self.channel_groups = get_channel_groups(dp)
+            if len(self.channel_groups) == 0:
                 print("Unable to locate channel groups, please provide a working action_list")
-        else:
-            self._channel_groups = [self._channel_group]
 
     def do_matching(self):
         # do pairwise matching
@@ -60,7 +58,7 @@ class TrackMultipleSessions:
                     self.action_list[j],
                     actions=self._actions,
                     max_dissimilarity=np.inf,
-                    channel_group=self._channel_group,
+                    channel_groups=self.channel_groups,
                     verbose=self._verbose,
                 )
                 # comp.save_dissimilarity_matrix()
@@ -74,7 +72,7 @@ class TrackMultipleSessions:
 
         self.graphs = {}
 
-        for ch in self._channel_groups:
+        for ch in self.channel_groups:
             if self._verbose:
                 print("Processing channel", ch)
             self.graphs[ch] = nx.Graph()

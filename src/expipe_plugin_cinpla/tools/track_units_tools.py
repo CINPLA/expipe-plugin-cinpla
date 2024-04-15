@@ -60,21 +60,6 @@ def dissimilarity_weighted(templates_0, templates_1):
     return weighted
 
 
-def make_dissimilary_matrix(comp_object, channel_group):
-    templates_0, templates_1 = comp_object.templates[channel_group]
-    diss_matrix = np.zeros((len(templates_0), len(templates_1)))
-
-    unit_ids_0, unit_ids_1 = comp_object.unit_ids[channel_group]
-
-    for i, w0 in enumerate(templates_0):
-        for j, w1 in enumerate(templates_1):
-            diss_matrix[i, j] = dissimilarity_weighted(w0, w1)
-
-    diss_matrix = pd.DataFrame(diss_matrix, index=unit_ids_0, columns=unit_ids_1)
-
-    return diss_matrix
-
-
 def make_possible_match(dissimilarity_scores, max_dissimilarity):
     """
     Given an agreement matrix and a max_dissimilarity threhold.
