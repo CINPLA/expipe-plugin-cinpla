@@ -472,8 +472,9 @@ class Data:
         sts = load_spiketrains(self.data_path(action_id), lim=lim)
         for st in sts:
             channel_group = st.annotations["group"]
-            unit_id = get_unit_id(st)
-            self._spike_trains[action_id][channel_group] = {unit_id: st}
+            if channel_group not in self._spike_trains[action_id]:
+                self._spike_trains[action_id][channel_group] = {}
+            self._spike_trains[action_id][channel_group][int(get_unit_id(st))] = st
 
         return self._spike_trains[action_id]
 
