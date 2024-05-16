@@ -2,13 +2,13 @@
 name = "expipe_plugin_cinpla"
 version = "0.1.5"
 authors = [
-  { name="Mikkel Lepperod", email="mikkel@simula.no" },
-  { name="Alessio Buccino", email="alessiop.buccino@gmail.com" },
+    { name = "Mikkel Lepperod", email = "mikkel@simula.no" },
+    { name = "Alessio Buccino", email = "alessiop.buccino@gmail.com" },
 ]
 
 description = "Expipe plugins for the CINPLA lab."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -16,28 +16,25 @@ classifiers = [
 ]
 
 dependencies = [
-    "expipe>=0.6.0", 
+    "expipe>=0.6.0",
     "neuroconv>=0.4.6",
     "pyopenephys>=1.2.0",
     "spikeinterface[full,widgets]>=0.100.0",
     "pynwb>=2.5.0",
-    "neuroconv>=0.4.6",
     "ipywidgets>=8.1.1",
     "nwbwidgets>=0.11.3",
-    "tbb>=2021.11.0",
+    "tbb>=2021.11.0",                        # TODO: pip can't find tbb or tbb4py (at least on macOS). Is it needed?
     "pynapple>=0.5.1",
-    "spython>=0.3.13",
+    "spython>=0.3.13",                       # TODO: is this needed?
 ]
 
 [project.urls]
 homepage = "https://github.com/CINPLA/expipe-plugin-cinpla"
 repository = "https://github.com/CINPLA/expipe-plugin-cinpla"
 
-
 [build-system]
 requires = ["setuptools>=62.0"]
 build-backend = "setuptools.build_meta"
-
 
 [tool.setuptools]
 include-package-data = true
@@ -48,30 +45,70 @@ include = ["expipe_plugin_cinpla*"]
 namespaces = false
 
 [project.optional-dependencies]
-
-dev = [
-    "pytest",
-    "pytest-cov",
-    "pytest-dependency",
-    "black"
-]
-
-test = [
-    "pytest",
-    "pytest-cov",
-    "pytest-dependency",
-    "mountainsort5"
-]
-
-docs = [
-    "sphinx-gallery",
-    "sphinx_rtd_theme",
+dev = ["pre-commit", "black[jupyter]", "isort", "ruff"]
+test = ["pytest", "pytest-cov", "pytest-dependency", "mountainsort5"]
+docs = ["sphinx-gallery", "sphinx_rtd_theme"]
+full = [
+    "expipe_plugin_cinpla[dev]",
+    "expipe_plugin_cinpla[test]",
+    "expipe_plugin_cinpla[docs]",
 ]
 
 [tool.coverage.run]
-omit = [
-    "tests/*",
-]
+omit = ["tests/*"]
 
 [tool.black]
 line-length = 120
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+# Same as Black.
+line-length = 120
+indent-width = 4
+
+# Assume Python 3.11.
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = ["E4", "E7", "E9", "F"]
+ignore = []
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"src/expipe_plugin_cinpla/cli/utils.py" = ["F403"]
+"src/expipe_plugin_cinpla/nwbutils/nwbwidgetsunitviewer.py" = ["F821"]
+"src/expipe_plugin_cinpla/widgets/utils.py" = ["F841"]                 # TODO: fix warning
+"tests/test_cli.py" = ["F841"]                                         # TODO: fix warning
+"tests/test_script.py" = ["F841"]                                      # TODO: fix warning
