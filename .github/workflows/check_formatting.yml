@@ -1,0 +1,44 @@
+name: Check formatting
+
+on: [push, pull_request]
+
+permissions:
+    contents: read
+
+jobs:
+    main:
+        runs-on: ubuntu-latest
+        steps:
+
+        - uses: actions/checkout@v4
+
+        - uses: actions/setup-python@v5
+          with:
+            python-version: "3.11"
+
+        - name: Check EOF
+          uses: pre-commit/action@v3.0.0
+          with:
+            extra_args: end-of-file-fixer
+
+        - name: Check trailing whitespace
+          uses: pre-commit/action@v3.0.0
+          with:
+            extra_args: trailing-whitespace
+
+        - name: Black
+          uses: psf/black@stable
+          with:
+            options: "--check"
+            src: "./code"
+            jupyter: true
+
+        - name: isort
+          uses: isort/isort-action@v1
+          with:
+            configuration: --profile=black --check-only --diff
+
+        - name: Ruff
+          uses: chartboost/ruff-action@v1
+          with:
+            args: "check"
