@@ -1,6 +1,6 @@
-import ipywidgets
-
+# -*- coding: utf-8 -*-
 import expipe
+import ipywidgets
 
 from ..nwbutils.nwbwidgetsunitviewer import get_custom_spec
 from ..scripts.utils import _get_data_path

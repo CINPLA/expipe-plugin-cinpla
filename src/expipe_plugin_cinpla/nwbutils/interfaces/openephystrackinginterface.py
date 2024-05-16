@@ -1,14 +1,11 @@
+# -*- coding: utf-8 -*-
 import warnings
+
 import numpy as np
 import pyopenephys
-
-from pynwb.behavior import (
-    Position,
-    SpatialSeries,
-)
-
 from neuroconv import BaseDataInterface
 from neuroconv.utils import FolderPathType
+from pynwb.behavior import Position, SpatialSeries
 
 
 class OpenEphysTrackingInterface(BaseDataInterface):
@@ -89,7 +86,7 @@ class OpenEphysTrackingInterface(BaseDataInterface):
                                 )
                             start_times = times[rising].rescale("s").magnitude
                             stop_times = times[falling].rescale("s").magnitude
-                            for start, stop in zip(start_times, stop_times):
+                            for start, stop in zip(start_times, stop_times, strict=False):
                                 nwbfile.add_trial(
                                     start_time=start,
                                     stop_time=stop,

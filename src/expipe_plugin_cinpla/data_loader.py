@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 """Utils for loading data from NWB files"""
-import numpy as np
 
-import quantities as pq
 import neo
+import numpy as np
+import quantities as pq
 import spikeinterface as si
 import spikeinterface.extractors as se
 

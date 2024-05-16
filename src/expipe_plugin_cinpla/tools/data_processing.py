@@ -1,20 +1,20 @@
+# -*- coding: utf-8 -*-
 # This is work in progress,
-import numpy as np
-from expipe_plugin_cinpla.data_loader import (
-    load_epochs,
-    get_channel_groups,
-    load_spiketrains,
-    load_unit_annotations,
-    load_leds,
-    get_duration,
-    load_lfp,
-    get_sample_rate,
-    get_data_path,
-)
 import pathlib
-import expipe
-import spatial_maps as sp
 import warnings
+
+import expipe
+import numpy as np
+import spatial_maps as sp
+
+from expipe_plugin_cinpla.data_loader import (
+    get_channel_groups,
+    get_duration,
+    load_epochs,
+    load_leds,
+    load_lfp,
+    load_spiketrains,
+)
 
 
 def view_active_channels(action, sorter):
@@ -174,8 +174,8 @@ def check_valid_tracking(x, y, box_size):
     if x.min() < 0 or x.max() > box_size[0] or y.min() < 0 or y.max() > box_size[1]:
         warnings.warn(
             "Invalid values found "
-            + "outside box: min [x, y] = [{}, {}], ".format(x.min(), y.min())
-            + "max [x, y] = [{}, {}]".format(x.max(), y.max())
+            + f"outside box: min [x, y] = [{x.min()}, {y.min()}], "
+            + f"max [x, y] = [{x.max()}, {y.max()}]"
         )
 
 

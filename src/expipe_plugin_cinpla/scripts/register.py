@@ -1,21 +1,21 @@
+# -*- coding: utf-8 -*-
 import shutil
-import warnings
 import time
-import numpy as np
-from pathlib import Path
+import warnings
 from datetime import datetime
+from pathlib import Path
+
+import expipe
+import numpy as np
+import probeinterface as pi
+import pyopenephys
 import pytz
 import quantities as pq
 
-import pyopenephys
-import probeinterface as pi
-
-import expipe
-
 
 def convert_to_nwb(project, action, openephys_path, probe_path, entity_id, user, include_events, overwrite):
-    from .utils import _make_data_path
     from ..nwbutils.cinplanwbconverter import CinplaNWBConverter
+    from .utils import _make_data_path
 
     nwb_path = _make_data_path(action, overwrite)
 
@@ -162,8 +162,9 @@ def register_openephys_recording(
     if delete_raw_data:
         try:
             shutil.rmtree(openephys_path)
-        except:
+        except Exception as e:
             print("Could not remove: ", openephys_path)
+            raise e
 
 
 ### Adjustment ###
@@ -181,7 +182,11 @@ adjustment_template = {
 
 
 def register_adjustment(project, entity_id, date, adjustment, user, depth, yes):
-    from expipe_plugin_cinpla.scripts.utils import position_to_dict, get_depth_from_surgery, query_yes_no
+    from expipe_plugin_cinpla.scripts.utils import (
+        get_depth_from_surgery,
+        position_to_dict,
+        query_yes_no,
+    )
 
     user = user or project.config.get("username")
     if user is None:
@@ -203,7 +208,7 @@ def register_adjustment(project, entity_id, date, adjustment, user, depth, yes):
     try:
         action = project.actions[action_id]
         init = False
-    except KeyError as e:
+    except KeyError:
         action = project.create_action(action_id)
         init = True
 
@@ -213,7 +218,7 @@ def register_adjustment(project, entity_id, date, adjustment, user, depth, yes):
             if name.endswith("adjustment"):
                 deltas.append(int(name.split("_")[0]))
         index = max(deltas) + 1
-        prev_depth = action.modules["{:03d}_adjustment".format(max(deltas))].contents["depth"]
+        prev_depth = action.modules[f"{max(deltas):03d}_adjustment"].contents["depth"]
     if init:
         if len(depth) > 0:
             prev_depth = position_to_dict(depth)
@@ -221,14 +226,14 @@ def register_adjustment(project, entity_id, date, adjustment, user, depth, yes):
             prev_depth = get_depth_from_surgery(project=project, entity_id=entity_id)
         index = 0
 
-    name = "{:03d}_adjustment".format(index)
+    name = f"{index:03d}_adjustment"
     if not isinstance(prev_depth, dict):
         print("Unable to retrieve previous depth.")
         return
     adjustment_dict = {key: dict() for key in prev_depth}
     current = {key: dict() for key in prev_depth}
     for key, probe, val, unit in adjustment:
-        pos_key = "probe_{}".format(probe)
+        pos_key = f"probe_{probe}"
         adjustment_dict[key][pos_key] = pq.Quantity(val, unit)
     for key, val in prev_depth.items():
         for pos_key in prev_depth[key]:
@@ -243,13 +248,13 @@ def register_adjustment(project, entity_id, date, adjustment, user, depth, yes):
     correct = query_yes_no(
         "Correct adjustment?: \n"
         + " ".join(
-            "{} {} = {}\n".format(key, pos_key, val[pos_key])
+            f"{key} {pos_key} = {val[pos_key]}\n"
             for key, val in adjustment_dict.items()
             for pos_key in sorted(val, key=lambda x: last_probe(x))
         )
         + "New depth: \n"
         + " ".join(
-            "{} {} = {}\n".format(key, pos_key, val[pos_key])
+            f"{key} {pos_key} = {val[pos_key]}\n"
             for key, val in current.items()
             for pos_key in sorted(val, key=lambda x: last_probe(x))
         ),
@@ -262,13 +267,13 @@ def register_adjustment(project, entity_id, date, adjustment, user, depth, yes):
     print(
         "Registering adjustment: \n"
         + " ".join(
-            "{} {} = {}\n".format(key, pos_key, val[pos_key])
+            f"{key} {pos_key} = {val[pos_key]}\n"
             for key, val in adjustment_dict.items()
             for pos_key in sorted(val, key=lambda x: last_probe(x))
         )
         + " New depth: \n"
         + " ".join(
-            "{} {} = {}\n".format(key, pos_key, val[pos_key])
+            f"{key} {pos_key} = {val[pos_key]}\n"
             for key, val in current.items()
             for pos_key in sorted(val, key=lambda x: last_probe(x))
         )
@@ -300,10 +305,7 @@ def register_annotation(
     templates,
     correct_depth_answer,
 ):
-    from expipe_plugin_cinpla.scripts.utils import (
-        register_templates,
-        register_depth,
-    )
+    from expipe_plugin_cinpla.scripts.utils import register_depth, register_templates
 
     user = user or project.config.get("username")
     action = project.actions[action_id]
@@ -333,9 +335,7 @@ def register_annotation(
         print("Registering message", message)
         action.create_message(text=message, user=user, datetime=datetime.now())
     if depth:
-        correct_depth = register_depth(
-            project=project, action=action, depth=depth, answer=correct_depth_answer, overwrite=True
-        )
+        _ = register_depth(project=project, action=action, depth=depth, answer=correct_depth_answer, overwrite=True)
 
 
 ### Entity ###
@@ -389,7 +389,7 @@ def register_entity(
         if isinstance(val, (str, float, int)):
             entity.modules["register"][key]["value"] = val
         elif isinstance(val, tuple):
-            if not None in val:
+            if None not in val:
                 entity.modules["register"][key] = pq.Quantity(val[0], val[1])
         elif isinstance(val, type(None)):
             pass
@@ -456,15 +456,15 @@ def register_surgery(
 
     for key, probe, x, y, z, unit in position:
         action.modules[key] = {}
-        probe_key = "probe_{}".format(probe)
+        probe_key = f"probe_{probe}"
         action.modules[key][probe_key] = {}
-        print("Registering position " + "{} {}: x={}, y={}, z={} {}".format(key, probe, x, y, z, unit))
+        print("Registering position " + f"{key} {probe}: x={x}, y={y}, z={z} {unit}")
         action.modules[key][probe_key]["position"] = pq.Quantity([x, y, z], unit)
     for key, probe, ang, unit in angle:
-        probe_key = "probe_{}".format(probe)
+        probe_key = f"probe_{probe}"
         if probe_key not in action.modules[key]:
             action.modules[key][probe_key] = {}
-        print("Registering angle " + "{} {}: angle={} {}".format(key, probe, ang, unit))
+        print("Registering angle " + f"{key} {probe}: angle={ang} {unit}")
         action.modules[key][probe_key]["angle"] = pq.Quantity(ang, unit)
 
 

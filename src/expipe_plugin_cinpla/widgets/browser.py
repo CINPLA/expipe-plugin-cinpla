@@ -1,16 +1,17 @@
-import IPython.display as ipd
+# -*- coding: utf-8 -*-
 import expipe
+import IPython.display as ipd
 
+from .curation import CurationView
+from .process import process_ecephys_view
 from .register import (
-    register_openephys_view,
     register_adjustment_view,
     register_annotate_view,
     register_entity_view,
-    register_surgery_view,
+    register_openephys_view,
     register_perfuse_view,
+    register_surgery_view,
 )
-from .process import process_ecephys_view
-from .curation import CurationView
 from .viewer import NwbViewer
 
 

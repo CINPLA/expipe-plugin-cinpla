@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
 import collections
+import copy
+
 import click
 
 from expipe_plugin_cinpla.imports import *
@@ -98,12 +101,12 @@ def optional_choice(ctx, param, value):
     assert isinstance(options, list)
     if value is None:
         if param.required:
-            raise ValueError('Missing option "{}"'.format(param.opts))
+            raise ValueError(f'Missing option "{param.opts}"')
         return value
     if param.multiple:
         if len(value) == 0:
             if param.required:
-                raise ValueError('Missing option "{}"'.format(param.opts))
+                raise ValueError(f'Missing option "{param.opts}"')
             return value
     if len(options) == 0:
         return value
@@ -113,8 +116,8 @@ def optional_choice(ctx, param, value):
                 value,
             ]
         for val in value:
-            if not val in options:
-                raise ValueError('Value "{}" not in "{}".'.format(val, options))
+            if val not in options:
+                raise ValueError(f'Value "{val}" not in "{options}".')
             else:
                 if param.multiple:
                     return value

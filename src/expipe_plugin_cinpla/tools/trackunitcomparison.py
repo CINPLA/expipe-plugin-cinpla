@@ -1,9 +1,22 @@
-from .track_units_tools import dissimilarity_weighted, make_possible_match, make_best_match, make_hungarian_match
-from expipe_plugin_cinpla.data_loader import get_data_path, load_spiketrains, get_channel_groups
-import matplotlib.pylab as plt
-import numpy as np
+# -*- coding: utf-8 -*-
 from pathlib import Path
+
+import numpy as np
 import pandas as pd
+
+from expipe_plugin_cinpla.data_loader import (
+    get_channel_groups,
+    get_data_path,
+    load_spiketrains,
+)
+
+from .track_units_tools import (
+    dissimilarity_weighted,
+    make_best_match,
+    make_hungarian_match,
+    make_possible_match,
+)
+
 
 class TrackingSession:
     """
@@ -60,7 +73,7 @@ class TrackingSession:
                 self._do_dissimilarity(channel_group)
                 self._do_matching(channel_group)
             elif self._verbose:
-                print(f'Found no units in {channel_group}')
+                print(f"Found no units in {channel_group}")
 
     def save_dissimilarity_matrix(self, path=None):
         path = path or Path.cwd()
@@ -77,7 +90,7 @@ class TrackingSession:
     @property
     def session_1_name(self):
         return self.name_list[1]
-    
+
     def make_dissimilary_matrix(self, channel_group):
         templates_0, templates_1 = self.templates[channel_group]
         diss_matrix = np.zeros((len(templates_0), len(templates_1)))

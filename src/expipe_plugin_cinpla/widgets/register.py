@@ -1,18 +1,17 @@
+# -*- coding: utf-8 -*-
 from pathlib import Path
+
 from expipe_plugin_cinpla.scripts import register
-from .utils import BaseViewWithLog
+
 from ..utils import dump_project_config
+from .utils import BaseViewWithLog
 
 
 ### Open Ephys recording ###
 def register_openephys_view(project):
     import ipywidgets
-    from .utils import (
-        MultiInput,
-        required_values_filled,
-        none_if_empty,
-        split_tags,
-    )
+
+    from .utils import MultiInput, none_if_empty, required_values_filled, split_tags
 
     # left column
     layout_auto = ipywidgets.Layout(width="300px")
@@ -127,12 +126,8 @@ def register_openephys_view(project):
 ### Adjustment ###
 def register_adjustment_view(project):
     import ipywidgets
-    from .utils import (
-        DateTimePicker,
-        MultiInput,
-        required_values_filled,
-        SearchSelect,
-    )
+
+    from .utils import DateTimePicker, MultiInput, SearchSelect, required_values_filled
 
     entity_id = SearchSelect(options=project.entities, description="*Entities")
     user = ipywidgets.Text(placeholder="*User", value=project.config.get("username"))
@@ -182,11 +177,12 @@ def register_adjustment_view(project):
 ### Annotation ###
 def register_annotate_view(project):
     import ipywidgets
+
     from .utils import (
         DateTimePicker,
         MultiInput,
-        required_values_filled,
         SearchSelectMultiple,
+        required_values_filled,
         split_tags,
     )
 
@@ -235,13 +231,13 @@ def register_annotate_view(project):
 ### Entity ###
 def register_entity_view(project):
     import ipywidgets
+
     from .utils import (
         DatePicker,
         SearchSelectMultiple,
-        required_values_filled,
         none_if_empty,
+        required_values_filled,
         split_tags,
-        make_output_and_show,
     )
 
     entity_id = ipywidgets.Text(placeholder="*Entity id")
@@ -287,14 +283,15 @@ def register_entity_view(project):
 ### Surgery ###
 def register_surgery_view(project):
     import ipywidgets
+
     from .utils import (
         DatePicker,
         MultiInput,
-        SearchSelectMultiple,
-        required_values_filled,
-        none_if_empty,
-        split_tags,
         SearchSelect,
+        SearchSelectMultiple,
+        none_if_empty,
+        required_values_filled,
+        split_tags,
     )
 
     entity_id = SearchSelect(options=project.entities, description="*Entities")
@@ -350,14 +347,13 @@ def register_surgery_view(project):
 ### PERFUSION ###
 def register_perfuse_view(project):
     import ipywidgets
+
     from .utils import (
         DatePicker,
-        MultiInput,
-        SearchSelectMultiple,
-        required_values_filled,
-        none_if_empty,
-        split_tags,
         SearchSelect,
+        SearchSelectMultiple,
+        none_if_empty,
+        required_values_filled,
     )
 
     entity_id = SearchSelect(options=project.entities, description="*Entities")

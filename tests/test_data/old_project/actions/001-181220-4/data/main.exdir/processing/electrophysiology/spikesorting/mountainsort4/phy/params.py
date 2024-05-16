@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 dat_path = r"recording.dat"
 n_channels_dat = 32
 dtype = "float64"
