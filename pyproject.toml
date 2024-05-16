@@ -23,9 +23,8 @@ dependencies = [
     "pynwb>=2.5.0",
     "ipywidgets>=8.1.1",
     "nwbwidgets>=0.11.3",
-    "tbb>=2021.11.0",                        # TODO: pip can't find tbb or tbb4py (at least on macOS). Is it needed?
+    "tbb>=2021.11.0; platform_system != 'Darwin'",
     "pynapple>=0.5.1",
-    "spython>=0.3.13",                       # TODO: is this needed?
 ]
 
 [project.urls]
