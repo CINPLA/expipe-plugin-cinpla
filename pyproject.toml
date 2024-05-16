@@ -85,6 +85,9 @@ exclude = [
     "venv",
 ]
 
+# In addition to the standard set of exclusions, omit:
+extend-exclude = ["tests/test_data"]
+
 # Same as Black.
 line-length = 120
 indent-width = 4
