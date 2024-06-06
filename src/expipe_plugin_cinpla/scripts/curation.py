@@ -157,7 +157,7 @@ class SortingCurator:
                 curated_sorting,
                 folder=None,
                 mode="memory",
-                max_spikes_per_unit=100,
+                max_spikes_per_unit=None,
                 sparse=True,
                 method="by_property",
                 by_property="group",

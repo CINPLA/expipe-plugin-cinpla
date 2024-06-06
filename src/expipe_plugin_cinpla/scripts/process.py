@@ -252,6 +252,7 @@ def process_ecephys(
             ms_after=ms_after,
             sparsity_temp_folder=si_folder / "tmp",
             sparse=True,
+            max_spikes_per_unit=None,
             method="by_property",
             by_property="group",
         )
