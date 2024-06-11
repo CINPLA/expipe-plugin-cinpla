@@ -465,19 +465,21 @@ class Data:
         self.spike_trains(action_id)
         return self._spike_trains[action_id][channel_group][unit_id]
 
-    def spike_trains(self, action_id):
+    def spike_trains(self, action_id, channel_group=None):
         if action_id not in self._spike_trains:
             self._spike_trains[action_id] = {}
         lim = self.get_lim(action_id) if self.stim_mask else None
 
         sts = load_spiketrains(self.data_path(action_id), lim=lim)
         for st in sts:
-            channel_group = st.annotations["group"]
-            if channel_group not in self._spike_trains[action_id]:
-                self._spike_trains[action_id][channel_group] = {}
-            self._spike_trains[action_id][channel_group][int(get_unit_id(st))] = st
-
-        return self._spike_trains[action_id]
+            group = st.annotations["group"]
+            if group not in self._spike_trains[action_id]:
+                self._spike_trains[action_id][group] = {}
+            self._spike_trains[action_id][group][int(get_unit_id(st))] = st
+        if channel_group is None:
+            return self._spike_trains[action_id]
+        else:
+            return self._spike_trains[action_id][channel_group]
 
     def unit_names(self, action_id, channel_group):
         units = load_unit_annotations(self.data_path(action_id), channel_group=channel_group)
