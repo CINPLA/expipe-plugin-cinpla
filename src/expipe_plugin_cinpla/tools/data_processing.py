@@ -162,6 +162,8 @@ def load_head_direction(data_path, sampling_rate, low_pass_frequency, box_size):
     check_valid_tracking(x2, y2, box_size)
 
     angles, times = head_direction(x1, y1, x2, y2, t1)
+    # set t[0] to zero
+    times = times - times.min()
     return angles, times
 
 
@@ -208,6 +210,8 @@ def load_tracking(data_path, sampling_rate, low_pass_frequency, box_size, veloci
     vel = np.gradient([x, y], axis=1) / np.gradient(t)
     speed = np.linalg.norm(vel, axis=0)
     x, y, t, speed = np.array(x), np.array(y), np.array(t), np.array(speed)
+    # set t[0] to zero
+    t = t - t.min()
     return x, y, t, speed
 
 
