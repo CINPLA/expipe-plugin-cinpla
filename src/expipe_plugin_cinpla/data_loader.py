@@ -106,8 +106,8 @@ def load_leds(data_path):
     green_data = green_spatial_series.data
     x1, y1 = red_data[:, 0], red_data[:, 1]
     x2, y2 = green_data[:, 0], green_data[:, 1]
-    t1 = red_spatial_series.timestamps
-    t2 = green_spatial_series.timestamps
+    t1 = red_spatial_series.timestamps - nwbfile.session_start_time
+    t2 = green_spatial_series.timestamps - nwbfile.session_start_time
     stop_time = np.max([t1[-1], t2[-1]])
 
     return x1, y1, t1, x2, y2, t2, stop_time
@@ -131,6 +131,10 @@ def load_lfp(data_path, channel_group=None, lim=None):
     LFP: neo.AnalogSignal
         The LFP signal
     """
+    from pynwb import NWBHDF5IO
+    # get the session start time
+    io = NWBHDF5IO(str(data_path), "r")
+    nwbfile = io.read()
     recording_lfp = se.read_nwb_recording(
         str(data_path), electrical_series_path="processing/ecephys/LFP/ElectricalSeriesLFP"
     )
@@ -152,11 +156,11 @@ def load_lfp(data_path, channel_group=None, lim=None):
 
     if lim is None:
         lfp_traces = recording_lfp_group.get_traces(return_scaled=True)
-        t_start = recording_lfp.get_times()[0] * pq.s
-        t_stop = recording_lfp.get_times()[-1] * pq.s
+        t_start = (recording_lfp.get_times()[0] - nwbfile.session_start_time) * pq.s
+        t_stop = (recording_lfp.get_times()[-1] - nwbfile.session_start_time) * pq.s
     else:
         assert len(lim) == 2, "lim must be a list of two elements with t_start and t_stop"
-        times_all = recording_lfp_group.get_times()
+        times_all = recording_lfp_group.get_times() - nwbfile.session_start_time
         start_frame, end_frame = np.searchsorted(times_all, lim)
         times = times_all[start_frame:end_frame]
         t_start = times[0] * pq.s
@@ -196,9 +200,9 @@ def load_epochs(data_path, label_column=None):
     with NWBHDF5IO(str(data_path), "r") as io:
         nwbfile = io.read()
         trials = nwbfile.trials.to_dataframe()
-
-        start_times = trials["start_time"].values * pq.s
-        stop_times = trials["stop_time"].values * pq.s
+        nwbfile.session_start_time
+        start_times = (trials["start_time"].values - nwbfile.session_start_time) * pq.s
+        stop_times = (trials["stop_time"].values - nwbfile.session_start_time) * pq.s
         durations = stop_times - start_times
 
         if label_column is not None and label_column in trials.columns:
@@ -251,6 +255,10 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
     spiketrains: list of NEO spike trains
         The spike trains
     """
+    from pynwb import NWBHDF5IO
+    # get the session start time
+    io = NWBHDF5IO(str(data_path), "r")
+    nwbfile = io.read()
     recording = se.read_nwb_recording(str(data_path), electrical_series_path="acquisition/ElectricalSeries")
     sorting = se.read_nwb_sorting(str(data_path), electrical_series_path="acquisition/ElectricalSeries")
 
@@ -265,9 +273,11 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
     sptr = []
     # build neo objects
     for unit in unit_ids:
-        spike_times = sorting.get_unit_spike_train(unit, return_times=True) * pq.s
+        spike_times = sorting.get_unit_spike_train(unit, return_times=True) 
+        # subtract the session start time
+        spike_times = (spike_times - nwbfile.session_start_time) * pq.s
         if lim is None:
-            times = recording.get_times() * pq.s
+            times = (recording.get_times - nwbfile.session_start_time) * pq.s
             t_start = times[0]
             t_stop = times[-1]
         else:
