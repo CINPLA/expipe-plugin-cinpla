@@ -276,7 +276,7 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
         # subtract the session start time
         spike_times = spike_times * pq.s
         if lim is None:
-            times = recording.get_times * pq.s
+            times = recording.get_times() * pq.s
             t_start = times[0]
             t_stop = times[-1]
         else:
