@@ -235,6 +235,13 @@ def process_ecephys(
         if verbose:
             print(f"\tFound {len(sorting.get_unit_ids())} units!")
 
+        # remove units with less than n_components spikes
+        num_spikes = sorting.count_num_spikes_per_unit()
+        selected_units = sorting.unit_ids[np.array(list(num_spikes.values())) >= n_components]
+        n_too_few_spikes = int(len(sorting.unit_ids) - len(selected_units))
+        print(f"\tRemoved {n_too_few_spikes} units with less than {n_components} spikes")
+        sorting = sorting.select_units(selected_units)
+
         # extract waveforms
         if verbose:
             print("\nPostprocessing")
