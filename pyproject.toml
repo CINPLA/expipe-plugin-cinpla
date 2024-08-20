@@ -19,7 +19,7 @@ dependencies = [
     "expipe>=0.6.0", 
     "neuroconv>=0.4.6",
     "pyopenephys>=1.2.0",
-    "spikeinterface[full,widgets]>=0.100.0",
+    "spikeinterface[full,widgets]>=0.100.0,<0.101.0",
     "scikit-learn<1.5.0",
     "pynwb>=2.5.0",
     "neuroconv>=0.4.6",

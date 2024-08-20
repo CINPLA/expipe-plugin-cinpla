@@ -147,9 +147,8 @@ class SortingCurator:
             print("Removing excess spikes from curated sorting")
             curated_sorting = sc.remove_excess_spikes(curated_sorting, recording=recording)
 
-            # if not sort by group, extract dense and estimate group
-            if "group" not in curated_sorting.get_property_keys():
-                compute_and_set_unit_groups(curated_sorting, recording)
+            # if "group" is not available or some missing groups, extract dense and estimate group
+            compute_and_set_unit_groups(curated_sorting, recording)
 
             print("Extracting waveforms on curated sorting")
             self.curated_we = si.extract_waveforms(
