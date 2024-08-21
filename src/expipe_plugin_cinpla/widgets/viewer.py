@@ -1,7 +1,6 @@
-import ipywidgets
-from pynwb import NWBHDF5IO
-
+# -*- coding: utf-8 -*-
 import expipe
+import ipywidgets
 
 from ..nwbutils.nwbwidgetsunitviewer import get_custom_spec
 from ..scripts.utils import _get_data_path
@@ -32,11 +31,13 @@ class NwbViewer(ipywidgets.VBox):
             data_path = _get_data_path(action)
             if data_path is not None and data_path.name == "main.nwb":
                 options.append(action_name)
+        options = sorted(options)
         return options
 
     def on_change(self, change):
         if change["type"] == "change" and change["name"] == "value":
             from nwbwidgets import nwb2widget
+            from pynwb import NWBHDF5IO
 
             action_id = change["new"]
             if action_id is None:

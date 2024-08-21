@@ -1,1 +1,2 @@
-from .openephystrackinginterface import OpenEphysTrackingInterface
+# -*- coding: utf-8 -*-
+from .openephystrackinginterface import OpenEphysTrackingInterface  # noqa

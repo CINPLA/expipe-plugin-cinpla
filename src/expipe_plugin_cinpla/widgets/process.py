@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
 import ast
+
 from expipe_plugin_cinpla.scripts import process
+
 from .utils import BaseViewWithLog
 
 metric_names = [
@@ -25,8 +28,9 @@ metric_names = [
 def process_ecephys_view(project):
     import ipywidgets
     import spikeinterface.sorters as ss
-    from .utils import SearchSelectMultiple, required_values_filled, ParameterSelectList
+
     from ..scripts.utils import _get_data_path
+    from .utils import ParameterSelectList, SearchSelectMultiple, required_values_filled
 
     all_actions = project.actions
 
@@ -41,7 +45,7 @@ def process_ecephys_view(project):
                 action_names.append(f"{action_name} -- (P)")
             else:
                 action_names.append(f"{action_name} -- (U)")
-
+    action_names = sorted(action_names)
     action_ids = SearchSelectMultiple(action_names, description="*Actions")
 
     overwrite = ipywidgets.Checkbox(description="Overwrite", value=True)

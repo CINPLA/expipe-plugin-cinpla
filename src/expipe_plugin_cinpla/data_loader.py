@@ -1,13 +1,13 @@
+# -*- coding: utf-8 -*-
 """Utils for loading data from NWB files"""
-import numpy as np
 
-import quantities as pq
 import neo
+import numpy as np
+import quantities as pq
 import spikeinterface as si
 import spikeinterface.extractors as se
 
-from pynwb import NWBHDF5IO
-from .utils import _get_data_path
+from .scripts.utils import _get_data_path
 
 
 def get_data_path(action):
@@ -92,6 +92,8 @@ def load_leds(data_path):
     x1, y1, t1, x2, y2, t2, stop_time: tuple
         The x and y positions of the red and green LEDs, the timestamps and the stop time
     """
+    from pynwb import NWBHDF5IO
+
     io = NWBHDF5IO(str(data_path), "r")
     nwbfile = io.read()
 
@@ -130,6 +132,12 @@ def load_lfp(data_path, channel_group=None, lim=None):
     LFP: neo.AnalogSignal
         The LFP signal
     """
+    # from pynwb import NWBHDF5IO
+
+    # get the session start time
+    # TODO: are io and nwbfile needed?
+    # io = NWBHDF5IO(str(data_path), "r")
+    # nwbfile = io.read()
     recording_lfp = se.read_nwb_recording(
         str(data_path), electrical_series_path="processing/ecephys/LFP/ElectricalSeriesLFP"
     )
@@ -190,10 +198,11 @@ def load_epochs(data_path, label_column=None):
     epochs: neo.Epoch
         The trials as NEO epochs
     """
+    from pynwb import NWBHDF5IO
+
     with NWBHDF5IO(str(data_path), "r") as io:
         nwbfile = io.read()
         trials = nwbfile.trials.to_dataframe()
-
         start_times = trials["start_time"].values * pq.s
         stop_times = trials["stop_time"].values * pq.s
         durations = stop_times - start_times
@@ -248,6 +257,12 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
     spiketrains: list of NEO spike trains
         The spike trains
     """
+    # from pynwb import NWBHDF5IO
+
+    # get the session start time
+    # TODO: are io and nwbfile needed?
+    # io = NWBHDF5IO(str(data_path), "r")
+    # nwbfile = io.read()
     recording = se.read_nwb_recording(str(data_path), electrical_series_path="acquisition/ElectricalSeries")
     sorting = se.read_nwb_sorting(str(data_path), electrical_series_path="acquisition/ElectricalSeries")
 
@@ -260,9 +275,11 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
             unit_id for unit_index, unit_id in enumerate(sorting.unit_ids) if groups[unit_index] == channel_group
         ]
     sptr = []
-    # build neo pbjects
+    # build neo objects
     for unit in unit_ids:
-        times = sorting.get_unit_spike_train(unit, return_times=True) * pq.s
+        spike_times = sorting.get_unit_spike_train(unit, return_times=True)
+        # subtract the session start time
+        spike_times = spike_times * pq.s
         if lim is None:
             times = recording.get_times() * pq.s
             t_start = times[0]
@@ -270,12 +287,13 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
         else:
             t_start = pq.Quantity(lim[0], "s")
             t_stop = pq.Quantity(lim[1], "s")
-        mask = (times >= t_start) & (times <= t_stop)
-        times = times[mask]
+        mask = (spike_times >= t_start) & (spike_times <= t_stop)
+        spike_times = spike_times[mask]
 
         st = neo.SpikeTrain(
-            times=times, t_start=t_start, t_stop=t_stop, sampling_rate=sorting.sampling_frequency * pq.Hz
+            times=spike_times, t_start=t_start, t_stop=t_stop, sampling_rate=sorting.sampling_frequency * pq.Hz
         )
+        st.annotations.update({"name": unit})
         for p in sorting.get_property_keys():
             st.annotations.update({p: sorting.get_unit_property(unit, p)})
         sptr.append(st)
@@ -313,7 +331,7 @@ def load_unit_annotations(data_path, channel_group=None):
         ]
 
     for unit in unit_ids:
-        annotations = {}
+        annotations = {"name": unit}
         for p in sorting.get_property_keys():
             annotations.update({p: sorting.get_unit_property(unit, p)})
         units.append(annotations)

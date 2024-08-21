@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
 from pathlib import Path
-from pynwb import NWBHDF5IO
 
 import expipe
-from expipe_plugin_cinpla.scripts.utils import _get_data_path
+from pynwb import NWBHDF5IO
+
 from expipe_plugin_cinpla import convert_old_project
+from expipe_plugin_cinpla.scripts.utils import _get_data_path
 
 test_folder = Path(__file__).parent
 old_project_path = test_folder / "test_data" / "old_project"

@@ -1,9 +1,9 @@
+# -*- coding: utf-8 -*-
 import click
-
 from expipe.cliutils.plugin import IPlugin
 
-from .register import attach_to_register
 from .process import attach_to_process
+from .register import attach_to_register
 
 
 class CinplaPlugin(IPlugin):

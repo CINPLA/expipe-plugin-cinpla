@@ -1,14 +1,17 @@
-import click
-from pathlib import Path
+# -*- coding: utf-8 -*-
 from datetime import datetime
+from pathlib import Path
 
+import click
 import expipe
 
+from expipe_plugin_cinpla.cli.utils import (
+    validate_adjustment,
+    validate_angle,
+    validate_depth,
+    validate_position,
+)
 from expipe_plugin_cinpla.scripts import register
-from expipe_plugin_cinpla.cli.utils import validate_depth, validate_position, validate_angle, validate_adjustment
-
-
-import spikeinterface.sorters as ss
 
 
 def attach_to_register(cli):

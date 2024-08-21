@@ -1,14 +1,14 @@
+# -*- coding: utf-8 -*-
 import shutil
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
-import time
 
 import expipe
 
-from .utils import _get_data_path
-from .register import convert_to_nwb, register_entity
-from .process import process_ecephys
 from .curation import SortingCurator
+from .process import process_ecephys
+from .register import convert_to_nwb, register_entity
 
 
 def convert_old_project(
@@ -128,6 +128,20 @@ def convert_old_project(
             delimiter = "*" * len(process_msg)
             print(f"\n{delimiter}\n{process_msg}\n{delimiter}\n")
             old_action = old_actions[action_id]
+
+            old_action_folder = old_project.path / "actions" / action_id
+            new_action_folder = new_project.path / "actions" / action_id
+            old_data_folder = old_action_folder / "data"
+            new_data_folder = new_action_folder / "data"
+            # main.exdir
+            old_exdir_folder = old_data_folder / "main.exdir"
+
+            if exist_ok and not new_action_folder.is_dir():
+                # Copy action that previously failed
+                print(f">>> Re-copying action {action_id} to new project\n")
+                shutil.copytree(
+                    old_action_folder, new_action_folder, ignore=shutil.ignore_patterns("main.exdir", ".git")
+                )
             new_action = new_project.actions[action_id]
 
             # replace file in attributes.yaml
@@ -136,18 +150,12 @@ def convert_old_project(
             attributes_str = attributes_str.replace("main.exdir", "main.nwb")
             attributes_file.write_text(attributes_str)
 
-            old_data_folder = old_project.path / "actions" / action_id / "data"
-            new_data_folder = new_project.path / "actions" / action_id / "data"
-
-            # main.exdir
-            old_exdir_folder = old_data_folder / "main.exdir"
-
             # find open-ephys folder
             acquisition_folder = old_exdir_folder / "acquisition"
             openephys_folders = [p for p in acquisition_folder.iterdir() if p.is_dir()]
             if len(openephys_folders) != 1:
                 print(f"Found {len(openephys_folders)} openephys folders in {acquisition_folder}!")
-                continue
+                raise ValueError("Expected to find exactly one openephys folder")
             openephys_path = openephys_folders[0]
             # here we assume the following action name: {entity_id}-{date}-{session}
             entity_id = action_id.split("-")[0]
@@ -236,7 +244,7 @@ def convert_old_project(
 
     t_stop_all = time.perf_counter()
     print(f"\nTotal time: {t_stop_all - t_start_all:.2f} s")
-    done_msg = f"ALL DONE!"
+    done_msg = "ALL DONE!"
     delimeter = "*" * len(done_msg)
     print(f"\n{delimeter}\n{done_msg}\n{delimeter}\n")
     print(f"Successful: {len(actions_to_convert) - len(actions_failed)}\n")

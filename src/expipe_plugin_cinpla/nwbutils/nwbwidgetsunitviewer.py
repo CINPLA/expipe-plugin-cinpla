@@ -1,14 +1,10 @@
+# -*- coding: utf-8 -*-
 from functools import partial
-import numpy as np
+
 import ipywidgets as widgets
-from ipywidgets import Layout, interactive_output
-from pynwb.misc import Units
-from pynwb.behavior import SpatialSeries
-
 import matplotlib.pyplot as plt
-
-from nwbwidgets.view import default_neurodata_vis_spec
-
+import numpy as np
+from ipywidgets import Layout, interactive_output
 
 color_wheel = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
@@ -16,7 +12,7 @@ color_wheel = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 class UnitWaveformsWidget(widgets.VBox):
     def __init__(
         self,
-        units: Units,
+        units: "pynwb.misc.Units",
     ):
         super().__init__()
 
@@ -55,7 +51,7 @@ class UnitWaveformsWidget(widgets.VBox):
         self.unit_group_text.value = f"Group: {unit_group}"
 
 
-def show_unit_waveforms(units: Units, unit_index=None, ax=None):
+def show_unit_waveforms(units: "pynwb.mis.Units", unit_index=None, ax=None):
     """
     TODO: add docstring
 
@@ -105,8 +101,8 @@ def show_unit_waveforms(units: Units, unit_index=None, ax=None):
 class UnitRateMapWidget(widgets.VBox):
     def __init__(
         self,
-        units: Units,
-        spatial_series: SpatialSeries = None,
+        units: "pynwb.mis.Units",
+        spatial_series: "SpatialSeries" = None,
     ):
         super().__init__()
 
@@ -186,6 +182,8 @@ class UnitRateMapWidget(widgets.VBox):
         self.unit_group_text.value = f"Group: {unit_group}"
 
     def get_spatial_series(self):
+        from pynwb.behavior import SpatialSeries
+
         spatial_series = dict()
         nwbfile = self.units.get_ancestor("NWBFile")
         for item in nwbfile.all_children():
@@ -265,6 +263,9 @@ class UnitRateMapWidget(widgets.VBox):
 
 
 def get_custom_spec():
+    from nwbwidgets.view import default_neurodata_vis_spec
+    from pynwb.misc import Units
+
     custom_neurodata_vis_spec = default_neurodata_vis_spec.copy()
 
     # remove irrelevant widgets

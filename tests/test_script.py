@@ -1,8 +1,14 @@
-import pytest
+# -*- coding: utf-8 -*-
 from datetime import datetime
-from expipe_plugin_cinpla.scripts.register import register_entity, register_openephys_recording
-from expipe_plugin_cinpla.scripts.process import process_ecephys
+
+import pytest
+
 from expipe_plugin_cinpla.scripts.curation import SortingCurator
+from expipe_plugin_cinpla.scripts.process import process_ecephys
+from expipe_plugin_cinpla.scripts.register import (
+    register_entity,
+    register_openephys_recording,
+)
 
 
 @pytest.mark.dependency()

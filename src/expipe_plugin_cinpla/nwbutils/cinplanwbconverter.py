@@ -1,6 +1,7 @@
-from probeinterface import ProbeGroup
+# -*- coding: utf-8 -*-
 from neuroconv import NWBConverter
 from neuroconv.datainterfaces import OpenEphysRecordingInterface
+from probeinterface import ProbeGroup
 
 from .interfaces.openephystrackinginterface import OpenEphysTrackingInterface
 

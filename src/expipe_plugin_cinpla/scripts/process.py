@@ -1,13 +1,12 @@
-import shutil
+# -*- coding: utf-8 -*-
 import contextlib
-import time
 import json
-import os
+import shutil
+import time
+
 import numpy as np
 
 from expipe_plugin_cinpla.scripts import utils
-
-from ..nwbutils.cinplanwbconverter import CinplaNWBConverter
 
 
 def process_ecephys(
@@ -33,18 +32,17 @@ def process_ecephys(
     verbose=True,
 ):
     import warnings
+
     import spikeinterface as si
-    import spikeinterface.extractors as se
-    import spikeinterface.preprocessing as spre
-    import spikeinterface.sorters as ss
-    import spikeinterface.postprocessing as spost
-    import spikeinterface.qualitymetrics as sqm
     import spikeinterface.exporters as sexp
+    import spikeinterface.extractors as se
+    import spikeinterface.postprocessing as spost
+    import spikeinterface.preprocessing as spre
+    import spikeinterface.qualitymetrics as sqm
+    import spikeinterface.sorters as ss
     import spikeinterface.widgets as sw
-
-    from pynwb import NWBHDF5IO
-
     from neuroconv.tools.spikeinterface import add_recording
+    from pynwb import NWBHDF5IO
 
     from .utils import add_units_from_waveform_extractor, compute_and_set_unit_groups
 
@@ -226,14 +224,17 @@ def process_ecephys(
                         **spikesorter_params,
                     )
         except Exception as e:
-            try:
-                shutil.rmtree(output_folder)
-            except:
-                if verbose:
-                    print(f"\tCould not tmp processing folder: {output_folder}")
+            shutil.rmtree(output_folder)
             raise Exception(f"Spike sorting failed:\n\n{e}")
         if verbose:
             print(f"\tFound {len(sorting.get_unit_ids())} units!")
+
+        # remove units with less than n_components spikes
+        num_spikes = sorting.count_num_spikes_per_unit()
+        selected_units = sorting.unit_ids[np.array(list(num_spikes.values())) >= n_components]
+        n_too_few_spikes = int(len(sorting.unit_ids) - len(selected_units))
+        print(f"\tRemoved {n_too_few_spikes} units with less than {n_components} spikes")
+        sorting = sorting.select_units(selected_units)
 
         # extract waveforms
         if verbose:
@@ -252,6 +253,7 @@ def process_ecephys(
             ms_after=ms_after,
             sparsity_temp_folder=si_folder / "tmp",
             sparse=True,
+            max_spikes_per_unit=None,
             method="by_property",
             by_property="group",
         )
@@ -269,7 +271,7 @@ def process_ecephys(
 
         if verbose:
             print("\tExporting to phy")
-        phy_folder = output_base_folder / f"phy"
+        phy_folder = output_base_folder / "phy"
         if phy_folder.is_dir():
             shutil.rmtree(phy_folder)
         sexp.export_to_phy(
@@ -383,7 +385,7 @@ def process_ecephys(
     if not provenance_file.is_file():
         (output_base_folder / "recording_cmr").mkdir(parents=True, exist_ok=True)
         recording_cmr.dump_to_json(output_base_folder / "recording_cmr" / "provenance.json")
-    with open(output_base_folder / "recording_cmr" / "provenance.json", "r") as f:
+    with open(output_base_folder / "recording_cmr" / "provenance.json") as f:
         provenance = json.load(f)
     provenance_str = json.dumps(provenance)
     provenance_str = provenance_str.replace("main_tmp.nwb", "main.nwb")
@@ -393,9 +395,9 @@ def process_ecephys(
         shutil.rmtree(output_base_folder / "recording_cmr")
     try:
         nwb_path_tmp.unlink()
-    except:
+    except Exception as e:
         print(f"Could not remove: {nwb_path_tmp}")
-        raise Exception
+        raise e
 
     if verbose:
         print("\tSaved to NWB: ", nwb_path)

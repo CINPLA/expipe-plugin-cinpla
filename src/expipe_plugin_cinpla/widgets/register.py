@@ -1,18 +1,17 @@
+# -*- coding: utf-8 -*-
 from pathlib import Path
+
 from expipe_plugin_cinpla.scripts import register
-from .utils import BaseViewWithLog
+
 from ..utils import dump_project_config
+from .utils import BaseViewWithLog
 
 
 ### Open Ephys recording ###
 def register_openephys_view(project):
     import ipywidgets
-    from .utils import (
-        MultiInput,
-        required_values_filled,
-        none_if_empty,
-        split_tags,
-    )
+
+    from .utils import MultiInput, none_if_empty, required_values_filled, split_tags
 
     # left column
     layout_auto = ipywidgets.Layout(width="300px")
@@ -31,7 +30,7 @@ def register_openephys_view(project):
     # buttons
     depth = MultiInput(["Key", "Probe", "Depth", "Unit"], "Add depth")
     register_depth = ipywidgets.Checkbox(description="Register depth", value=False)
-    include_events = ipywidgets.Checkbox(description="Include events", value=False)
+    include_events = ipywidgets.Checkbox(description="Include events", value=True)
     register_depth_from_adjustment = ipywidgets.Checkbox(description="Find adjustments", value=True)
     register_depth_from_adjustment.layout.visibility = "hidden"
 
@@ -127,12 +126,8 @@ def register_openephys_view(project):
 ### Adjustment ###
 def register_adjustment_view(project):
     import ipywidgets
-    from .utils import (
-        DateTimePicker,
-        MultiInput,
-        required_values_filled,
-        SearchSelect,
-    )
+
+    from .utils import DateTimePicker, MultiInput, SearchSelect, required_values_filled
 
     entity_id = SearchSelect(options=project.entities, description="*Entities")
     user = ipywidgets.Text(placeholder="*User", value=project.config.get("username"))
@@ -140,9 +135,9 @@ def register_adjustment_view(project):
     adjustment = MultiInput(["*Key", "*Probe", "*Adjustment", "*Unit"], "Add adjustment")
     depth = MultiInput(["Key", "Probe", "Depth", "Unit"], "Add depth")
     depth_from_surgery = ipywidgets.Checkbox(description="Get depth from surgery", value=True)
-    register = ipywidgets.Button(description="Register")
+    register_button = ipywidgets.Button(description="Register")
 
-    fields = ipywidgets.VBox([user, date, adjustment, register])
+    fields = ipywidgets.VBox([user, date, adjustment, register_button])
     main_box = ipywidgets.VBox([depth_from_surgery, ipywidgets.HBox([fields, entity_id])])
 
     def on_manual_depth(change):
@@ -158,6 +153,9 @@ def register_adjustment_view(project):
 
     depth_from_surgery.observe(on_manual_depth, names="value")
 
+    view = BaseViewWithLog(main_box=main_box, project=project)
+
+    @view.output.capture()
     def on_register(change):
         if not required_values_filled(entity_id, user, adjustment):
             return
@@ -171,18 +169,20 @@ def register_adjustment_view(project):
             yes=True,
         )
 
-    register.on_click(on_register)
-    return main_box
+    register_button.on_click(on_register)
+
+    return view
 
 
 ### Annotation ###
 def register_annotate_view(project):
     import ipywidgets
+
     from .utils import (
         DateTimePicker,
         MultiInput,
-        required_values_filled,
         SearchSelectMultiple,
+        required_values_filled,
         split_tags,
     )
 
@@ -196,11 +196,14 @@ def register_annotate_view(project):
     message = ipywidgets.Text(placeholder="Message")
     tag = ipywidgets.Text(placeholder="Tags (; to separate)")
     templates = SearchSelectMultiple(project.templates, description="Templates")
-    register = ipywidgets.Button(description="Register")
+    register_button = ipywidgets.Button(description="Register")
 
-    fields = ipywidgets.VBox([user, date, location, message, action_type, tag, depth, entity_id, register])
+    fields = ipywidgets.VBox([user, date, location, message, action_type, tag, depth, entity_id, register_button])
     main_box = ipywidgets.VBox([ipywidgets.HBox([fields, action_id, templates])])
 
+    view = BaseViewWithLog(main_box=main_box, project=project)
+
+    @view.output.capture()
     def on_register(change):
         if not required_values_filled(action_id, user):
             return
@@ -221,20 +224,20 @@ def register_annotate_view(project):
                 correct_depth_answer=True,
             )
 
-    register.on_click(on_register)
-    return main_box
+    register_button.on_click(on_register)
+    return view
 
 
 ### Entity ###
 def register_entity_view(project):
     import ipywidgets
+
     from .utils import (
         DatePicker,
         SearchSelectMultiple,
-        required_values_filled,
         none_if_empty,
+        required_values_filled,
         split_tags,
-        make_output_and_show,
     )
 
     entity_id = ipywidgets.Text(placeholder="*Entity id")
@@ -248,8 +251,8 @@ def register_entity_view(project):
     templates = SearchSelectMultiple(project.templates, description="Templates")
 
     overwrite = ipywidgets.Checkbox(description="Overwrite", value=False)
-    register = ipywidgets.Button(description="Register")
-    fields = ipywidgets.VBox([entity_id, user, species, sex, location, birthday, message, tag, register])
+    register_button = ipywidgets.Button(description="Register")
+    fields = ipywidgets.VBox([entity_id, user, species, sex, location, birthday, message, tag, register_button])
 
     main_box = ipywidgets.VBox([overwrite, ipywidgets.HBox([fields, templates])])
     view = BaseViewWithLog(main_box=main_box, project=project)
@@ -273,21 +276,22 @@ def register_entity_view(project):
             templates=templates.value,
         )
 
-    register.on_click(on_register)
+    register_button.on_click(on_register)
     return view
 
 
 ### Surgery ###
 def register_surgery_view(project):
     import ipywidgets
+
     from .utils import (
         DatePicker,
         MultiInput,
-        SearchSelectMultiple,
-        required_values_filled,
-        none_if_empty,
-        split_tags,
         SearchSelect,
+        SearchSelectMultiple,
+        none_if_empty,
+        required_values_filled,
+        split_tags,
     )
 
     entity_id = SearchSelect(options=project.entities, description="*Entities")
@@ -307,9 +311,9 @@ def register_surgery_view(project):
     angle = MultiInput(["*Key", "*Probe", "*Angle", "*Unit"], "Add angle")
     templates = SearchSelectMultiple(project.templates, description="Templates")
     overwrite = ipywidgets.Checkbox(description="Overwrite", value=False)
-    register = ipywidgets.Button(description="Register")
+    register_button = ipywidgets.Button(description="Register")
 
-    fields = ipywidgets.VBox([user, location, date, weight, position, angle, message, procedure, tag, register])
+    fields = ipywidgets.VBox([user, location, date, weight, position, angle, message, procedure, tag, register_button])
     main_box = ipywidgets.VBox([overwrite, ipywidgets.HBox([fields, ipywidgets.VBox([entity_id, templates])])])
 
     view = BaseViewWithLog(main_box=main_box, project=project)
@@ -336,21 +340,20 @@ def register_surgery_view(project):
             tags=tags,
         )
 
-    register.on_click(on_register)
+    register_button.on_click(on_register)
     return view
 
 
 ### PERFUSION ###
 def register_perfuse_view(project):
     import ipywidgets
+
     from .utils import (
         DatePicker,
-        MultiInput,
-        SearchSelectMultiple,
-        required_values_filled,
-        none_if_empty,
-        split_tags,
         SearchSelect,
+        SearchSelectMultiple,
+        none_if_empty,
+        required_values_filled,
     )
 
     entity_id = SearchSelect(options=project.entities, description="*Entities")
@@ -367,8 +370,8 @@ def register_perfuse_view(project):
     templates = SearchSelectMultiple(project.templates, description="Templates")
     overwrite = ipywidgets.Checkbox(description="Overwrite", value=False)
 
-    register = ipywidgets.Button(description="Register")
-    fields = ipywidgets.VBox([user, location, date, weight, message, register])
+    register_button = ipywidgets.Button(description="Register")
+    fields = ipywidgets.VBox([user, location, date, weight, message, register_button])
     main_box = ipywidgets.VBox([overwrite, ipywidgets.HBox([fields, entity_id, templates])])
     view = BaseViewWithLog(main_box=main_box, project=project)
 
@@ -389,5 +392,5 @@ def register_perfuse_view(project):
             message=none_if_empty(message.value),
         )
 
-    register.on_click(on_register)
+    register_button.on_click(on_register)
     return view

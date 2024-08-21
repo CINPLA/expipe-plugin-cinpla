@@ -1,12 +1,12 @@
-import sys
+# -*- coding: utf-8 -*-
 import shutil
-from datetime import datetime
+import sys
+from datetime import datetime, timedelta
 from pathlib import Path, PureWindowsPath
-import numpy as np
-
-import quantities as pq
 
 import expipe
+import numpy as np
+import quantities as pq
 
 nwb_main_groups = ["acquisition", "analysis", "processing", "epochs", "general"]
 tmp_phy_folders = [".klustakwik2", ".phy", ".spikedetect"]
@@ -47,14 +47,14 @@ def query_yes_no(question, default="yes", answer=None):
 
 
 def deltadate(adjustdate, regdate):
-    delta = regdate - adjustdate if regdate > adjustdate else datetime.timedelta.max
+    delta = regdate - adjustdate if regdate > adjustdate else timedelta.max
     return delta
 
 
 def position_to_dict(depth):
     position = {d[0]: dict() for d in depth}
     for key, num, val, unit in depth:
-        probe_key = "probe_{}".format(num)
+        probe_key = f"probe_{num}"
         position[key][probe_key] = pq.Quantity(val, unit)
     return position
 
@@ -85,7 +85,6 @@ def write_python(path, dict):
 
 
 def get_depth_from_surgery(project, entity_id):
-    index = 0
     surgery = project.actions[entity_id + "-surgery-implantation"]
     position = {}
     for key, module in surgery.modules.items():
@@ -97,7 +96,7 @@ def get_depth_from_surgery(project, entity_id):
     for key, groups in position.items():
         for group, pos in groups.items():
             if not isinstance(pos, pq.Quantity):
-                raise ValueError("Depth of implant " + '"{} {} = {}"'.format(key, group, pos) + " not recognized")
+                raise ValueError("Depth of implant " + f'"{key} {group} = {pos}"' + " not recognized")
             position[key][group] = pos.astype(float)[2]  # index 2 = z
     return position
 
@@ -106,7 +105,7 @@ def get_depth_from_adjustment(project, action, entity_id):
     DTIME_FORMAT = expipe.core.datetime_format
     try:
         adjustments = project.actions[entity_id + "-adjustment"]
-    except KeyError as e:
+    except KeyError:
         return None, None
     adjusts = {}
     for adjust in adjustments.modules.values():
@@ -130,7 +129,7 @@ def register_depth(project, action, depth=None, answer=None, overwrite=False):
         adjustdate = None
     else:
         curr_depth, adjustdate = get_depth_from_adjustment(project, action, action.entities[0])
-        print("Adjust date time: {}\n".format(adjustdate))
+        print(f"Adjust date time: {adjustdate}\n")
     if curr_depth is None:
         print("Cannot find current depth from adjustments.")
         return False
@@ -140,7 +139,7 @@ def register_depth(project, action, depth=None, answer=None, overwrite=False):
 
     print(
         "".join(
-            "Depth: {} {} = {}\n".format(key, probe_key, val[probe_key])
+            f"Depth: {key} {probe_key} = {val[probe_key]}\n"
             for key, val in curr_depth.items()
             for probe_key in sorted(val, key=lambda x: last_num(x))
         )
@@ -176,19 +175,18 @@ def _make_data_path(action, overwrite, suffix=".nwb"):
 
 
 def _get_data_path(action):
-    if "main" not in action.data:
-        return
     try:
+        if "main" not in action.data:
+            return
         data_path = action.data_path("main")
-    except:
-        data_path = Path("None")
-        pass
-    if not data_path.is_dir():
-        action_path = action._backend.path
-        project_path = action_path.parent.parent
-        # data_path = action.data['main']
-        data_path = project_path / str(Path(PureWindowsPath(action.data["main"])))
-    return data_path
+        if not data_path.is_dir():
+            action_path = action._backend.path
+            project_path = action_path.parent.parent
+            # data_path = action.data['main']
+            data_path = project_path / str(Path(PureWindowsPath(action.data["main"])))
+        return data_path
+    except Exception:
+        return None
 
 
 def register_templates(action, templates, overwrite=False):
@@ -290,7 +288,23 @@ def generate_phy_restore_files(phy_folder):
 def compute_and_set_unit_groups(sorting, recording):
     import spikeinterface as si
 
-    we_mem = si.extract_waveforms(recording, sorting, folder=None, mode="memory", sparse=False)
-    extremum_channel_indices = si.get_template_extremum_channel(we_mem, outputs="index")
-    unit_groups = recording.get_channel_groups()[np.array(list(extremum_channel_indices.values()))]
-    sorting.set_property("group", unit_groups)
+    if len(np.unique(recording.get_channel_groups())) == 1:
+        sorting.set_property("group", np.zeros(len(sorting.unit_ids), dtype="int64"))
+    else:
+        if "group" not in sorting.get_property_keys():
+            we_mem = si.extract_waveforms(recording, sorting, folder=None, mode="memory", sparse=False)
+            extremum_channel_indices = si.get_template_extremum_channel(we_mem, outputs="index")
+            unit_groups = recording.get_channel_groups()[np.array(list(extremum_channel_indices.values()))]
+            sorting.set_property("group", unit_groups)
+        else:
+            unit_groups = sorting.get_property("group")
+            # if there are units without group, we need to compute them
+            unit_ids_without_group = np.array(sorting.unit_ids)[np.where(unit_groups == "nan")[0]]
+            if len(unit_ids_without_group) > 0:
+                sorting_no_group = sorting.select_units(unit_ids=unit_ids_without_group)
+                we_mem = si.extract_waveforms(recording, sorting_no_group, folder=None, mode="memory", sparse=False)
+                extremum_channel_indices = si.get_template_extremum_channel(we_mem, outputs="index")
+                unit_groups[unit_ids_without_group] = recording.get_channel_groups()[
+                    np.array(list(extremum_channel_indices.values()))
+                ]
+                sorting.set_property("group", unit_groups)
