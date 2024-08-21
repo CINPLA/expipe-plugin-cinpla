@@ -1,16 +1,24 @@
-import numpy as np
-import networkx as nx
-import yaml
-from .trackunitcomparison import TrackingSession
-from expipe_plugin_cinpla.data_loader import get_data_path, get_channel_groups, load_spiketrains
-from .track_units_tools import plot_template
-import matplotlib.pylab as plt
-from tqdm import tqdm
+# -*- coding: utf-8 -*-
+import datetime
 import uuid
-from matplotlib import gridspec
 from collections import defaultdict
 from pathlib import Path
-import datetime
+
+import matplotlib.pylab as plt
+import networkx as nx
+import numpy as np
+import yaml
+from matplotlib import gridspec
+from tqdm import tqdm
+
+from expipe_plugin_cinpla.data_loader import (
+    get_channel_groups,
+    get_data_path,
+    load_spiketrains,
+)
+
+from .track_units_tools import plot_template
+from .trackunitcomparison import TrackingSession
 
 
 class TrackMultipleSessions:
@@ -191,7 +199,7 @@ class TrackMultipleSessions:
         for path in self.data_path.iterdir():
             if path.name.startswith("graph-group") and path.suffix == ".yaml":
                 ch = path.stem.split("-")[-1]
-                with open(path, "r") as f:
+                with open(path) as f:
                     self.graphs[ch] = yaml.load(f, Loader=yaml.Loader)
 
     def identify_units(self):

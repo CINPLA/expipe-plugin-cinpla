@@ -1,14 +1,14 @@
+# -*- coding: utf-8 -*-
 import shutil
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
-import time
 
 import expipe
 
-from .utils import _get_data_path
-from .register import convert_to_nwb, register_entity
-from .process import process_ecephys
 from .curation import SortingCurator
+from .process import process_ecephys
+from .register import convert_to_nwb, register_entity
 
 
 def convert_old_project(
@@ -244,7 +244,7 @@ def convert_old_project(
 
     t_stop_all = time.perf_counter()
     print(f"\nTotal time: {t_stop_all - t_start_all:.2f} s")
-    done_msg = f"ALL DONE!"
+    done_msg = "ALL DONE!"
     delimeter = "*" * len(done_msg)
     print(f"\n{delimeter}\n{done_msg}\n{delimeter}\n")
     print(f"Successful: {len(actions_to_convert) - len(actions_failed)}\n")

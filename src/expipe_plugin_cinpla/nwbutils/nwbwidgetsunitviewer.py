@@ -1,10 +1,10 @@
+# -*- coding: utf-8 -*-
 from functools import partial
-import numpy as np
+
 import ipywidgets as widgets
-from ipywidgets import Layout, interactive_output
-
 import matplotlib.pyplot as plt
-
+import numpy as np
+from ipywidgets import Layout, interactive_output
 
 color_wheel = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
@@ -263,8 +263,8 @@ class UnitRateMapWidget(widgets.VBox):
 
 
 def get_custom_spec():
-    from pynwb.misc import Units
     from nwbwidgets.view import default_neurodata_vis_spec
+    from pynwb.misc import Units
 
     custom_neurodata_vis_spec = default_neurodata_vis_spec.copy()
 

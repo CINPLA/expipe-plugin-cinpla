@@ -1,5 +1,7 @@
-import click
+# -*- coding: utf-8 -*-
 from pathlib import Path
+
+import click
 import ruamel.yaml as yaml
 
 from expipe_plugin_cinpla.imports import project

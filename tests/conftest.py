@@ -1,7 +1,9 @@
-import pytest
-import expipe
+# -*- coding: utf-8 -*-
 import shutil
 from pathlib import Path
+
+import expipe
+import pytest
 
 from expipe_plugin_cinpla.utils import dump_project_config
 

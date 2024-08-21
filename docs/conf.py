@@ -22,7 +22,6 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 import os
-import re
 
 # import expipe_plugin_cinpla
 

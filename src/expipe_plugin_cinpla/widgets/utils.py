@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
+import datetime as dt
+import warnings
+
+import expipe
 import ipywidgets
 import numpy as np
-import datetime as dt
-import expipe
-import warnings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -217,7 +219,7 @@ class ParameterSelectList(ipywidgets.VBox):
         for ch in self.children:
             keys.append(ch.description)
             values.append(ch.value)
-        return dict(zip(keys, values))
+        return dict(zip(keys, values, strict=False))
 
 
 class DateTimePicker(ipywidgets.HBox):
@@ -277,8 +279,9 @@ class SelectFileButton(ipywidgets.Button):
 
     @staticmethod
     def select_file(self):
-        from tkfilebrowser import askopenfilename
         from tkinter import Tk
+
+        from tkfilebrowser import askopenfilename
 
         # Create Tk root
         root = Tk()
@@ -294,7 +297,7 @@ class SelectFileButton(ipywidgets.Button):
             name = ft[1:].capitalize()
             result = askopenfilename(
                 defaultextension=ft,
-                filetypes=[("{} file".format(name), "*{}".format(ft)), ("All files", "*.*")],
+                filetypes=[(f"{name} file", f"*{ft}"), ("All files", "*.*")],
                 initialdir=self.initialdir,
             )
             self.file = result if len(result) > 0 else ""
@@ -347,8 +350,9 @@ class SelectFilesButton(ipywidgets.Button):
 
     @staticmethod
     def select_file(self):
-        from tkfilebrowser import askopenfilenames
         from tkinter import Tk
+
+        from tkfilebrowser import askopenfilenames
 
         # Create Tk root
         root = Tk()
@@ -364,7 +368,7 @@ class SelectFilesButton(ipywidgets.Button):
             name = ft[1:].capitalize()
             self.files = askopenfilenames(
                 defaultextension=ft,
-                filetypes=[("{} file".format(name), "*{}".format(ft)), ("All files", "*.*")],
+                filetypes=[(f"{name} file", f"*{ft}"), ("All files", "*.*")],
                 initialdir=self.initialdir,
             )
         else:
@@ -399,8 +403,9 @@ class SelectDirectoryButton(ipywidgets.Button):
 
     @staticmethod
     def select_directories(self):
-        from tkfilebrowser import askopendirnames
         from tkinter import Tk
+
+        from tkfilebrowser import askopendirnames
 
         # Create Tk root
         root = Tk()

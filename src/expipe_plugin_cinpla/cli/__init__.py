@@ -1,1 +1,2 @@
-from .main import CinplaPlugin
+# -*- coding: utf-8 -*-
+from .main import CinplaPlugin  # noqa

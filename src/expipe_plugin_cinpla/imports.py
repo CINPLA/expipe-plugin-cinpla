@@ -1,6 +1,7 @@
-import expipe
+# -*- coding: utf-8 -*-
 from pathlib import Path
 
+import expipe
 
 local_root, _ = expipe.config._load_local_config(Path.cwd())
 if local_root is not None:

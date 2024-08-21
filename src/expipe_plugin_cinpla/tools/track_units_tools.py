@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.optimize import linear_sum_assignment
 from matplotlib import gridspec
-import matplotlib.pyplot as plt
+from scipy.optimize import linear_sum_assignment
 
 
 def dissimilarity(template_0, template_1):
@@ -181,7 +182,7 @@ def make_hungarian_match(dissimilarity_scores, max_dissimilarity):
     hungarian_match_21 = pd.Series(index=unit2_ids, dtype="int64")
     hungarian_match_21[:] = -1
 
-    for i1, i2 in zip(inds1, inds2):
+    for i1, i2 in zip(inds1, inds2, strict=False):
         u1 = unit1_ids[i1]
         u2 = unit2_ids[i2]
         if dissimilarity_scores.at[u1, u2] < max_dissimilarity:

@@ -1,15 +1,14 @@
-import ipywidgets
-import pandas as pd
+# -*- coding: utf-8 -*-
 from collections import OrderedDict
 
-import expipe
-import expipe.config
+import ipywidgets
+import pandas as pd
 
 from expipe_plugin_cinpla.scripts import curation
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
-from .utils import BaseViewWithLog, required_values_filled
-from ..utils import dump_project_config
 
+from ..utils import dump_project_config
+from .utils import BaseViewWithLog, required_values_filled
 
 default_qms = [
     dict(name="isi_violations_ratio", sign="<", threshold=0.5),
@@ -47,7 +46,11 @@ class CurationView(BaseViewWithLog):
     def __init__(self, project):
         from nwbwidgets import nwb2widget
         from pynwb.misc import Units
-        from ..nwbutils.nwbwidgetsunitviewer import UnitWaveformsWidget, UnitRateMapWidget
+
+        from ..nwbutils.nwbwidgetsunitviewer import (
+            UnitRateMapWidget,
+            UnitWaveformsWidget,
+        )
 
         custom_raw_unit_vis = {
             Units: OrderedDict({"Raw Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget})

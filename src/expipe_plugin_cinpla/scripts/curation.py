@@ -1,12 +1,16 @@
-import shutil
+# -*- coding: utf-8 -*-
 import json
-from pathlib import Path
-import numpy as np
+import shutil
 import warnings
 
+import numpy as np
 import spikeinterface as si
 
-from .utils import _get_data_path, add_units_from_waveform_extractor, compute_and_set_unit_groups
+from .utils import (
+    _get_data_path,
+    add_units_from_waveform_extractor,
+    compute_and_set_unit_groups,
+)
 
 warnings.filterwarnings("ignore", category=ResourceWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -76,10 +80,10 @@ class SortingCurator:
                 unit_table_path=raw_units_path,
                 electrical_series_path="acquisition/ElectricalSeries",
             )
+            return sorting_raw
         except Exception as e:
             print(f"Could not load raw sorting for {sorter}. Using None: {e}")
-            sorting_raw = None
-        return sorting_raw
+            return None
 
     def load_raw_units(self, sorter):
         from pynwb import NWBHDF5IO
@@ -90,9 +94,10 @@ class SortingCurator:
         nwbfile = self.io.read()
         try:
             units = _retrieve_unit_table_pynwb(nwbfile, raw_units_path)
-        except:
-            units = None
-        return units
+            return units
+        except Exception as e:
+            print(f"Could not load raw units for {sorter}. Using None: {e}")
+            return None
 
     def load_main_units(self):
         from pynwb import NWBHDF5IO
@@ -137,9 +142,9 @@ class SortingCurator:
             print(f"No curation was performed for {sorter}. Using raw sorting")
             self.curated_we = None
         else:
+            import spikeinterface.curation as sc
             import spikeinterface.postprocessing as spost
             import spikeinterface.qualitymetrics as sqm
-            import spikeinterface.curation as sc
 
             recording = self.load_processed_recording(sorter)
 
@@ -199,7 +204,7 @@ class SortingCurator:
         visualization_json = self.si_path / sorter / "sortingview_links.json"
         if not visualization_json.is_file():
             return "Sorting view link not found."
-        with open(visualization_json, "r") as f:
+        with open(visualization_json) as f:
             sortingview_links = json.load(f)
         return sortingview_links["raw"]
 
@@ -220,7 +225,7 @@ class SortingCurator:
         uri = curation_str[curation_str.find("sha1://") : -2]
         sorting_curated = sc.apply_sortingview_curation(sorting_raw, uri_or_json=uri)
         # exclude noise
-        good_units = sorting_curated.unit_ids[sorting_curated.get_property("noise") == False]
+        good_units = sorting_curated.unit_ids[sorting_curated.get_property("noise") == False]  # noqa E712
         # create single property for SUA and MUA
         sorting_curated = sorting_curated.select_units(good_units)
         self.apply_curation(sorter, sorting_curated)

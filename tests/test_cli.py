@@ -1,14 +1,14 @@
-import pytest
+# -*- coding: utf-8 -*-
 import time
+
 import click
-from pathlib import Path
-from click.testing import CliRunner
-import quantities as pq
 import numpy as np
+import pytest
+import quantities as pq
+import spikeinterface.extractors as se
+from click.testing import CliRunner
 
 from expipe_plugin_cinpla.cli import CinplaPlugin
-
-import spikeinterface.extractors as se
 
 
 @click.group()
@@ -23,7 +23,6 @@ CinplaPlugin().attach_to_cli(cli)
 def run_command(command_list, inp=None):
     runner = CliRunner()
     command_list = [str(c) for c in command_list]
-    # print(" ".join(command_list))
     result = runner.invoke(cli, command_list, input=inp)
     if result.exit_code != 0:
         print(result.output)
