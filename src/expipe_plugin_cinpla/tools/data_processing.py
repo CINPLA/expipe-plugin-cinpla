@@ -482,8 +482,10 @@ class Data:
             return self._spike_trains[action_id][channel_group]
 
     def unit_names(self, action_id, channel_group):
-        units = load_unit_annotations(self.data_path(action_id), channel_group=channel_group)
-        return [u['name'] for u in units]
+        # TODO
+        # units = load_unit_annotations(self.data_path(action_id), channel_group=channel_group)
+        units = None
+        return [u["name"] for u in units]
 
     def stim_times(self, action_id):
         if action_id not in self._stim_times:

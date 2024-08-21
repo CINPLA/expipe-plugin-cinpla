@@ -132,10 +132,12 @@ def load_lfp(data_path, channel_group=None, lim=None):
     LFP: neo.AnalogSignal
         The LFP signal
     """
-    from pynwb import NWBHDF5IO
+    # from pynwb import NWBHDF5IO
+
     # get the session start time
-    io = NWBHDF5IO(str(data_path), "r")
-    nwbfile = io.read()
+    # TODO: are io and nwbfile needed?
+    # io = NWBHDF5IO(str(data_path), "r")
+    # nwbfile = io.read()
     recording_lfp = se.read_nwb_recording(
         str(data_path), electrical_series_path="processing/ecephys/LFP/ElectricalSeriesLFP"
     )
@@ -255,10 +257,12 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
     spiketrains: list of NEO spike trains
         The spike trains
     """
-    from pynwb import NWBHDF5IO
+    # from pynwb import NWBHDF5IO
+
     # get the session start time
-    io = NWBHDF5IO(str(data_path), "r")
-    nwbfile = io.read()
+    # TODO: are io and nwbfile needed?
+    # io = NWBHDF5IO(str(data_path), "r")
+    # nwbfile = io.read()
     recording = se.read_nwb_recording(str(data_path), electrical_series_path="acquisition/ElectricalSeries")
     sorting = se.read_nwb_sorting(str(data_path), electrical_series_path="acquisition/ElectricalSeries")
 
@@ -273,7 +277,7 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
     sptr = []
     # build neo objects
     for unit in unit_ids:
-        spike_times = sorting.get_unit_spike_train(unit, return_times=True) 
+        spike_times = sorting.get_unit_spike_train(unit, return_times=True)
         # subtract the session start time
         spike_times = spike_times * pq.s
         if lim is None:
