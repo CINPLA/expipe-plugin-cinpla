@@ -244,6 +244,10 @@ def process_ecephys(
         if "group" not in sorting.get_property_keys():
             compute_and_set_unit_groups(sorting, recording_cmr)
 
+        sparsity_temp_folder = si_folder / "tmp"
+        if sparsity_temp_folder.is_dir():
+            shutil.rmtree(sparsity_temp_folder)
+
         we = si.extract_waveforms(
             recording_cmr,
             sorting,
@@ -251,7 +255,7 @@ def process_ecephys(
             overwrite=True,
             ms_before=ms_before,
             ms_after=ms_after,
-            sparsity_temp_folder=si_folder / "tmp",
+            sparsity_temp_folder=sparsity_temp_folder,
             sparse=True,
             max_spikes_per_unit=None,
             method="by_property",
