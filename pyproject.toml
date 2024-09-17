@@ -17,7 +17,7 @@ classifiers = [
 
 dependencies = [
     "expipe>=0.6.0",
-    "neuroconv>=0.4.6",
+    "neuroconv>=0.4.6,<0.5.0",
     "pyopenephys>=1.2.0",
     "spikeinterface[full,widgets]>=0.100.0,<0.101.0",
     "scikit-learn<1.5.0",
@@ -26,6 +26,7 @@ dependencies = [
     "nwbwidgets>=0.11.3",
     "tbb>=2021.11.0; platform_system != 'Darwin'",
     "pynapple>=0.5.1",
+    "lxml"
 ]
 
 [project.urls]
