@@ -34,13 +34,13 @@ def process_ecephys(
     import warnings
 
     import spikeinterface as si
+    import spikeinterface.curation as sc
     import spikeinterface.exporters as sexp
     import spikeinterface.extractors as se
     import spikeinterface.postprocessing as spost
     import spikeinterface.preprocessing as spre
     import spikeinterface.qualitymetrics as sqm
     import spikeinterface.sorters as ss
-    import spikeinterface.curation as sc
     import spikeinterface.widgets as sw
     from neuroconv.tools.spikeinterface import add_recording
     from pynwb import NWBHDF5IO
