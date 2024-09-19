@@ -40,6 +40,7 @@ def process_ecephys(
     import spikeinterface.preprocessing as spre
     import spikeinterface.qualitymetrics as sqm
     import spikeinterface.sorters as ss
+    import spikeinterface.curation as sc
     import spikeinterface.widgets as sw
     from neuroconv.tools.spikeinterface import add_recording
     from pynwb import NWBHDF5IO
@@ -228,6 +229,9 @@ def process_ecephys(
             raise Exception(f"Spike sorting failed:\n\n{e}")
         if verbose:
             print(f"\tFound {len(sorting.get_unit_ids())} units!")
+
+        # remove excess spikes from KS, which sometimes finds spikes beyond the recording duration
+        sorting = sc.remove_excess_spikes(sorting, recording=recording_cmr)
 
         # remove units with less than n_components spikes
         num_spikes = sorting.count_num_spikes_per_unit()
