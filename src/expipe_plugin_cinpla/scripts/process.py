@@ -34,6 +34,7 @@ def process_ecephys(
     import warnings
 
     import spikeinterface as si
+    import spikeinterface.curation as sc
     import spikeinterface.exporters as sexp
     import spikeinterface.extractors as se
     import spikeinterface.postprocessing as spost
@@ -228,6 +229,9 @@ def process_ecephys(
             raise Exception(f"Spike sorting failed:\n\n{e}")
         if verbose:
             print(f"\tFound {len(sorting.get_unit_ids())} units!")
+
+        # remove excess spikes from KS, which sometimes finds spikes beyond the recording duration
+        sorting = sc.remove_excess_spikes(sorting, recording=recording_cmr)
 
         # remove units with less than n_components spikes
         num_spikes = sorting.count_num_spikes_per_unit()
