@@ -231,12 +231,13 @@ class Template:
         self.sampling_rate = float(sptr.sampling_rate)
 
 
-class Data:
+class DataProcessor:
     def __init__(self, project, stim_mask=False, baseline_duration=None, stim_channels=None, **kwargs):
-        self.project_path = project.path
-        self.params = kwargs
-        self.project = expipe.get_project(self.project_path)
-        self.actions = self.project.actions
+        self._project_path = project.path
+        self.params = kwargs  # TODO: remove this
+        self._project = expipe.get_project(self.project_path)
+        self._actions = self.project.actions
+        self._entities = list(self.project.entities)
         self._spike_trains = {}
         self._templates = {}
         self._stim_times = {}
@@ -254,6 +255,22 @@ class Data:
         self.baseline_duration = baseline_duration
         self._channel_groups = {}
         self.stim_channels = stim_channels
+
+    @property
+    def project(self):
+        return self._project
+
+    @property
+    def project_path(self):
+        return self._project_path
+
+    @property
+    def actions(self):
+        return self._actions
+
+    @property
+    def entities(self):
+        return self._entities
 
     def channel_groups(self, action_id):
         if action_id not in self._channel_groups:
