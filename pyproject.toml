@@ -26,7 +26,8 @@ dependencies = [
     "nwbwidgets>=0.11.3",
     "tbb>=2021.11.0; platform_system != 'Darwin'",
     "pynapple>=0.5.1",
-    "lxml"
+    "lxml",
+    "spatial_maps@git+https://github.com/CINPLA/spatial-maps",
 ]
 
 [project.urls]
