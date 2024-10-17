@@ -304,7 +304,7 @@ def compute_and_set_unit_groups(sorting, recording):
                 sorting_no_group = sorting.select_units(unit_ids=unit_ids_without_group)
                 we_mem = si.extract_waveforms(recording, sorting_no_group, folder=None, mode="memory", sparse=False)
                 extremum_channel_indices = si.get_template_extremum_channel(we_mem, outputs="index")
-                unit_groups[unit_ids_without_group] = recording.get_channel_groups()[
+                unit_groups[sorting.ids_to_indices(unit_ids_without_group)] = recording.get_channel_groups()[
                     np.array(list(extremum_channel_indices.values()))
                 ]
                 sorting.set_property("group", unit_groups)
