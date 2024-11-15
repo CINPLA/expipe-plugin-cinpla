@@ -54,7 +54,7 @@ class UnitWaveformsWidget(widgets.VBox):
         self.unit_name_text.value = f"Unit: {unit_name}"
         unit_info_text = f"Group: {unit_group}"
         if "original_cluster_id" in self.units.colnames:
-            unit_info_text += " - Phy ID: {self.units['original_cluster_id'][self.unit_list.value]}"
+            unit_info_text += f" - Phy ID: {self.units['original_cluster_id'][self.unit_list.value]}"
         self.unit_info_text.value = unit_info_text
 
 
@@ -191,7 +191,7 @@ class UnitRateMapWidget(widgets.VBox):
         self.unit_name_text.value = f"Unit: {unit_name}"
         unit_info_text = f"Group: {unit_group}"
         if "original_cluster_id" in self.units.colnames:
-            unit_info_text += " - Phy ID: {self.units['original_cluster_id'][self.unit_list.value]}"
+            unit_info_text += f" - Phy ID: {self.units['original_cluster_id'][self.unit_list.value]}"
         self.unit_info_text.value = unit_info_text
 
     def get_spatial_series(self):
