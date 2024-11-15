@@ -297,7 +297,7 @@ def compute_and_set_unit_groups(sorting, recording):
             unit_groups = recording.get_channel_groups()[np.array(list(extremum_channel_indices.values()))]
             sorting.set_property("group", unit_groups)
         else:
-            unit_groups = sorting.get_property("group")
+            unit_groups = sorting.get_property("group").astype("str")
             # if there are units without group, we need to compute them
             unit_ids_without_group = np.array(sorting.unit_ids)[np.where(unit_groups == "nan")[0]]
             if len(unit_ids_without_group) > 0:
