@@ -123,13 +123,13 @@ class UnitRateMapWidget(widgets.VBox):
             elif len(self.spatial_series) > 1:
                 self.spatial_series_selector = widgets.Dropdown(
                     options=list(self.spatial_series.keys()),
-                    description="Spatial Series:",
+                    description="",
                     layout=dict(width="200px", display="flex", justify_content="flex-start"),
                 )
             else:
                 self.spatial_series_selector = widgets.Text(
                     value=list(self.spatial_series.keys())[0],
-                    description="Spatial Series:",
+                    description="",
                     layout=dict(width="200px", display="flex", justify_content="flex-start"),
                     disabled=True,
                 )
@@ -158,17 +158,23 @@ class UnitRateMapWidget(widgets.VBox):
         )
         self.bin_size_slider = widgets.FloatSlider(
             value=0.02,
-            min=0,
-            max=1,
+            min=0.01,
+            max=0.2,
             step=0.01,
             description="Bin size:",
         )
+        spatial_series_label = widgets.Label("Spatial Series:")
         top_panel = widgets.VBox(
             [
                 self.unit_list,
                 self.unit_name_text,
                 self.unit_info_text,
-                self.spatial_series_selector,
+                widgets.HBox(
+                    [
+                        spatial_series_label,
+                        self.spatial_series_selector,
+                    ]
+                ),
                 widgets.HBox([self.smoothing_slider, self.bin_size_slider]),
             ]
         )
@@ -328,7 +334,5 @@ def get_custom_spec():
     units_view.move_to_end("table")
 
     custom_neurodata_vis_spec[Units] = units_view
-
-    # TODO: add Place Fields widget
 
     return custom_neurodata_vis_spec
