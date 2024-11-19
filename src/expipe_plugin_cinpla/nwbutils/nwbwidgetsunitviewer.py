@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ipywidgets import Layout, interactive_output
 
+from spatial_maps import SpatialMap
+
 color_wheel = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
 
@@ -150,12 +152,19 @@ class UnitRateMapWidget(widgets.VBox):
         if "original_cluster_id" in self.units.colnames:
             unit_info_text += " - Phy ID:      "
         self.unit_info_text = widgets.Label(unit_info_text, layout=dict(width="90%"))
-        self.num_bins_slider = widgets.IntSlider(
-            value=30,
-            min=5,
-            max=100,
-            step=1,
-            description="Bins:",
+        self.bin_size_slider = widgets.FloatSlider(
+            value=0.02,
+            min=0,
+            max=1,
+            step=0.01,
+            description="Bin size:",
+        )
+        self.smoothing_slider = widgets.FloatSlider(
+            value=0.05,
+            min=0,
+            max=1,
+            step=0.01,
+            description="Smoothing:",
         )
         top_panel = widgets.VBox(
             [
@@ -163,16 +172,19 @@ class UnitRateMapWidget(widgets.VBox):
                 self.unit_name_text,
                 self.unit_info_text,
                 self.spatial_series_selector,
-                self.num_bins_slider,
+                self.bin_size_slider,
+                self.smoothing_slider,
             ]
         )
         self.controls = dict(
             unit_index=self.unit_list,
             spatial_series_selector=self.spatial_series_selector,
-            num_bins_slider=self.num_bins_slider,
+            bin_size_slider=self.bin_size_slider,
+            smoothing_slider=self.smoothing_slider,
         )
-        self.rate_maps, self.binsxy, self.extent = None, None, None
-        self.compute_rate_maps()
+        self.instantiate_spatial_map()
+        # self.rate_maps, self.binsxy, self.extent = None, None, None
+        # self.compute_rate_maps()
 
         out_fig = interactive_output(self.show_unit_rate_maps, self.controls)
 
@@ -181,9 +193,16 @@ class UnitRateMapWidget(widgets.VBox):
         self.layout = Layout(width="100%")
 
         self.unit_list.observe(self.on_unit_change, names="value")
-        self.spatial_series_selector.observe(self.on_spatial_series_change, names="value")
-        self.num_bins_slider.observe(self.on_num_bins_change, names="value")
+        # self.spatial_series_selector.observe(self.on_spatial_series_change, names="value")
+        self.bin_size_slider.observe(self.on_bin_size_change, names="value")
+        self.smoothing_slider.observe(self.on_smoothing_change, names="value")
         self.on_unit_change(None)
+
+    def instantiate_spatial_map(self):
+        self.spatial_map = SpatialMap(
+            smoothing=self.smoothing_slider.value,
+            bin_size=self.bin_size_slider.value,
+        )
 
     def on_unit_change(self, change):
         unit_name = self.units["unit_name"][self.unit_list.value]
@@ -205,40 +224,43 @@ class UnitRateMapWidget(widgets.VBox):
                 spatial_series[item.name] = item
         return spatial_series
 
-    def compute_rate_maps(self):
-        import pynapple as nap
+    # def compute_rate_maps(self):
+    #     import pynapple as nap
 
-        spatial_series = self.spatial_series[self.spatial_series_selector.value]
+    #     spatial_series = self.spatial_series[self.spatial_series_selector.value]
 
-        # Remove NaNs
-        mask = np.logical_not(np.isnan(spatial_series.data)).T
-        mask_and = np.logical_and(mask[0], mask[1])
+    #     # Remove NaNs
+    #     mask = np.logical_not(np.isnan(spatial_series.data)).T
+    #     mask_and = np.logical_and(mask[0], mask[1])
 
-        nap_position = nap.TsdFrame(
-            d=spatial_series.data[mask_and],
-            t=spatial_series.timestamps[mask_and],
-            columns=["x", "y"],
-        )
-        self.extent = (
-            np.min(nap_position["x"]),
-            np.max(nap_position["x"]),
-            np.min(nap_position["y"]),
-            np.max(nap_position["y"]),
-        )
+    #     nap_position = nap.TsdFrame(
+    #         d=spatial_series.data[mask_and],
+    #         t=spatial_series.timestamps[mask_and],
+    #         columns=["x", "y"],
+    #     )
+    #     self.extent = (
+    #         np.min(nap_position["x"]),
+    #         np.max(nap_position["x"]),
+    #         np.min(nap_position["y"]),
+    #         np.max(nap_position["y"]),
+    #     )
 
-        # Load the unit spike times into a pynapple TsGroup
-        unit_names = self.units["unit_name"][:]
-        unit_spike_times = self.units["spike_times"][:]
-        nap_units = nap.TsGroup({i: np.array(unit_spike_times[i]) for i in range(len(unit_names))})
-        self.rate_maps, self.binsxy = nap.compute_2d_tuning_curves(nap_units, nap_position, self.num_bins_slider.value)
-        self.nap_position = nap_position
-        self.nap_units = nap_units
+    #     # Load the unit spike times into a pynapple TsGroup
+    #     unit_names = self.units["unit_name"][:]
+    #     unit_spike_times = self.units["spike_times"][:]
+    #     nap_units = nap.TsGroup({i: np.array(unit_spike_times[i]) for i in range(len(unit_names))})
+    #     self.rate_maps, self.binsxy = nap.compute_2d_tuning_curves(nap_units, nap_position, self.num_bins_slider.value)
+    #     self.nap_position = nap_position
+    #     self.nap_units = nap_units
 
-    def on_spatial_series_change(self, change):
-        self.compute_rate_maps()
+    # def on_spatial_series_change(self, change):
+    #     self.compute_rate_maps()
 
-    def on_num_bins_change(self, change):
-        self.compute_rate_maps()
+    def on_bin_size_change(self, change):
+        self.instantiate_spatial_map()
+
+    def on_smoothing_change(self, change):
+        self.instantiate_spatial_map()
 
     def show_unit_rate_maps(self, unit_index=None, spatial_series_selector=None, num_bins_slider=None, axs=None):
         """
@@ -251,8 +273,12 @@ class UnitRateMapWidget(widgets.VBox):
         """
         if unit_index is None:
             return
-        if self.rate_maps is None:
-            return
+        # if self.rate_maps is None:
+        #     return
+        spatial_series = self.spatial_series[self.spatial_series_selector.value]
+        x, y = spatial_series.data[:].T
+        t = spatial_series.timestamps[:]
+        spike_times = self.units[unit_index]["spike_times"][:][0]
 
         legend_kwargs = dict()
         figsize = (10, 7)
@@ -262,15 +288,17 @@ class UnitRateMapWidget(widgets.VBox):
                 fig.canvas.header_visible = False
             else:
                 legend_kwargs.update(bbox_to_anchor=(1.01, 1))
-        axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin="lower", aspect="auto", extent=self.extent)
+        ratemap = spatial_map.rate_map(x, y, t, spike_train)
+        axs[0].imshow(ratemap, cmap="viridis", origin="lower", aspect="auto")
         axs[0].set_xlabel("x")
         axs[0].set_ylabel("y")
 
-        axs[1].plot(self.nap_position["y"], self.nap_position["x"], color="grey")
-        spk_pos = self.nap_units[unit_index].value_from(self.nap_position)
-        axs[1].plot(spk_pos["y"], spk_pos["x"], "o", color="red", markersize=5, alpha=0.5)
-        axs[1].set_xlabel("x")
-        axs[1].set_ylabel("y")
+        axs[1] = spike_track(x, y, t, spike_train, axs[1], spines=False)
+        # axs[1].plot(self.nap_position["y"], self.nap_position["x"], color="grey")
+        # spk_pos = self.nap_units[unit_index].value_from(self.nap_position)
+        # axs[1].plot(spk_pos["y"], spk_pos["x"], "o", color="red", markersize=5, alpha=0.5)
+        # axs[1].set_xlabel("x")
+        # axs[1].set_ylabel("y")
         fig.tight_layout()
 
         return axs
@@ -299,7 +327,5 @@ def get_custom_spec():
     units_view.move_to_end("table")
 
     custom_neurodata_vis_spec[Units] = units_view
-
-    # TODO: add Place Fields widget
 
     return custom_neurodata_vis_spec
