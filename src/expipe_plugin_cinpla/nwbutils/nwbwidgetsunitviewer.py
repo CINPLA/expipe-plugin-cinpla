@@ -196,6 +196,7 @@ class UnitRateMapWidget(widgets.VBox):
         self.on_unit_change(None)
 
     def compute_rate_maps(self):
+        print("Computing rate maps")
         self.spatial_map = SpatialMap(
             smoothing=self.smoothing_slider.value,
             bin_size=self.bin_size_slider.value,
@@ -256,10 +257,6 @@ class UnitRateMapWidget(widgets.VBox):
             return
         if self.rate_maps is None:
             return
-        spatial_series = self.spatial_series[self.spatial_series_selector.value]
-        x, y = spatial_series.data[:].T
-        t = spatial_series.timestamps[:]
-        spike_times = self.units[unit_index]["spike_times"][:][0]
 
         legend_kwargs = dict()
         figsize = (10, 7)
