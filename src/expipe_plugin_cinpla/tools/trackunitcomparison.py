@@ -11,7 +11,7 @@ from expipe_plugin_cinpla.data_loader import (
 )
 
 from .track_units_tools import (
-    dissimilarity_weighted,
+    compute_dissimilarity,
     make_best_match,
     make_hungarian_match,
     make_possible_match,
@@ -99,7 +99,7 @@ class TrackingSession:
 
         for i, w0 in enumerate(templates_0):
             for j, w1 in enumerate(templates_1):
-                diss_matrix[i, j] = dissimilarity_weighted(w0, w1)
+                diss_matrix[i, j] = compute_dissimilarity(w0, w1)
 
         diss_matrix = pd.DataFrame(diss_matrix, index=unit_ids_0, columns=unit_ids_1)
 

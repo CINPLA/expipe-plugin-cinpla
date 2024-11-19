@@ -105,6 +105,7 @@ def show_unit_waveforms(units: "pynwb.mis.Units", unit_index=None, ax=None):
     return ax
 
 
+# TODO: use SpatialMaps instead
 class UnitRateMapWidget(widgets.VBox):
     def __init__(
         self,

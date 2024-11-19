@@ -22,13 +22,46 @@ from .trackunitcomparison import TrackingSession
 
 
 class TrackMultipleSessions:
+    """
+    Class to compare multiple sessions and identify units across sessions.
+
+    Parameters
+    ----------
+    actions: expipe.Actions
+        List of expipe actions.
+    action_list: list
+        List of action ids to compare.
+    channel_groups: list | None, default: None
+        List of channel groups to compare. If None, all channel groups are compared.
+    verbose: bool, default: False
+        If True, output is printed during the comparison.
+    progress_bar: callable, default: None
+        Progress bar to use. If None, tqdm is used.
+    data_path: str | None, default: None
+        Path to save the data. If None, the current working directory is used.
+
+    Examples
+    --------
+    >>> from expipe_plugin_cinpla import TrackMultipleSessions
+    >>> # at instantiation, all pairwise comparisons are performed
+    >>> track_sessions = TrackMultipleSessions(actions)
+    >>> # make graphs from the matches
+    >>> track_sessions.make_graphs_from_matches()
+    >>> track_sessions.compute_depth_delta_edges()
+    >>> track_sessions.compute_time_delta_edges()
+    >>> # filter graph
+    >>> track_sessions.remove_edges_above_threshold(key="weight", threshold=0.05)
+    >>> track_sessions.remove_edges_with_duplicate_actions()
+    >>> track_sessions.identify_units()
+    >>> print(track_sessions.identified_units)
+    >>> track_sessions.plot_matches()
+    """
+
     def __init__(
         self,
         actions,
         action_list=None,
         channel_groups=None,
-        max_dissimilarity=None,
-        max_timedelta=None,
         verbose=False,
         progress_bar=None,
         data_path=None,
@@ -38,8 +71,6 @@ class TrackMultipleSessions:
         self.action_list = [a for a in actions] if action_list is None else action_list
         self._actions = actions
         self.channel_groups = channel_groups
-        self.max_dissimilarity = max_dissimilarity or np.inf
-        self.max_timedelta = max_timedelta or datetime.MAXYEAR
         self._verbose = verbose
         self._pbar = tqdm if progress_bar is None else progress_bar
         self._templates = {}
@@ -50,6 +81,9 @@ class TrackMultipleSessions:
                 print("Unable to locate channel groups, please provide a working action_list")
 
     def do_matching(self):
+        """
+        Perform the pairwise matching based on dissimilarity
+        """
         # do pairwise matching
         if self._verbose:
             print("Multicomaprison step1: pairwise comparison")
@@ -75,6 +109,9 @@ class TrackMultipleSessions:
         pbar.close()
 
     def make_graphs_from_matches(self):
+        """
+        Create graphs from the matches
+        """
         if self._verbose:
             print("Multicomaprison step2: make graph")
 
@@ -110,7 +147,7 @@ class TrackMultipleSessions:
 
     def compute_time_delta_edges(self):
         """
-        adds a timedelta to each of the edges
+        Adds a timedelta to each of the edges
         """
         for graph in self.graphs.values():
             for n0, n1 in graph.edges():
@@ -121,7 +158,7 @@ class TrackMultipleSessions:
 
     def compute_depth_delta_edges(self):
         """
-        adds a depthdelta to each of the edges
+        Adds a depthdelta to each of the edges
         """
         for ch, graph in self.graphs.items():
             ch_num = int(ch[-1])
@@ -140,7 +177,15 @@ class TrackMultipleSessions:
 
     def remove_edges_above_threshold(self, key="weight", threshold=0.05):
         """
+        Remove edges above a certain threshold for a given
         key: weight, depth_delta, time_delta
+
+        Parameters
+        ----------
+        key: str
+            The key to remove edges based on
+        threshold: float
+            The threshold to remove edges above
         """
         for ch in self.graphs:
             graph = self.graphs[ch]
@@ -157,6 +202,9 @@ class TrackMultipleSessions:
             self.graphs[ch] = graph
 
     def remove_edges_with_duplicate_actions(self):
+        """
+        Removes edges between nodes that have the same action_id
+        """
         for graph in self.graphs.values():
             edges_to_remove = []
             for sub_graph in nx.connected_components(graph):
@@ -190,11 +238,17 @@ class TrackMultipleSessions:
                 graph.remove_edge(n1, n2)
 
     def save_graphs(self):
+        """
+        Save the graphs to the data_path
+        """
         for ch, graph in self.graphs.items():
             with open(self.data_path / f"graph-group-{ch}.yaml", "w") as f:
                 yaml.dump(graph, f)
 
     def load_graphs(self):
+        """
+        Load the graphs from the data_path
+        """
         self.graphs = {}
         for path in self.data_path.iterdir():
             if path.name.startswith("graph-group") and path.suffix == ".yaml":
@@ -203,6 +257,9 @@ class TrackMultipleSessions:
                     self.graphs[ch] = yaml.load(f, Loader=yaml.Loader)
 
     def identify_units(self):
+        """
+        Identify units across sessions from the graphs
+        """
         if self._verbose:
             print("Multicomaprison step3: extract agreement from graph")
         self.identified_units = {}
@@ -213,10 +270,10 @@ class TrackMultipleSessions:
                 unit_id = str(uuid.uuid4())
                 edges = graph.edges(node_set, data=True)
 
-                if len(edges) == 0:
-                    average_dissimilarity = None
-                else:
-                    average_dissimilarity = np.mean([d["weight"] for _, _, d in edges])
+                if len(node_set) < 2:
+                    continue
+
+                average_dissimilarity = np.mean([d["weight"] for _, _, d in edges])
 
                 original_ids = defaultdict(list)
                 for node in node_set:
@@ -230,6 +287,23 @@ class TrackMultipleSessions:
             self.identified_units[ch] = self._new_units
 
     def load_template(self, action_id, channel_group, unit_id):
+        """
+        Load the template for a given action_id, channel_group and unit_id
+
+        Parameters
+        ----------
+        action_id: str
+            The action id
+        channel_group: int or str
+            The channel group
+        unit_id: int or str
+            The unit id
+
+        Returns
+        -------
+        template: np.ndarray
+            The template
+        """
         group_unit_hash = str(channel_group) + "_" + str(unit_id)
         if action_id in self._templates:
             return self._templates[action_id][group_unit_hash]
@@ -247,21 +321,21 @@ class TrackMultipleSessions:
 
         return self._templates[action_id][group_unit_hash]
 
-    def plot_matches(self, chan_group=None, figsize=(10, 3), step_color=True):
+    def plot_matches(self, channel_group=None, figsize=(10, 3)):
         """
+        Plot the matched units across sessions
 
         Parameters
         ----------
-
-
-        Returns
-        -------
-
+        channel_group: int or str
+            The channel group to plot. If None, all channel groups are plotted
+        figsize: tuple
+            The figure size
         """
-        if chan_group is None:
+        if channel_group is None:
             ch_groups = self.identified_units.keys()
         else:
-            ch_groups = [chan_group]
+            ch_groups = [channel_group]
         for ch_group in ch_groups:
             identified_units = self.identified_units[ch_group]
             units = [

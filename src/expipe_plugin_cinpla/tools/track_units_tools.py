@@ -6,58 +6,32 @@ from matplotlib import gridspec
 from scipy.optimize import linear_sum_assignment
 
 
-def dissimilarity(template_0, template_1):
+def compute_dissimilarity(template_0, template_1):
     """
-    Returns a value of dissimilarity of the mean between two or more
-    spike templates.
+    Returns a value of dissimilarity of the mean between two templates.
+    The dissimilarity is computed as the root sum square of the difference
+    between the two templates, averaged over channels and normalized by the
+    maximum value of the two templates.
+
     Parameters
     ----------
-    templates : list object (see Notes)
-        List containing the mean waveform over each electrode of spike sorted
-        spiketrains from at least one electrode. All elements in the list must
-        be of equal size, that is, the number of electrodes must be equal, and
-        the number of points on the waveform must be equal.
+    template_0 : np.ndarray
+        The first template. Dimensions are (n_timepoints, n_channels).
+    template_1 : np.ndarray
+        The second template. Dimensions are (n_timepoints, n_channels).
+
     Returns
     -------
-    diss : numpy array-like
-        Returns a matrix containing the computed dissimilarity between the mean
-        of the spiketrain, for the same channel.
+    dissimilarity : float
+        The dissimilarity between the two templates.
     """
+
     max_val = np.max([np.max(np.abs(template_0)), np.max(np.abs(template_1))])
 
-    t_i_lin = template_0.ravel()
-    t_j_lin = template_1.ravel()
-
-    return np.mean(np.abs(t_i_lin / max_val - t_j_lin / max_val))
-    # return np.mean(np.abs(t_i_lin - t_j_lin))
-
-
-def dissimilarity_weighted(templates_0, templates_1):
-    """
-    Returns a value of dissimilarity of the mean between two or more
-    spike templates.
-    Parameters
-    ----------
-    templates : list object (see Notes)
-        List containing the mean waveform over each electrode of spike sorted
-        spiketrains from at least one electrode. All elements in the list must
-        be of equal size, that is, the number of electrodes must be equal, and
-        the number of points on the waveform must be equal.
-    Returns
-    -------
-    diss : numpy array-like
-        Returns a matrix containing the computed dissimilarity between the mean
-        of the spiketrain, for the same channel.
-    """
-
-    max_val = np.max([np.max(np.abs(templates_0)), np.max(np.abs(templates_1))])
-
-    templates_0 /= max_val
-    templates_1 /= max_val
+    template_0_scaled = template_0 / max_val
+    template_1_scaled = template_1 / max_val
     # root sum square, averaged over channels
-    weighted = np.sqrt(
-        np.sum([(templates_0[:, i] - templates_1[:, i]) ** 2 for i in range(templates_0.shape[1])], axis=0)
-    ).mean()
+    weighted = np.sqrt(np.sum((template_0_scaled - template_1_scaled) ** 2, axis=1)).mean()
     return weighted
 
 
@@ -193,6 +167,23 @@ def make_hungarian_match(dissimilarity_scores, max_dissimilarity):
 
 
 def plot_template(template, fig, gs, axs=None, **kwargs):
+    """
+    Plot a template on a figure.
+
+    Parameters
+    ----------
+    template: np.ndarray
+        The template to plot. The first dimension is the number of timepoints
+        and the second dimension is the number of channels.
+    fig: matplotlib.figure.Figure
+        The figure to plot on.
+    gs: matplotlib.gridspec.GridSpec
+        The gridspec to plot on.
+    axs: list of matplotlib.axes.Axes
+        The axes to plot on. If None, new axes are created.
+    kwargs: dict
+        Keyword arguments to pass to the plot function.
+    """
     nrc = template.shape[1]
     if axs is None:
         gs0 = gridspec.GridSpecFromSubplotSpec(1, nrc, subplot_spec=gs)
