@@ -183,8 +183,12 @@ class UnitRateMapWidget(widgets.VBox):
             smoothing_slider=self.smoothing_slider,
         )
         self.instantiate_spatial_map()
-        # self.rate_maps, self.binsxy, self.extent = None, None, None
-        # self.compute_rate_maps()
+
+        # Load the unit spike times into a pynapple TsGroup
+        unit_names = self.units["unit_name"][:]
+        unit_spike_times = self.units["spike_times"][:]
+        self.nap_units = nap.TsGroup({i: np.array(unit_spike_times[i]) for i in range(len(unit_names))})
+        self.on_spatial_series_change(None)
 
         out_fig = interactive_output(self.show_unit_rate_maps, self.controls)
 
@@ -253,8 +257,13 @@ class UnitRateMapWidget(widgets.VBox):
     #     self.nap_position = nap_position
     #     self.nap_units = nap_units
 
-    # def on_spatial_series_change(self, change):
-    #     self.compute_rate_maps()
+    def on_spatial_series_change(self, change):
+        spatial_series = self.spatial_series[self.spatial_series_selector.value]
+        self.nap_position = nap.TsdFrame(
+            d=spatial_series.data[mask_and],
+            t=spatial_series.timestamps[mask_and],
+            columns=["x", "y"],
+        )
 
     def on_bin_size_change(self, change):
         self.instantiate_spatial_map()
@@ -289,17 +298,16 @@ class UnitRateMapWidget(widgets.VBox):
         x, y = spatial_series.data[:].T
         t = spatial_series.timestamps[:]
         spike_times = self.units[unit_index]["spike_times"][:][0]
-        ratemap = spatial_map.rate_map(x, y, t, spike_train)
+        ratemap = self.spatial_map.rate_map(x, y, t, spike_train)
         axs[0].imshow(ratemap, cmap="viridis", origin="lower", aspect="auto")
         axs[0].set_xlabel("x")
         axs[0].set_ylabel("y")
 
-        spike_track(x, y, t, spike_train, axs[1], spines=False)
-        # axs[1].plot(self.nap_position["y"], self.nap_position["x"], color="grey")
-        # spk_pos = self.nap_units[unit_index].value_from(self.nap_position)
-        # axs[1].plot(spk_pos["y"], spk_pos["x"], "o", color="red", markersize=5, alpha=0.5)
-        # axs[1].set_xlabel("x")
-        # axs[1].set_ylabel("y")
+        axs[1].plot(self.nap_position["y"], self.nap_position["x"], color="grey")
+        spk_pos = self.nap_units[unit_index].value_from(self.nap_position)
+        axs[1].plot(spk_pos["y"], spk_pos["x"], "o", color="red", markersize=5, alpha=0.5)
+        axs[1].set_xlabel("x")
+        axs[1].set_ylabel("y")
         fig.tight_layout()
 
         return axs
