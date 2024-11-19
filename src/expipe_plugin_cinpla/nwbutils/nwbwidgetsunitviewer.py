@@ -169,12 +169,7 @@ class UnitRateMapWidget(widgets.VBox):
                 self.unit_name_text,
                 self.unit_info_text,
                 self.spatial_series_selector,
-                widgets.HBox(
-                    [
-                        self.smoothing_slider,
-                        self.bin_size_slider
-                    ]
-                )
+                widgets.HBox([self.smoothing_slider, self.bin_size_slider]),
             ]
         )
         self.controls = dict(
@@ -222,20 +217,25 @@ class UnitRateMapWidget(widgets.VBox):
         import pynapple as nap
         from spatial_maps import SpatialMap
 
-        sm = SpatialMap(
-            smoothing=self.smoothing_slider.value,
-            bin_size=self.bin_size_slider.value
-        )
+        sm = SpatialMap(smoothing=self.smoothing_slider.value, bin_size=self.bin_size_slider.value)
 
         spatial_series = self.spatial_series[self.spatial_series_selector.value]
+        x, y = spatial_series.data[:].T
+        t = spatial_series.timestamps[:]
 
-        # Remove NaNs
-        mask = np.logical_not(np.isnan(spatial_series.data)).T
-        mask_and = np.logical_and(mask[0], mask[1])
+        # Remove NaNs and zeros
+        mask_nan = np.logical_not(np.isnan(spatial_series.data)).T
+        mask_nan = np.logical_and(mask_nan[0], mask_nan[1])
+        mask_zeros = np.logical_and(x != 0, y != 0)
+        mask = np.logical_and(mask_nan, mask_zeros)
+
+        x = x[mask]
+        y = y[mask]
+        t = t[mask]
 
         nap_position = nap.TsdFrame(
-            d=spatial_series.data[mask_and],
-            t=spatial_series.timestamps[mask_and],
+            d=spatial_series.data[mask],
+            t=spatial_series.timestamps[mask],
             columns=["x", "y"],
         )
         self.extent = (
@@ -249,9 +249,6 @@ class UnitRateMapWidget(widgets.VBox):
         unit_names = self.units["unit_name"][:]
         unit_spike_times = self.units["spike_times"][:]
 
-        spatial_series = self.spatial_series[self.spatial_series_selector.value]
-        x, y = spatial_series.data[:].T
-        t = spatial_series.timestamps[:]
         rate_maps = []
         for unit_index in self.units.id.data:
             rate_map = sm.rate_map(x, y, t, unit_spike_times[unit_index])
@@ -270,7 +267,9 @@ class UnitRateMapWidget(widgets.VBox):
     def on_smoothing_change(self, change):
         self.compute_rate_maps()
 
-    def show_unit_rate_maps(self, unit_index=None, spatial_series_selector=None, smoothing_slider=None, bin_size_slider=None, axs=None):
+    def show_unit_rate_maps(
+        self, unit_index=None, spatial_series_selector=None, smoothing_slider=None, bin_size_slider=None, axs=None
+    ):
         """
         Shows unit rate maps.
 
