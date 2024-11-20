@@ -28,8 +28,12 @@ class UnitWaveformsWidget(widgets.VBox):
         )
 
         self.unit_name_text = widgets.Label("Unit:    ", layout=dict(width="200px"))
-        self.unit_group_text = widgets.Label("Group:     ", layout=dict(width="200px"))
-        unit_controls = widgets.HBox([self.unit_list, self.unit_name_text, self.unit_group_text])
+        unit_info_text = "Group:     "
+        if "original_cluster_id" in self.units.colnames:
+            unit_info_text += " - Phy ID:      "
+        self.unit_info_text = widgets.Label(unit_info_text, layout=dict(width="90%"))
+
+        unit_controls = widgets.HBox([self.unit_list, self.unit_name_text, self.unit_info_text])
         self.controls = dict(unit_index=self.unit_list)
 
         plot_func = partial(show_unit_waveforms, units=self.units)
@@ -48,7 +52,10 @@ class UnitWaveformsWidget(widgets.VBox):
         unit_group = self.units["group"][self.unit_list.value]
 
         self.unit_name_text.value = f"Unit: {unit_name}"
-        self.unit_group_text.value = f"Group: {unit_group}"
+        unit_info_text = f"Group: {unit_group}"
+        if "original_cluster_id" in self.units.colnames:
+            unit_info_text += f" - Phy ID: {int(self.units['original_cluster_id'][self.unit_list.value])}"
+        self.unit_info_text.value = unit_info_text
 
 
 def show_unit_waveforms(units: "pynwb.mis.Units", unit_index=None, ax=None):
@@ -98,6 +105,7 @@ def show_unit_waveforms(units: "pynwb.mis.Units", unit_index=None, ax=None):
     return ax
 
 
+# TODO: use SpatialMaps instead
 class UnitRateMapWidget(widgets.VBox):
     def __init__(
         self,
@@ -138,7 +146,10 @@ class UnitRateMapWidget(widgets.VBox):
         )
 
         self.unit_name_text = widgets.Label("Unit:    ", layout=dict(width="200px"))
-        self.unit_group_text = widgets.Label("Group:     ", layout=dict(width="200px"))
+        unit_info_text = "Group:     "
+        if "original_cluster_id" in self.units.colnames:
+            unit_info_text += " - Phy ID:      "
+        self.unit_info_text = widgets.Label(unit_info_text, layout=dict(width="90%"))
         self.num_bins_slider = widgets.IntSlider(
             value=30,
             min=5,
@@ -150,7 +161,7 @@ class UnitRateMapWidget(widgets.VBox):
             [
                 self.unit_list,
                 self.unit_name_text,
-                self.unit_group_text,
+                self.unit_info_text,
                 self.spatial_series_selector,
                 self.num_bins_slider,
             ]
@@ -179,7 +190,10 @@ class UnitRateMapWidget(widgets.VBox):
         unit_group = self.units["group"][self.unit_list.value]
 
         self.unit_name_text.value = f"Unit: {unit_name}"
-        self.unit_group_text.value = f"Group: {unit_group}"
+        unit_info_text = f"Group: {unit_group}"
+        if "original_cluster_id" in self.units.colnames:
+            unit_info_text += f" - Phy ID: {int(self.units['original_cluster_id'][self.unit_list.value])}"
+        self.unit_info_text.value = unit_info_text
 
     def get_spatial_series(self):
         from pynwb.behavior import SpatialSeries
