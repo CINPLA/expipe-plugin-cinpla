@@ -173,8 +173,8 @@ class UnitRateMapWidget(widgets.VBox):
                 self.unit_list,
                 self.unit_name_text,
                 self.unit_info_text,
-                widgets.HBox([spatial_series_label, self.spatial_series_selector, self.flip_y_axis]),
-                widgets.HBox([self.smoothing_slider, self.bin_size_slider]),
+                widgets.HBox([spatial_series_label, self.spatial_series_selector]),
+                widgets.HBox([self.smoothing_slider, self.bin_size_slider, self.flip_y_axis]),
             ]
         )
         self.controls = dict(
