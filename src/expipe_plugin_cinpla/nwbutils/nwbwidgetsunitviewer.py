@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from functools import partial
 
-import warnings
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
@@ -164,19 +163,18 @@ class UnitRateMapWidget(widgets.VBox):
             step=0.01,
             description="Bin size:",
         )
+        self.flip_y_axis = widgets.Checkbox(
+            value=False,
+            description="Flip y-axis",
+        )
         spatial_series_label = widgets.Label("Spatial Series:")
         top_panel = widgets.VBox(
             [
                 self.unit_list,
                 self.unit_name_text,
                 self.unit_info_text,
-                widgets.HBox(
-                    [
-                        spatial_series_label,
-                        self.spatial_series_selector,
-                    ]
-                ),
-                widgets.HBox([self.smoothing_slider, self.bin_size_slider]),
+                widgets.HBox([spatial_series_label, self.spatial_series_selector]),
+                widgets.HBox([self.smoothing_slider, self.bin_size_slider, self.flip_y_axis]),
             ]
         )
         self.controls = dict(
@@ -184,6 +182,7 @@ class UnitRateMapWidget(widgets.VBox):
             spatial_series_selector=self.spatial_series_selector,
             smoothing_slider=self.smoothing_slider,
             bin_size_slider=self.bin_size_slider,
+            flip_y_axis=self.flip_y_axis,
         )
         self.rate_maps, self.extent = None, None
         self.compute_rate_maps()
@@ -222,15 +221,7 @@ class UnitRateMapWidget(widgets.VBox):
 
     def compute_rate_maps(self):
         import pynapple as nap
-        try:
-            from spatial_maps import SpatialMap
-            HAVE_SPATIAL_MAPS = True
-        except:
-            warnings.warn(
-                "spatial_maps not installed. Please install it to compute rate maps:\n"
-                ">>> pip install git+https://github.com/CINPLA/spatial-maps.git"
-            )
-            HAVE_SPATIAL_MAPS = False
+        from spatial_maps import SpatialMap
 
         spatial_series = self.spatial_series[self.spatial_series_selector.value]
         x, y = spatial_series.data[:].T
@@ -265,30 +256,36 @@ class UnitRateMapWidget(widgets.VBox):
         self.nap_position = nap_position
         self.nap_units = nap_units
 
-        if HAVE_SPATIAL_MAPS:
-            sm = SpatialMap(
-                bin_size=self.bin_size_slider.value,
-                smoothing=self.smoothing_slider.value,
-            )
-            rate_maps = []
-            for unit_index in self.units.id.data:
-                rate_map = sm.rate_map(x, y, t, unit_spike_times[unit_index])
-                rate_maps.append(rate_map)
-            self.rate_maps = np.array(rate_maps)
-        else:
-            self.rate_maps = None
+        sm = SpatialMap(
+            bin_size=self.bin_size_slider.value,
+            smoothing=self.smoothing_slider.value,
+        )
+        rate_maps = []
+        for unit_index in self.units.id.data:
+            rate_map = sm.rate_map(x, y, t, unit_spike_times[unit_index])
+            rate_maps.append(rate_map)
+        self.rate_maps = np.array(rate_maps)
 
     def on_spatial_series_change(self, change):
         self.compute_rate_maps()
+        self.show_unit_rate_maps(self.unit_list.value)
 
     def on_bin_size_change(self, change):
         self.compute_rate_maps()
+        self.show_unit_rate_maps(self.unit_list.value)
 
     def on_smoothing_change(self, change):
         self.compute_rate_maps()
+        self.show_unit_rate_maps(self.unit_list.value)
 
     def show_unit_rate_maps(
-        self, unit_index=None, spatial_series_selector=None, smoothing_slider=None, bin_size_slider=None, axs=None
+        self,
+        unit_index=None,
+        spatial_series_selector=None,
+        smoothing_slider=None,
+        bin_size_slider=None,
+        flip_y_axis=None,
+        axs=None,
     ):
         """
         Shows unit rate maps.
@@ -305,21 +302,26 @@ class UnitRateMapWidget(widgets.VBox):
         figsize = (10, 7)
 
         if axs is None:
-            fig, axs = plt.subplots(figsize=figsize, ncols=2)
+            fig, axs = plt.subplots(figsize=figsize, ncols=2, sharex=True, sharey=True)
             if hasattr(fig, "canvas"):
                 fig.canvas.header_visible = False
             else:
                 legend_kwargs.update(bbox_to_anchor=(1.01, 1))
-        if self.rate_maps is not None:
-            axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin="lower", aspect="auto", extent=self.extent)
-            axs[0].set_xlabel("x")
-            axs[0].set_ylabel("y")
-        else:
-            axs[0].set_title("Rate maps not computed (spatial_maps not installed)")
+        origin = "lower" if self.flip_y_axis.value else "upper"
+        axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin=origin, aspect="auto", extent=self.extent)
+        axs[0].set_xlabel("x")
+        axs[0].set_ylabel("y")
 
-        axs[1].plot(self.nap_position["y"], self.nap_position["x"], color="grey")
+        tracking_x = self.nap_position["y"]
+        tracking_y = self.nap_position["x"]
         spk_pos = self.nap_units[unit_index].value_from(self.nap_position)
-        axs[1].plot(spk_pos["y"], spk_pos["x"], "o", color="red", markersize=5, alpha=0.5)
+        spike_pos_x = spk_pos["y"]
+        spike_pos_y = spk_pos["x"]
+        if not self.flip_y_axis.value:
+            tracking_y = 1 - tracking_y
+            spike_pos_y = 1 - spike_pos_y
+        axs[1].plot(tracking_x, tracking_y, color="grey")
+        axs[1].plot(spike_pos_x, spike_pos_y, "o", color="red", markersize=5, alpha=0.5)
         axs[1].set_xlabel("x")
         axs[1].set_ylabel("y")
         fig.tight_layout()

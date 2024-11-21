@@ -5,6 +5,7 @@ import warnings
 
 import expipe
 import numpy as np
+import spatial_maps as sp
 
 from expipe_plugin_cinpla.data_loader import (
     get_channel_groups,

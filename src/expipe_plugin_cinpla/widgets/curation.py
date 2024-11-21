@@ -104,9 +104,10 @@ class CurationView(BaseViewWithLog):
         load_from_phy = ipywidgets.Button(description="Load from Phy", layout={"width": "initial"})
         load_from_phy.style.button_color = "pink"
 
-        restore_phy = ipywidgets.ToggleButton(
+        self.restore_phy_clicked = False
+        restore_phy = ipywidgets.Button(
             value=False,
-            description="Restore",
+            description="Restore (click twice to restore)",
             disabled=False,
             button_style="",  # 'success', 'info', 'warning', 'danger' or ''
             tooltip="Restore unsorted clusters",
@@ -205,6 +206,14 @@ class CurationView(BaseViewWithLog):
             sorters = [p.name for p in si_path.iterdir() if p.is_dir()]
             sorter_list.options = sorters
             if len(sorter_list.value) == 1:
+                units_raw = self.sorting_curator.load_raw_units(sorter_list.value[0])
+                if units_raw is not None:
+                    w = nwb2widget(units_raw, custom_raw_unit_vis)
+                    units_viewers["raw"] = w
+                units_main = self.sorting_curator.load_main_units()
+                if units_main is not None:
+                    w = nwb2widget(units_main, custom_main_unit_vis)
+                    units_viewers["main"] = w
                 if strategy.value == "Sortingview":
                     sv_visualization_link.value = self.sorting_curator.get_sortingview_link(sorter_list.value[0])
                 elif strategy.value == "Phy":
@@ -313,7 +322,15 @@ class CurationView(BaseViewWithLog):
             if len(sorter_list.value) > 1:
                 print("Select one spike sorting output at a time")
             else:
-                self.sorting_curator.restore_phy(sorter_list.value[0])
+                if self.restore_phy_clicked:
+                    self.sorting_curator.restore_phy(sorter_list.value[0])
+                    self.restore_phy_clicked = False
+                    restore_phy.description = "Restore (click twice to restore)"
+                    restore_phy.button_style = "primary"
+                else:
+                    self.restore_phy_clicked = True
+                    restore_phy.description = "Restore (click again to confirm)"
+                    restore_phy.button_style = "danger"
 
         @self.output.capture()
         def on_apply_qm_curation(change):
@@ -335,7 +352,7 @@ class CurationView(BaseViewWithLog):
 
         actions_list.observe(on_action)
         load_from_phy.on_click(on_load_phy)
-        restore_phy.observe(on_restore_phy)
+        restore_phy.on_click(on_restore_phy)
         run_save.on_click(on_save_to_nwb)
         strategy.observe(on_change_strategy)
         sorter_list.observe(on_sorter)
