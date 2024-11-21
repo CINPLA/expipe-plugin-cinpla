@@ -174,13 +174,7 @@ class UnitRateMapWidget(widgets.VBox):
                 self.unit_list,
                 self.unit_name_text,
                 self.unit_info_text,
-                widgets.HBox(
-                    [
-                        spatial_series_label,
-                        self.spatial_series_selector,
-                        self.flip_y_axis
-                    ]
-                ),
+                widgets.HBox([spatial_series_label, self.spatial_series_selector, self.flip_y_axis]),
                 widgets.HBox([self.smoothing_slider, self.bin_size_slider]),
             ]
         )
@@ -227,8 +221,10 @@ class UnitRateMapWidget(widgets.VBox):
 
     def compute_rate_maps(self):
         import pynapple as nap
+
         try:
             from spatial_maps import SpatialMap
+
             HAVE_SPATIAL_MAPS = True
         except:
             warnings.warn(

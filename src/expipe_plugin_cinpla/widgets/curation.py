@@ -221,7 +221,6 @@ class CurationView(BaseViewWithLog):
                 units_dropdown.value = "Raw"
                 on_choose_units(None)
 
-
         def on_sorter(change):
             required_values_filled(actions_list)
             if len(sorter_list.value) > 1:
