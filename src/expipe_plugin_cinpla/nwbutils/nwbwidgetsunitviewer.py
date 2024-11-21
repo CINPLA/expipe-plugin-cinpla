@@ -164,6 +164,10 @@ class UnitRateMapWidget(widgets.VBox):
             step=0.01,
             description="Bin size:",
         )
+        self.flip_y_axis = widgets.Checkbox(
+            value=False,
+            description="Flip y-axis",
+        )
         spatial_series_label = widgets.Label("Spatial Series:")
         top_panel = widgets.VBox(
             [
@@ -174,6 +178,7 @@ class UnitRateMapWidget(widgets.VBox):
                     [
                         spatial_series_label,
                         self.spatial_series_selector,
+                        self.flip_y_axis
                     ]
                 ),
                 widgets.HBox([self.smoothing_slider, self.bin_size_slider]),
@@ -311,13 +316,18 @@ class UnitRateMapWidget(widgets.VBox):
             else:
                 legend_kwargs.update(bbox_to_anchor=(1.01, 1))
         if self.rate_maps is not None:
+            origin = "lower" if self.flip_y_axis.value else "upper"
             axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin="lower", aspect="auto", extent=self.extent)
             axs[0].set_xlabel("x")
             axs[0].set_ylabel("y")
         else:
             axs[0].set_title("Rate maps not computed (spatial_maps not installed)")
 
-        axs[1].plot(self.nap_position["y"], self.nap_position["x"], color="grey")
+        tracking_x = self.nap_position["y"]
+        tracking_y = self.nap_position["x"]
+        if self.flip_y_axis.value:
+            tracking_y = 1 - tracking_y
+        axs[1].plot(tracking_x, tracking_y, color="grey")
         spk_pos = self.nap_units[unit_index].value_from(self.nap_position)
         axs[1].plot(spk_pos["y"], spk_pos["x"], "o", color="red", markersize=5, alpha=0.5)
         axs[1].set_xlabel("x")
