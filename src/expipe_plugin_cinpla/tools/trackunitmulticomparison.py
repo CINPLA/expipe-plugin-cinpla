@@ -332,7 +332,7 @@ class TrackMultipleSessions:
             The figure size
         """
         if channel_group is None:
-            ch_groups = self.identified_units.keys()
+            ch_groups = sorted(self.identified_units.keys())
         else:
             ch_groups = [channel_group]
         for ch_group in ch_groups:
