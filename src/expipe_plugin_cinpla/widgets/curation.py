@@ -352,7 +352,7 @@ class CurationView(BaseViewWithLog):
 
         actions_list.observe(on_action)
         load_from_phy.on_click(on_load_phy)
-        restore_phy.observe(on_restore_phy)
+        restore_phy.on_click(on_restore_phy)
         run_save.on_click(on_save_to_nwb)
         strategy.observe(on_change_strategy)
         sorter_list.observe(on_sorter)
