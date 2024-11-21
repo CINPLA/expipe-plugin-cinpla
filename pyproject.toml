@@ -27,6 +27,7 @@ dependencies = [
     "tbb>=2021.11.0; platform_system != 'Darwin'",
     "pynapple>=0.5.1",
     "lxml",
+    "spatial_maps"
 ]
 
 [project.urls]

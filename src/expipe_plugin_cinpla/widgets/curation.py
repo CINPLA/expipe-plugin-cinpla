@@ -105,7 +105,7 @@ class CurationView(BaseViewWithLog):
         load_from_phy.style.button_color = "pink"
 
         self.restore_phy_clicked = False
-        restore_phy = ipywidgets.ToggleButton(
+        restore_phy = ipywidgets.Button(
             value=False,
             description="Restore (click twice to restore)",
             disabled=False,

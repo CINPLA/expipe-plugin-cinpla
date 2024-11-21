@@ -221,17 +221,7 @@ class UnitRateMapWidget(widgets.VBox):
 
     def compute_rate_maps(self):
         import pynapple as nap
-
-        try:
-            from spatial_maps import SpatialMap
-
-            HAVE_SPATIAL_MAPS = True
-        except:
-            warnings.warn(
-                "spatial_maps not installed. Please install it to compute rate maps:\n"
-                ">>> pip install git+https://github.com/CINPLA/spatial-maps.git"
-            )
-            HAVE_SPATIAL_MAPS = False
+        from spatial_maps import SpatialMap
 
         spatial_series = self.spatial_series[self.spatial_series_selector.value]
         x, y = spatial_series.data[:].T
@@ -266,18 +256,15 @@ class UnitRateMapWidget(widgets.VBox):
         self.nap_position = nap_position
         self.nap_units = nap_units
 
-        if HAVE_SPATIAL_MAPS:
-            sm = SpatialMap(
-                bin_size=self.bin_size_slider.value,
-                smoothing=self.smoothing_slider.value,
-            )
-            rate_maps = []
-            for unit_index in self.units.id.data:
-                rate_map = sm.rate_map(x, y, t, unit_spike_times[unit_index])
-                rate_maps.append(rate_map)
-            self.rate_maps = np.array(rate_maps)
-        else:
-            self.rate_maps = None
+        sm = SpatialMap(
+            bin_size=self.bin_size_slider.value,
+            smoothing=self.smoothing_slider.value,
+        )
+        rate_maps = []
+        for unit_index in self.units.id.data:
+            rate_map = sm.rate_map(x, y, t, unit_spike_times[unit_index])
+            rate_maps.append(rate_map)
+        self.rate_maps = np.array(rate_maps)
 
     def on_spatial_series_change(self, change):
         self.compute_rate_maps()
@@ -311,13 +298,10 @@ class UnitRateMapWidget(widgets.VBox):
                 fig.canvas.header_visible = False
             else:
                 legend_kwargs.update(bbox_to_anchor=(1.01, 1))
-        if self.rate_maps is not None:
-            origin = "lower" if self.flip_y_axis.value else "upper"
-            axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin="lower", aspect="auto", extent=self.extent)
-            axs[0].set_xlabel("x")
-            axs[0].set_ylabel("y")
-        else:
-            axs[0].set_title("Rate maps not computed (spatial_maps not installed)")
+        origin = "lower" if self.flip_y_axis.value else "upper"
+        axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin="lower", aspect="auto", extent=self.extent)
+        axs[0].set_xlabel("x")
+        axs[0].set_ylabel("y")
 
         tracking_x = self.nap_position["y"]
         tracking_y = self.nap_position["x"]
