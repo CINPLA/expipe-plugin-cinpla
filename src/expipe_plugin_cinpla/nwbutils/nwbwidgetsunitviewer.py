@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from functools import partial
 
+import warnings
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
@@ -221,9 +222,15 @@ class UnitRateMapWidget(widgets.VBox):
 
     def compute_rate_maps(self):
         import pynapple as nap
-        from spatial_maps import SpatialMap
-
-        sm = SpatialMap(smoothing=self.smoothing_slider.value, bin_size=self.bin_size_slider.value)
+        try:
+            from spatial_maps import SpatialMap
+            HAVE_SPATIAL_MAPS = True
+        except ImportError:
+            warnings.warn(
+                "spatial_maps not installed. Please install it to compute rate maps:\n"
+                ">>> pip install git+https://github.com/CINPLA/spatial-maps.git"
+            )
+            HAVE_SPATIAL_MAPS = False
 
         spatial_series = self.spatial_series[self.spatial_series_selector.value]
         x, y = spatial_series.data[:].T
@@ -254,15 +261,22 @@ class UnitRateMapWidget(widgets.VBox):
         # Load the unit spike times into a pynapple TsGroup
         unit_names = self.units["unit_name"][:]
         unit_spike_times = self.units["spike_times"][:]
-
-        rate_maps = []
-        for unit_index in self.units.id.data:
-            rate_map = sm.rate_map(x, y, t, unit_spike_times[unit_index])
-            rate_maps.append(rate_map)
-        self.rate_maps = np.array(rate_maps)
         nap_units = nap.TsGroup({i: np.array(unit_spike_times[i]) for i in range(len(unit_names))})
         self.nap_position = nap_position
         self.nap_units = nap_units
+
+        if HAVE_SPATIAL_MAPS:
+            sm = SpatialMap(
+                bin_size=self.bin_size_slider.value,
+                smoothing=self.smoothing_slider.value,
+            )
+            rate_maps = []
+            for unit_index in self.units.id.data:
+                rate_map = sm.rate_map(x, y, t, unit_spike_times[unit_index])
+                rate_maps.append(rate_map)
+            self.rate_maps = np.array(rate_maps)
+        else:
+            self.rate_maps = None
 
     def on_spatial_series_change(self, change):
         self.compute_rate_maps()
@@ -286,20 +300,22 @@ class UnitRateMapWidget(widgets.VBox):
         """
         if unit_index is None:
             return
-        if self.rate_maps is None:
-            return
 
         legend_kwargs = dict()
         figsize = (10, 7)
+
         if axs is None:
             fig, axs = plt.subplots(figsize=figsize, ncols=2)
             if hasattr(fig, "canvas"):
                 fig.canvas.header_visible = False
             else:
                 legend_kwargs.update(bbox_to_anchor=(1.01, 1))
-        axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin="lower", aspect="auto", extent=self.extent)
-        axs[0].set_xlabel("x")
-        axs[0].set_ylabel("y")
+        if self.rate_maps is not None:
+            axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin="lower", aspect="auto", extent=self.extent)
+            axs[0].set_xlabel("x")
+            axs[0].set_ylabel("y")
+        else:
+            axs[0].set_title("Rate maps not computed (spatial_maps not installed)")
 
         axs[1].plot(self.nap_position["y"], self.nap_position["x"], color="grey")
         spk_pos = self.nap_units[unit_index].value_from(self.nap_position)
