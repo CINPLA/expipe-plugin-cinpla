@@ -55,6 +55,10 @@ def process_ecephys(
     nwb_path = utils._get_data_path(action)
     nwb_path_tmp = nwb_path.parent / "main_tmp.nwb"
 
+    # clean up tmp NWB file in case of crash
+    if nwb_path_tmp.is_file():
+        nwb_path_tmp.unlink()
+
     si.set_global_job_kwargs(n_jobs=-1, progress_bar=False)
 
     if overwrite:
