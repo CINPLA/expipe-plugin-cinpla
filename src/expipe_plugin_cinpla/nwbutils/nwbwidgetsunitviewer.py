@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
+import warnings
 from functools import partial
 
-import warnings
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
@@ -222,10 +222,12 @@ class UnitRateMapWidget(widgets.VBox):
 
     def compute_rate_maps(self):
         import pynapple as nap
+
         try:
             from spatial_maps import SpatialMap
+
             HAVE_SPATIAL_MAPS = True
-        except:
+        except ImportError:
             warnings.warn(
                 "spatial_maps not installed. Please install it to compute rate maps:\n"
                 ">>> pip install git+https://github.com/CINPLA/spatial-maps.git"

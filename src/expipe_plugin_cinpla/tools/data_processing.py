@@ -15,6 +15,17 @@ from expipe_plugin_cinpla.data_loader import (
     load_spiketrains,
 )
 
+try:
+    import spatial_maps as sp
+
+    HAVE_SPATIAL_MAPS = True
+except ImportError:
+    warnings.warn(
+        "spatial_maps not installed. Please install it to compute rate maps:\n"
+        ">>> pip install git+https://github.com/CINPLA/spatial-maps.git"
+    )
+    HAVE_SPATIAL_MAPS = False
+
 
 def view_active_channels(action, sorter):
     path = action.data_path()
