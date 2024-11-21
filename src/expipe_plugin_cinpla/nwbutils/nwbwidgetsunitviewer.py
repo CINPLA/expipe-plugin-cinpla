@@ -225,7 +225,7 @@ class UnitRateMapWidget(widgets.VBox):
         try:
             from spatial_maps import SpatialMap
             HAVE_SPATIAL_MAPS = True
-        except ImportError:
+        except:
             warnings.warn(
                 "spatial_maps not installed. Please install it to compute rate maps:\n"
                 ">>> pip install git+https://github.com/CINPLA/spatial-maps.git"
