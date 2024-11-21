@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from functools import partial
 
-import warnings
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
@@ -183,6 +182,7 @@ class UnitRateMapWidget(widgets.VBox):
             spatial_series_selector=self.spatial_series_selector,
             smoothing_slider=self.smoothing_slider,
             bin_size_slider=self.bin_size_slider,
+            flip_y_axis=self.flip_y_axis,
         )
         self.rate_maps, self.extent = None, None
         self.compute_rate_maps()
@@ -268,15 +268,24 @@ class UnitRateMapWidget(widgets.VBox):
 
     def on_spatial_series_change(self, change):
         self.compute_rate_maps()
+        self.show_unit_rate_maps(self.unit_list.value)
 
     def on_bin_size_change(self, change):
         self.compute_rate_maps()
+        self.show_unit_rate_maps(self.unit_list.value)
 
     def on_smoothing_change(self, change):
         self.compute_rate_maps()
+        self.show_unit_rate_maps(self.unit_list.value)
 
     def show_unit_rate_maps(
-        self, unit_index=None, spatial_series_selector=None, smoothing_slider=None, bin_size_slider=None, axs=None
+        self,
+        unit_index=None,
+        spatial_series_selector=None,
+        smoothing_slider=None,
+        bin_size_slider=None,
+        flip_y_axis=None,
+        axs=None,
     ):
         """
         Shows unit rate maps.
@@ -293,23 +302,26 @@ class UnitRateMapWidget(widgets.VBox):
         figsize = (10, 7)
 
         if axs is None:
-            fig, axs = plt.subplots(figsize=figsize, ncols=2)
+            fig, axs = plt.subplots(figsize=figsize, ncols=2, sharex=True, sharey=True)
             if hasattr(fig, "canvas"):
                 fig.canvas.header_visible = False
             else:
                 legend_kwargs.update(bbox_to_anchor=(1.01, 1))
         origin = "lower" if self.flip_y_axis.value else "upper"
-        axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin="lower", aspect="auto", extent=self.extent)
+        axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin=origin, aspect="auto", extent=self.extent)
         axs[0].set_xlabel("x")
         axs[0].set_ylabel("y")
 
         tracking_x = self.nap_position["y"]
         tracking_y = self.nap_position["x"]
-        if self.flip_y_axis.value:
-            tracking_y = 1 - tracking_y
-        axs[1].plot(tracking_x, tracking_y, color="grey")
         spk_pos = self.nap_units[unit_index].value_from(self.nap_position)
-        axs[1].plot(spk_pos["y"], spk_pos["x"], "o", color="red", markersize=5, alpha=0.5)
+        spike_pos_x = spk_pos["y"]
+        spike_pos_y = spk_pos["x"]
+        if not self.flip_y_axis.value:
+            tracking_y = 1 - tracking_y
+            spike_pos_y = 1 - spike_pos_y
+        axs[1].plot(tracking_x, tracking_y, color="grey")
+        axs[1].plot(spike_pos_x, spike_pos_y, "o", color="red", markersize=5, alpha=0.5)
         axs[1].set_xlabel("x")
         axs[1].set_ylabel("y")
         fig.tight_layout()
