@@ -37,7 +37,6 @@ def process_ecephys(
     import spikeinterface.curation as sc
     import spikeinterface.exporters as sexp
     import spikeinterface.extractors as se
-    import spikeinterface.postprocessing as spost
     import spikeinterface.preprocessing as spre
     import spikeinterface.qualitymetrics as sqm
     import spikeinterface.sorters as ss
@@ -45,7 +44,7 @@ def process_ecephys(
     from neuroconv.tools.spikeinterface import add_recording
     from pynwb import NWBHDF5IO
 
-    from .utils import add_units_from_waveform_extractor, compute_and_set_unit_groups
+    from .utils import add_units_from_sorting_analyzer, compute_and_set_unit_groups
 
     warnings.filterwarnings("ignore")
 
@@ -247,7 +246,6 @@ def process_ecephys(
         # extract waveforms
         if verbose:
             print("\nPostprocessing")
-            print("\tExtracting waveforms")
         # if not sort by group, extract dense and estimate group
         if "group" not in sorting.get_property_keys():
             compute_and_set_unit_groups(sorting, recording_cmr)
@@ -256,30 +254,35 @@ def process_ecephys(
         if sparsity_temp_folder.is_dir():
             shutil.rmtree(sparsity_temp_folder)
 
-        we = si.extract_waveforms(
-            recording_cmr,
+        sorting_analyzer = si.create_sorting_analyzer(
             sorting,
-            folder=output_base_folder / "waveforms",
+            recording_cmr,
+            format="binary_folder",
+            folder=output_base_folder / "analyzer",
             overwrite=True,
-            ms_before=ms_before,
-            ms_after=ms_after,
-            sparsity_temp_folder=sparsity_temp_folder,
             sparse=True,
-            max_spikes_per_unit=None,
             method="by_property",
             by_property="group",
         )
 
-        _ = spost.compute_spike_amplitudes(we)
-        _ = spost.compute_unit_locations(we)
-        _ = spost.compute_correlograms(we)
-        _ = spost.compute_template_similarity(we)
-        _ = spost.compute_isi_histograms(we)
-        _ = spost.compute_principal_components(we, n_components=n_components)
-        _ = spost.compute_template_metrics(we)
+        if verbose:
+            print("\tComputing extensions")
+        extension_list = {
+            "random_spikes": {},
+            "waveforms": {"ms_before": ms_before, "ms_after": ms_after},
+            "templates": {},
+            "spike_amplitudes": {},
+            "unit_locations": {},
+            "correlograms": {},
+            "template_similarity": {},
+            "isi_histograms": {},
+            "principal_components": {"n_components": n_components},
+            "template_metrics": {},
+        }
+        sorting_analyzer.compute(extension_list, n_jobs=-1, progress_bar=False)
         if verbose:
             print("\tComputing QC metrics")
-        qm = sqm.compute_quality_metrics(we, metric_names=metric_names)
+        qm = sqm.compute_quality_metrics(sorting_analyzer, metric_names=metric_names)
 
         if verbose:
             print("\tExporting to phy")
@@ -287,7 +290,7 @@ def process_ecephys(
         if phy_folder.is_dir():
             shutil.rmtree(phy_folder)
         sexp.export_to_phy(
-            we,
+            sorting_analyzer,
             output_folder=phy_folder,
             copy_binary=True,
             use_relative_path=True,
@@ -301,14 +304,14 @@ def process_ecephys(
                 print("\tGenerating sortingview link")
             unit_table_properties = ["group"]
             if "firing_rate" in qm:
-                we.sorting.set_property("firing_rate", np.round(qm["firing_rate"], 2))
+                sorting_analyzer.sorting.set_property("firing_rate", np.round(qm["firing_rate"], 2))
                 unit_table_properties.append("firing_rate")
             if "amplitude_median" in qm:
-                we.sorting.set_property("amplitude", np.round(qm["amplitude_median"]))
+                sorting_analyzer.sorting.set_property("amplitude", np.round(qm["amplitude_median"]))
                 unit_table_properties.append("firing_rate")
             try:
                 w = sw.plot_sorting_summary(
-                    we,
+                    sorting_analyzer,
                     backend="sortingview",
                     curation=True,
                     unit_table_properties=["group", "firing_rate", "amplitude"],
@@ -329,9 +332,9 @@ def process_ecephys(
                 )
                 w = None
             if "firing_rate" in qm:
-                we.sorting.delete_property("firing_rate")
+                sorting_analyzer.sorting.delete_property("firing_rate")
             if "amplitude_median" in qm:
-                we.sorting.delete_property("amplitude")
+                sorting_analyzer.sorting.delete_property("amplitude")
 
     if verbose:
         print("\nWriting to NWB")
@@ -343,8 +346,8 @@ def process_ecephys(
                 if verbose:
                     print("\tAdding units table")
 
-                add_units_from_waveform_extractor(
-                    we=we,
+                add_units_from_sorting_analyzer(
+                    sorting_analyzer=sorting_analyzer,
                     nwbfile=nwbfile_out,
                     unit_table_name=f"RawUnits-{sorter}",
                     unit_table_description=f"Raw units from {sorter} output",
