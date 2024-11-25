@@ -208,7 +208,7 @@ def process_ecephys(
                     sorting = ss.run_sorter_by_property(
                         sorter,
                         recording_cmr,
-                        working_folder=output_folder,
+                        folder=output_folder,
                         grouping_property="group",
                         verbose=False,
                         delete_output_folder=True,
@@ -220,7 +220,7 @@ def process_ecephys(
                     sorting = ss.run_sorter(
                         sorter,
                         recording_cmr,
-                        output_folder=output_folder,
+                        folder=output_folder,
                         verbose=False,
                         delete_output_folder=True,
                         remove_existing_folder=True,
