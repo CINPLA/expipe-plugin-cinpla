@@ -268,6 +268,7 @@ def process_ecephys(
         if verbose:
             print("\tComputing extensions")
         extension_list = {
+            "noise_levels": {},
             "random_spikes": {},
             "waveforms": {"ms_before": ms_before, "ms_after": ms_after},
             "templates": {},
