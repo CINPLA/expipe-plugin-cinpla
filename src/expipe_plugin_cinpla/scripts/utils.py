@@ -233,8 +233,8 @@ def add_units_from_sorting_analyzer(
         )
         template_ext = sorting_analyzer.get_extension("templates")
         for unit_id in sorting_analyzer.unit_ids:
-            wf_mean = template_ext.get_unit_template(unit_id, mode="median")
-            wf_sd = template_ext.get_unit_template(unit_id, mode="std")
+            wf_mean = template_ext.get_unit_template(unit_id, operator="median")
+            wf_sd = template_ext.get_unit_template(unit_id, operator="std")
             channel_indices = sorting_analyzer.sparsity.unit_id_to_channel_indices[unit_id]
             if len(channel_indices) < max_channel_in_group:
                 num_missing_channels = max_channel_in_group - len(channel_indices)
@@ -254,7 +254,7 @@ def add_units_from_sorting_analyzer(
             unit_electrode_indices.append(list(channel_indices))
     else:
         waveform_means = template_ext.get_templates()
-        waveform_sds = template_ext.get_all_templates(mode="std")
+        waveform_sds = template_ext.get_templates(operator="std")
         channel_indices = np.array(
             [list(sorting_analyzer.channel_ids).index(ch) for ch in sorting_analyzer.channel_ids]
         )
