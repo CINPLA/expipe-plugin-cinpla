@@ -156,6 +156,11 @@ class SortingCurator:
             # if "group" is not available or some missing groups, extract dense and estimate group
             compute_and_set_unit_groups(curated_sorting, recording)
 
+            # sort units by group
+            unit_groups = curated_sorting.get_property("group")
+            sort_indices = np.argsort(unit_groups)
+            curated_sorting = curated_sorting.select_units(curated_sorting.unit_ids[sort_indices])
+
             self.curated_analyzer = si.create_sorting_analyzer(
                 curated_sorting,
                 recording,

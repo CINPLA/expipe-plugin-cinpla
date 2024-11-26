@@ -301,59 +301,59 @@ def process_ecephys(
     if verbose:
         print("\nWriting to NWB")
     nwb_path.unlink()
-    try:
-        with NWBHDF5IO(nwb_path_tmp, mode="r") as read_io:
-            nwbfile_out = read_io.read()
-            if spikesort:
-                if verbose:
-                    print("\tAdding units table")
+    # try:
+    with NWBHDF5IO(nwb_path_tmp, mode="r") as read_io:
+        nwbfile_out = read_io.read()
+        if spikesort:
+            if verbose:
+                print("\tAdding units table")
 
-                add_units_from_sorting_analyzer(
-                    sorting_analyzer=sorting_analyzer,
-                    nwbfile=nwbfile_out,
-                    unit_table_name=f"RawUnits-{sorter}",
-                    unit_table_description=f"Raw units from {sorter} output",
-                    write_in_processing_module=True,
-                )
-            metadata_ecephys = {}
-            # assign existing device
-            device_name = nwbfile_out.devices[list(nwbfile_out.devices.keys())[0]].name
-            metadata_ecephys["Ecephys"] = {
-                "Device": [
-                    {"name": device_name, "description": nwbfile_out.devices[device_name].description},
-                ]
+            add_units_from_sorting_analyzer(
+                sorting_analyzer=sorting_analyzer,
+                nwbfile=nwbfile_out,
+                unit_table_name=f"RawUnits-{sorter}",
+                unit_table_description=f"Raw units from {sorter} output",
+                write_in_processing_module=True,
+            )
+        metadata_ecephys = {}
+        # assign existing device
+        device_name = nwbfile_out.devices[list(nwbfile_out.devices.keys())[0]].name
+        metadata_ecephys["Ecephys"] = {
+            "Device": [
+                {"name": device_name, "description": nwbfile_out.devices[device_name].description},
+            ]
+        }
+        if compute_lfp:
+            if verbose:
+                print("\tAdding LFP")
+            recording_lfp.set_property("group_name", recording_lfp.get_channel_groups())
+            add_recording(recording_lfp, nwbfile=nwbfile_out, write_as="lfp", metadata=metadata_ecephys)
+        if compute_mua:
+            if verbose:
+                print("\tAdding MUA")
+            # Add metadata about new electrical series
+            metadata_ecephys["Ecephys"]["ElectricalSeriesMUA"] = {
+                "name": "ElectricalSeriesMUA",
+                "description": "Rectified signal representing Multi-Unit Activity",
             }
-            if compute_lfp:
-                if verbose:
-                    print("\tAdding LFP")
-                recording_lfp.set_property("group_name", recording_lfp.get_channel_groups())
-                add_recording(recording_lfp, nwbfile=nwbfile_out, write_as="lfp", metadata=metadata_ecephys)
-            if compute_mua:
-                if verbose:
-                    print("\tAdding MUA")
-                # Add metadata about new electrical series
-                metadata_ecephys["Ecephys"]["ElectricalSeriesMUA"] = {
-                    "name": "ElectricalSeriesMUA",
-                    "description": "Rectified signal representing Multi-Unit Activity",
-                }
-                recording_mua.set_property("group_name", recording_mua.get_channel_groups())
-                add_recording(
-                    recording_mua,
-                    nwbfile=nwbfile_out,
-                    write_as="processed",
-                    metadata=metadata_ecephys,
-                    es_key="ElectricalSeriesMUA",
-                )
+            recording_mua.set_property("group_name", recording_mua.get_channel_groups())
+            add_recording(
+                recording_mua,
+                nwbfile=nwbfile_out,
+                write_as="processed",
+                metadata=metadata_ecephys,
+                es_key="ElectricalSeriesMUA",
+            )
 
-            with NWBHDF5IO(nwb_path, mode="w") as export_io:
-                export_io.export(src_io=read_io, nwbfile=nwbfile_out)
-    except Exception as e:
-        # restore NWB file
-        if verbose:
-            print(f"Error exporting to NWB: {e}")
-        if nwb_path.is_file():
-            nwb_path.unlink()
-        shutil.copy(nwb_path_tmp, nwb_path)
+        with NWBHDF5IO(nwb_path, mode="w") as export_io:
+            export_io.export(src_io=read_io, nwbfile=nwbfile_out)
+    # except Exception as e:
+    # restore NWB file
+    # if verbose:
+    #     print(f"Error exporting to NWB: {e}")
+    # if nwb_path.is_file():
+    #     nwb_path.unlink()
+    # shutil.copy(nwb_path_tmp, nwb_path)
 
     # clean up
     if verbose:
