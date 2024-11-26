@@ -7,7 +7,7 @@ import spikeinterface as si
 
 from .utils import (
     _get_data_path,
-    add_units_from_waveform_extractor,
+    add_units_from_sorting_analyzer,
     compute_and_set_unit_groups,
 )
 
@@ -43,7 +43,7 @@ class SortingCurator:
         self.io = None
         self.si_path = None
         self.curated_sorting = None
-        self.curated_we = None
+        self.curated_analyzer = None
         self.curation_description = ""
 
     def set_action(self, action_id):
@@ -106,15 +106,15 @@ class SortingCurator:
         return nwbfile.units
 
     def construct_curated_units(self):
-        if len(self.curated_we.unit_ids) == 0:
+        if len(self.curated_analyzer.unit_ids) == 0:
             print("No units left after curation.")
             return
         from pynwb import NWBHDF5IO
 
         self.io = NWBHDF5IO(self.nwb_path_main, "r")
         nwbfile = self.io.read()
-        add_units_from_waveform_extractor(
-            self.curated_we,
+        add_units_from_sorting_analyzer(
+            self.curated_analyzer,
             nwbfile,
             unit_table_name="CuratedUnits",
             unit_table_description=self.curation_description,
@@ -128,21 +128,23 @@ class SortingCurator:
         recording = si.load_extractor(preprocessed_json)
         return recording
 
-    def load_raw_waveforms(self, sorter):
-        raw_waveforms_path = self.si_path / sorter / "waveforms"
-        raw_we = si.load_waveforms(raw_waveforms_path, with_recording=False)
+    def load_raw_analyzer(self, sorter):
+        if (self.si_path / sorter / "waveforms").is_dir():
+            waveforms_folder = self.si_path / sorter / "waveforms"
+            raw_analyzer = si.load_waveforms(waveforms_folder, output="SortingAnalyzer")
+        else:
+            raw_analyzer = si.load_sorting_analyzer(self.si_path / sorter / "analyzer")
         recording = self.load_processed_recording(sorter)
-        raw_we.set_recording(recording)
-        return raw_we
+        raw_analyzer.set_temporary_recording(recording)
+        return raw_analyzer
 
     def apply_curation(self, sorter, curated_sorting):
         sorting_raw = self.load_raw_sorting(sorter)
         if sorting_raw is not None and self.check_sortings_equal(sorting_raw, curated_sorting):
             print(f"No curation was performed for {sorter}. Using raw sorting")
-            self.curated_we = None
+            self.curated_analyzer = None
         else:
             import spikeinterface.curation as sc
-            import spikeinterface.postprocessing as spost
             import spikeinterface.qualitymetrics as sqm
 
             recording = self.load_processed_recording(sorter)
@@ -154,23 +156,18 @@ class SortingCurator:
             # if "group" is not available or some missing groups, extract dense and estimate group
             compute_and_set_unit_groups(curated_sorting, recording)
 
-            print("Extracting waveforms on curated sorting")
-            self.curated_we = si.extract_waveforms(
-                recording,
+            self.curated_analyzer = si.create_sorting_analyzer(
                 curated_sorting,
-                folder=None,
-                mode="memory",
-                max_spikes_per_unit=None,
+                recording,
                 sparse=True,
                 method="by_property",
                 by_property="group",
-                n_jobs=-1,
-                progress_bar=False,
             )
+            print("Extracting waveforms on curated sorting")
+            self.curated_analyzer.compute(["random_spikes", "waveforms", "templates"], n_jobs=-1, progress_bar=False)
             # recompute PC, template and quality metrics
             print("Recomputing PC, template and quality metrics")
-            _ = spost.compute_principal_components(self.curated_we, progress_bar=False)
-            _ = spost.compute_template_metrics(self.curated_we)
+            self.curated_analyzer.compute(["principal_components", "template_metrics"])
             metric_names = []
             for property_name in curated_sorting.get_property_keys():
                 for metric_str in metric_metric_str_to_si_metric_name:
@@ -178,8 +175,9 @@ class SortingCurator:
                         new_metric = metric_metric_str_to_si_metric_name[metric_str]
                         if new_metric not in metric_names:
                             metric_names.append(new_metric)
-            _ = sqm.compute_quality_metrics(self.curated_we, metric_names=metric_names, n_jobs=-1, progress_bar=False)
-            _ = sqm.compute_quality_metrics(self.curated_we, metric_names=metric_names, n_jobs=-1, progress_bar=False)
+            _ = sqm.compute_quality_metrics(
+                self.curated_analyzer, metric_names=metric_names, n_jobs=-1, progress_bar=False
+            )
             print("Done applying curation")
 
     def load_from_phy(self, sorter):
@@ -200,12 +198,12 @@ class SortingCurator:
         return phy_run_command
 
     def apply_qc_curator(self, sorter, query):
-        raw_we = self.load_raw_waveforms(sorter)
-        qm_table = raw_we.load_extension("quality_metrics").get_data()
+        raw_analyzer = self.load_raw_analyzer(sorter)
+        qm_table = raw_analyzer.get_extension("quality_metrics").get_data()
         units_good = qm_table.query(query).index.values
         # in this case, no split/merge is performed, so we can just select the units
-        self.curated_we = raw_we.select_units(units_good, new_folder=None)
-        print(f'Applied QM-based curation with query "{query}" for {sorter}:\n{self.curated_we.sorting}')
+        self.curated_analyzer = raw_analyzer.select_units(units_good)
+        print(f'Applied QM-based curation with query "{query}" for {sorter}:\n{self.curated_analyzer.sorting}')
         self.curation_description = f"Automatic curation based on quality metrics.\nQuery: {query}"
 
     def restore_phy(self, sorter):
@@ -225,7 +223,7 @@ class SortingCurator:
             shutil.copy(restore_tsv_file, phy_folder)
 
     def save_to_nwb(self):
-        if self.curated_we is None:
+        if self.curated_analyzer is None:
             print("No curation was performed.")
             return
         from pynwb import NWBHDF5IO
@@ -247,8 +245,8 @@ class SortingCurator:
         with NWBHDF5IO(self.nwb_path_tmp, mode="a") as io:
             nwbfile_out = io.read()
             print("Adding curated units table")
-            add_units_from_waveform_extractor(
-                we=self.curated_we,
+            add_units_from_sorting_analyzer(
+                we=self.curated_analyzer,
                 nwbfile=nwbfile_out,
                 unit_table_name="units",
                 unit_table_description=self.curation_description,
