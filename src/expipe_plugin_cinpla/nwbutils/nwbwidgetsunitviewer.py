@@ -263,7 +263,7 @@ class UnitRateMapWidget(widgets.VBox):
         rate_maps = []
         for unit_index in self.units.id.data:
             rate_map = sm.rate_map(x, y, t, unit_spike_times[unit_index])
-            rate_maps.append(rate_map)
+            rate_maps.append(rate_map.T)
         self.rate_maps = np.array(rate_maps)
 
     def on_spatial_series_change(self, change):
@@ -307,17 +307,17 @@ class UnitRateMapWidget(widgets.VBox):
                 fig.canvas.header_visible = False
             else:
                 legend_kwargs.update(bbox_to_anchor=(1.01, 1))
-        origin = "lower" if self.flip_y_axis.value else "upper"
+        origin = "lower" if not self.flip_y_axis.value else "upper"
         axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin=origin, aspect="auto", extent=self.extent)
         axs[0].set_xlabel("x")
         axs[0].set_ylabel("y")
 
-        tracking_x = self.nap_position["y"]
-        tracking_y = self.nap_position["x"]
+        tracking_x = self.nap_position["x"]
+        tracking_y = self.nap_position["y"]
         spk_pos = self.nap_units[unit_index].value_from(self.nap_position)
-        spike_pos_x = spk_pos["y"]
-        spike_pos_y = spk_pos["x"]
-        if not self.flip_y_axis.value:
+        spike_pos_x = spk_pos["x"]
+        spike_pos_y = spk_pos["y"]
+        if self.flip_y_axis.value:
             tracking_y = 1 - tracking_y
             spike_pos_y = 1 - spike_pos_y
         axs[1].plot(tracking_x, tracking_y, color="grey")
