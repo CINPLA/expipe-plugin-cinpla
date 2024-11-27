@@ -271,7 +271,7 @@ def process_ecephys(
             "noise_levels": {},
             "random_spikes": {},
             "waveforms": {"ms_before": ms_before, "ms_after": ms_after},
-            "templates": {},
+            "templates": {"operators": ["average", "std", "median"]},
             "spike_amplitudes": {},
             "unit_locations": {},
             "correlograms": {},

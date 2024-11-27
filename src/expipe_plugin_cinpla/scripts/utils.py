@@ -233,13 +233,13 @@ def add_units_from_sorting_analyzer(
         )
         template_ext = sorting_analyzer.get_extension("templates")
         for unit_id in sorting_analyzer.unit_ids:
-            wf_mean = template_ext.get_unit_template(unit_id, mode="median")
-            wf_sd = template_ext.get_unit_template(unit_id, mode="std")
+            wf_mean = template_ext.get_unit_template(unit_id, operator="median")
+            wf_sd = template_ext.get_unit_template(unit_id, operator="std")
             channel_indices = sorting_analyzer.sparsity.unit_id_to_channel_indices[unit_id]
             if len(channel_indices) < max_channel_in_group:
                 num_missing_channels = max_channel_in_group - len(channel_indices)
-                wf_mean = np.pad(wf_mean, ((0, 0), (0, num_missing_channels)), mode="constant", constant_values=0)
-                wf_sd = np.pad(wf_sd, ((0, 0), (0, num_missing_channels)), mode="constant", constant_values=0)
+                wf_mean = np.pad(wf_mean, ((0, 0), (0, num_missing_channels)), operator="constant", constant_values=0)
+                wf_sd = np.pad(wf_sd, ((0, 0), (0, num_missing_channels)), operator="constant", constant_values=0)
                 max_index = np.max(channel_indices)
                 # add fake missing channel indices
                 if max_index < len(sorting_analyzer.channel_ids) - num_missing_channels:
