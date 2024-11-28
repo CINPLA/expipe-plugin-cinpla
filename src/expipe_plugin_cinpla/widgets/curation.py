@@ -7,7 +7,7 @@ import pandas as pd
 from expipe_plugin_cinpla.scripts import curation
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
 
-from ..utils import dump_project_config
+from ..tools.utils import dump_project_config
 from .utils import BaseViewWithLog, required_values_filled
 
 default_qms = [
@@ -50,16 +50,17 @@ class CurationView(BaseViewWithLog):
         from ..nwbutils.nwbwidgetsunitviewer import (
             UnitRateMapWidget,
             UnitWaveformsWidget,
+            UnitSummaryWidget
         )
 
         custom_raw_unit_vis = {
-            Units: OrderedDict({"Raw Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget})
+            Units: OrderedDict({"Raw Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget, "Unit Summary": UnitSummaryWidget})
         }
         custom_main_unit_vis = {
-            Units: OrderedDict({"Main Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget})
+            Units: OrderedDict({"Main Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget, "Unit Summary": UnitSummaryWidget})
         }
         custom_curated_unit_vis = {
-            Units: OrderedDict({"Curated Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget})
+            Units: OrderedDict({"Curated Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget, "Unit Summary": UnitSummaryWidget})
         }
 
         all_actions = project.actions

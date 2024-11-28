@@ -108,7 +108,6 @@ def test_process():
         ms_after=ms_after,
         metric_names=metric_names,
         overwrite=overwrite,
-        plot_sortingview=False,
         n_components=2,  # this is needed because there are very few waveforms!
     )
 
