@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from functools import partial
-
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,9 +33,7 @@ class UnitWaveformsWidget(widgets.VBox):
         unit_controls = widgets.HBox([self.unit_list, self.unit_name_text, self.unit_info_text])
         self.controls = dict(unit_index=self.unit_list)
 
-        plot_func = partial(self.show_unit_waveforms, units=self.units)
-
-        out_fig = interactive_output(plot_func, self.controls)
+        out_fig = interactive_output(self.show_unit_waveforms, self.controls)
 
         self.children = [unit_controls, out_fig]
 
@@ -122,7 +118,7 @@ class UnitRateMapWidget(widgets.VBox):
         self.units = units
 
         if spatial_series is None:
-            self.spatial_series = self.get_spatial_series()
+            self.spatial_series = get_spatial_series(self.units)
             if len(self.spatial_series) == 0:
                 self.children = [widgets.HTML("No sparial series present")]
                 return
@@ -213,16 +209,6 @@ class UnitRateMapWidget(widgets.VBox):
         if "original_cluster_id" in self.units.colnames:
             unit_info_text += f" - Phy ID: {int(self.units['original_cluster_id'][self.unit_list.value])}"
         self.unit_info_text.value = unit_info_text
-
-    def get_spatial_series(self):
-        from pynwb.behavior import SpatialSeries
-
-        spatial_series = dict()
-        nwbfile = self.units.get_ancestor("NWBFile")
-        for item in nwbfile.all_children():
-            if isinstance(item, SpatialSeries):
-                spatial_series[item.name] = item
-        return spatial_series
 
     def compute_rate_maps(self):
         import pynapple as nap
@@ -351,13 +337,13 @@ class UnitSummaryWidget(widgets.VBox):
         super().__init__()
 
         self.units = units
-        self.spatial_series = self.get_spatial_series()
+        self.spatial_series = get_spatial_series(self.units)
         self.spatial_series_selector = widgets.SelectMultiple(
             options=sorted(list(self.spatial_series.keys())),
             disabled=False,
             layout=dict(width="200px", display="flex", justify_content="flex-start"),
         )
-        if len(self.spatial_series_selector) == 2:
+        if len(self.spatial_series) == 2:
             self.spatial_series_selector.value = list(self.spatial_series.keys())
 
         unit_indices = units.id.data[:]
@@ -405,9 +391,7 @@ class UnitSummaryWidget(widgets.VBox):
             bin_size_slider=self.bin_size_slider,
         )
 
-        plot_func = partial(self.show_unit_summary, units=self.units)
-
-        out_fig = interactive_output(plot_func, self.controls)
+        out_fig = interactive_output(self.show_unit_summary, self.controls)
 
         self.children = [top_panel, out_fig]
 
@@ -530,6 +514,17 @@ class UnitSummaryWidget(widgets.VBox):
         fig.suptitle(title)
 
         return axs
+
+
+def get_spatial_series(units):
+    from pynwb.behavior import SpatialSeries
+
+    spatial_series = dict()
+    nwbfile = units.get_ancestor("NWBFile")
+    for item in nwbfile.all_children():
+        if isinstance(item, SpatialSeries):
+            spatial_series[item.name] = item
+    return spatial_series
 
 
 def get_custom_spec():
