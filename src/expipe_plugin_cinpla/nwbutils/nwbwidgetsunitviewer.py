@@ -59,7 +59,14 @@ class UnitWaveformsWidget(widgets.VBox):
 
     def show_unit_waveforms(self, unit_index=None, ax=None):
         """
-        TODO: add docstring
+        Shows unit waveforms.
+
+        Parameters
+        ----------
+        unit_index: int
+            Index of the unit to show.
+        ax: matplotlib.pyplot.Axes
+            Axes to plot the waveforms on.
 
         Returns
         -------
@@ -283,9 +290,24 @@ class UnitRateMapWidget(widgets.VBox):
         """
         Shows unit rate maps.
 
+        Parameters
+        ----------
+        unit_index: int
+            Index of the unit to show.
+        spatial_series_selector: widget
+            Name of the spatial series to use.
+        smoothing_slider: widget
+            Smoothing factor for the rate map.
+        bin_size_slider: widget
+            Bin size for the rate map.
+        flip_y_axis: widget
+            Whether to flip the y-axis.
+        axs: matplotlib.pyplot.Axes
+            Axes to plot the rate maps on.
+
         Returns
         -------
-        matplotlib.pyplot.Figure
+        matplotlib axes
 
         """
         if unit_index is None:
@@ -408,6 +430,25 @@ class UnitSummaryWidget(widgets.VBox):
 
 
     def show_unit_summary(self, unit_index, spatial_series_selector=None, smoothing_slider=None, bin_size_slider=None):
+        """
+        Shows unit summary.
+
+        Parameters
+        ----------
+        unit_index: int
+            Index of the unit to show.
+        spatial_series_selector: widget
+            Name of the spatial series to use.
+        smoothing_slider: widget
+            Smoothing factor for the rate map.
+        bin_size_slider: widget
+            Bin size for the rate map.
+
+        Returns
+        -------
+        matplotlib axes
+                    
+        """
         from spatial_maps import SpatialMap
         from head_direction import head_direction_rate, head_direction
         from ..tools.data_processing import process_tracking, _cut_to_same_len
@@ -496,7 +537,7 @@ class UnitSummaryWidget(widgets.VBox):
 
         fig.suptitle(title)
 
-        return fig, axs
+        return axs
 
 
 def get_custom_spec():
