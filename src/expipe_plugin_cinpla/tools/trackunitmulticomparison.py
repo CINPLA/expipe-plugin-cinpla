@@ -10,7 +10,7 @@ import yaml
 from matplotlib import gridspec
 from tqdm import tqdm
 
-from expipe_plugin_cinpla.data_loader import (
+from expipe_plugin_cinpla.tools.data_loader import (
     get_channel_groups,
     get_data_path,
     load_spiketrains,

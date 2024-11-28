@@ -3,7 +3,7 @@ from pathlib import Path
 
 from expipe_plugin_cinpla.scripts import register
 
-from ..utils import dump_project_config
+from ..tools.utils import dump_project_config
 from .utils import BaseViewWithLog
 
 
