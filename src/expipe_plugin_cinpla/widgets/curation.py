@@ -49,18 +49,36 @@ class CurationView(BaseViewWithLog):
 
         from ..nwbutils.nwbwidgetsunitviewer import (
             UnitRateMapWidget,
+            UnitSummaryWidget,
             UnitWaveformsWidget,
-            UnitSummaryWidget
         )
 
         custom_raw_unit_vis = {
-            Units: OrderedDict({"Raw Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget, "Unit Summary": UnitSummaryWidget})
+            Units: OrderedDict(
+                {
+                    "Raw Waveforms": UnitWaveformsWidget,
+                    "Rate Maps": UnitRateMapWidget,
+                    "Unit Summary": UnitSummaryWidget,
+                }
+            )
         }
         custom_main_unit_vis = {
-            Units: OrderedDict({"Main Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget, "Unit Summary": UnitSummaryWidget})
+            Units: OrderedDict(
+                {
+                    "Main Waveforms": UnitWaveformsWidget,
+                    "Rate Maps": UnitRateMapWidget,
+                    "Unit Summary": UnitSummaryWidget,
+                }
+            )
         }
         custom_curated_unit_vis = {
-            Units: OrderedDict({"Curated Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget, "Unit Summary": UnitSummaryWidget})
+            Units: OrderedDict(
+                {
+                    "Curated Waveforms": UnitWaveformsWidget,
+                    "Rate Maps": UnitRateMapWidget,
+                    "Unit Summary": UnitSummaryWidget,
+                }
+            )
         }
 
         all_actions = project.actions
