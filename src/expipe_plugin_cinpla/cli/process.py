@@ -4,8 +4,8 @@ from pathlib import Path
 import click
 import ruamel.yaml as yaml
 
-from expipe_plugin_cinpla.tools.imports import project
 from expipe_plugin_cinpla.scripts import process
+from expipe_plugin_cinpla.tools.imports import project
 
 
 # TODO: update this
