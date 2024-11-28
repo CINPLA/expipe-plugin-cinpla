@@ -35,9 +35,7 @@ class UnitWaveformsWidget(widgets.VBox):
         unit_controls = widgets.HBox([self.unit_list, self.unit_name_text, self.unit_info_text])
         self.controls = dict(unit_index=self.unit_list)
 
-        plot_func = partial(self.show_unit_waveforms, units=self.units)
-
-        out_fig = interactive_output(plot_func, self.controls)
+        out_fig = interactive_output(self.show_unit_waveforms, self.controls)
 
         self.children = [unit_controls, out_fig]
 
