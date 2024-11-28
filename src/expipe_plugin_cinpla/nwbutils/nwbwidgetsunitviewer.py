@@ -56,7 +56,6 @@ class UnitWaveformsWidget(widgets.VBox):
             unit_info_text += f" - Phy ID: {int(self.units['original_cluster_id'][self.unit_list.value])}"
         self.unit_info_text.value = unit_info_text
 
-
     def show_unit_waveforms(self, unit_index=None, ax=None):
         """
         Shows unit waveforms.
@@ -227,8 +226,9 @@ class UnitRateMapWidget(widgets.VBox):
 
     def compute_rate_maps(self):
         import pynapple as nap
-        from ..tools.data_processing import process_tracking
         from spatial_maps import SpatialMap
+
+        from ..tools.data_processing import process_tracking
 
         spatial_series = self.spatial_series[self.spatial_series_selector.value]
         x, y = spatial_series.data[:].T
@@ -308,7 +308,6 @@ class UnitRateMapWidget(widgets.VBox):
         Returns
         -------
         matplotlib axes
-
         """
         if unit_index is None:
             return
@@ -427,8 +426,6 @@ class UnitSummaryWidget(widgets.VBox):
             unit_info_text += f" - Phy ID: {int(self.units['original_cluster_id'][self.unit_list.value])}"
         self.unit_info_text.value = unit_info_text
 
-
-
     def show_unit_summary(self, unit_index, spatial_series_selector=None, smoothing_slider=None, bin_size_slider=None):
         """
         Shows unit summary.
@@ -447,11 +444,12 @@ class UnitSummaryWidget(widgets.VBox):
         Returns
         -------
         matplotlib axes
-                    
+
         """
+        from head_direction import head_direction, head_direction_rate
         from spatial_maps import SpatialMap
-        from head_direction import head_direction_rate, head_direction
-        from ..tools.data_processing import process_tracking, _cut_to_same_len
+
+        from ..tools.data_processing import _cut_to_same_len, process_tracking
         from ..tools.plotting_utils import spike_track
 
         sm = SpatialMap(
@@ -490,7 +488,7 @@ class UnitSummaryWidget(widgets.VBox):
             x = np.mean([x1, x2], axis=0)
             y = np.mean([y1, y2], axis=0)
             t = t1
-            
+
         ratemap = sm.rate_map(x, y, t, spike_train)
         axs[0, 0].imshow(ratemap.T, origin="lower")
         title = f"grp={group}, unit={unit_name}"
@@ -526,13 +524,7 @@ class UnitSummaryWidget(widgets.VBox):
             axs[1, i].set_ylim(*min_max)
             if waveform_sd is not None:
                 wf_sd = waveform_sd[:, i]
-                axs[1, i].fill_between(
-                    np.arange(len(wf)),
-                    wf - wf_sd,
-                    wf + wf_sd,
-                    alpha=0.2,
-                    color="C0"
-                )
+                axs[1, i].fill_between(np.arange(len(wf)), wf - wf_sd, wf + wf_sd, alpha=0.2, color="C0")
         axs[1, 0].set_ylabel("Mean waveform")
 
         fig.suptitle(title)
