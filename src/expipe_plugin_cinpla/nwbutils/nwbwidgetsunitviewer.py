@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from functools import partial
-
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,7 +16,6 @@ class UnitWaveformsWidget(widgets.VBox):
 
         self.units = units
 
-        self.progress_bar = widgets.HBox()
         unit_indices = units.id.data[:]
         self.unit_list = widgets.Dropdown(
             options=unit_indices,
@@ -36,9 +33,7 @@ class UnitWaveformsWidget(widgets.VBox):
         unit_controls = widgets.HBox([self.unit_list, self.unit_name_text, self.unit_info_text])
         self.controls = dict(unit_index=self.unit_list)
 
-        plot_func = partial(show_unit_waveforms, units=self.units)
-
-        out_fig = interactive_output(plot_func, self.controls)
+        out_fig = interactive_output(self.show_unit_waveforms, self.controls)
 
         self.children = [unit_controls, out_fig]
 
@@ -57,66 +52,73 @@ class UnitWaveformsWidget(widgets.VBox):
             unit_info_text += f" - Phy ID: {int(self.units['original_cluster_id'][self.unit_list.value])}"
         self.unit_info_text.value = unit_info_text
 
+    def show_unit_waveforms(self, unit_index=None, ax=None):
+        """
+        Shows unit waveforms.
 
-def show_unit_waveforms(units: "pynwb.mis.Units", unit_index=None, ax=None):
-    """
-    TODO: add docstring
+        Parameters
+        ----------
+        unit_index: int
+            Index of the unit to show.
+        ax: matplotlib.pyplot.Axes
+            Axes to plot the waveforms on.
 
-    Returns
-    -------
-    matplotlib.pyplot.Figure
+        Returns
+        -------
+        matplotlib.pyplot.Figure
 
-    """
-    if "waveform_mean" not in units.colnames:
-        return ax
+        """
+        units = self.units
+        if "waveform_mean" not in units.colnames:
+            return ax
 
-    if unit_index is None:
-        return
+        if unit_index is None:
+            return
 
-    legend_kwargs = dict()
-    figsize = (10, 7)
-    if ax is None:
-        fig, ax = plt.subplots(figsize=figsize)
-        if hasattr(fig, "canvas"):
-            fig.canvas.header_visible = False
+        legend_kwargs = dict()
+        figsize = (10, 7)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+            if hasattr(fig, "canvas"):
+                fig.canvas.header_visible = False
+            else:
+                legend_kwargs.update(bbox_to_anchor=(1.01, 1))
+        color = color_wheel[unit_index % len(color_wheel)]
+        waveform = units.waveform_mean[unit_index]
+        if "waveform_sd" in units.colnames:
+            waveform_sd = units.waveform_sd[unit_index]
         else:
-            legend_kwargs.update(bbox_to_anchor=(1.01, 1))
-    color = color_wheel[unit_index % len(color_wheel)]
-    waveform = units.waveform_mean[unit_index]
-    if "waveform_sd" in units.colnames:
-        waveform_sd = units.waveform_sd[unit_index]
-    else:
-        waveform_sd = None
-    ptp = 2 * np.ptp(waveform)
+            waveform_sd = None
+        ptp = 2 * np.ptp(waveform)
 
-    for i, wf in enumerate(waveform.T):
-        offset = i * ptp
-        ax.plot(wf + offset, color=color)
-        if waveform_sd is not None:
-            wf_sd = waveform_sd[:, i]
-            ax.fill_between(
-                np.arange(len(wf)),
-                wf - wf_sd + offset,
-                wf + wf_sd + offset,
-                alpha=0.2,
-                color=color,
-            )
+        for i, wf in enumerate(waveform.T):
+            offset = i * ptp
+            ax.plot(wf + offset, color=color)
+            if waveform_sd is not None:
+                wf_sd = waveform_sd[:, i]
+                ax.fill_between(
+                    np.arange(len(wf)),
+                    wf - wf_sd + offset,
+                    wf + wf_sd + offset,
+                    alpha=0.2,
+                    color=color,
+                )
 
-    return ax
+        return ax
 
 
 class UnitRateMapWidget(widgets.VBox):
     def __init__(
         self,
-        units: "pynwb.mis.Units",
-        spatial_series: "SpatialSeries" = None,
+        units: "pynwb.misc.Units",
+        spatial_series: "pynwb.behavior.SpatialSeries" = None,
     ):
         super().__init__()
 
         self.units = units
 
         if spatial_series is None:
-            self.spatial_series = self.get_spatial_series()
+            self.spatial_series = get_spatial_series(self.units)
             if len(self.spatial_series) == 0:
                 self.children = [widgets.HTML("No sparial series present")]
                 return
@@ -135,7 +137,6 @@ class UnitRateMapWidget(widgets.VBox):
                 )
         self.units = units
 
-        self.progress_bar = widgets.HBox()
         unit_indices = units.id.data[:]
         self.unit_list = widgets.Dropdown(
             options=unit_indices,
@@ -150,7 +151,7 @@ class UnitRateMapWidget(widgets.VBox):
             unit_info_text += " - Phy ID:      "
         self.unit_info_text = widgets.Label(unit_info_text, layout=dict(width="90%"))
         self.smoothing_slider = widgets.FloatSlider(
-            value=0.05,
+            value=0.03,
             min=0,
             max=0.2,
             step=0.01,
@@ -209,37 +210,22 @@ class UnitRateMapWidget(widgets.VBox):
             unit_info_text += f" - Phy ID: {int(self.units['original_cluster_id'][self.unit_list.value])}"
         self.unit_info_text.value = unit_info_text
 
-    def get_spatial_series(self):
-        from pynwb.behavior import SpatialSeries
-
-        spatial_series = dict()
-        nwbfile = self.units.get_ancestor("NWBFile")
-        for item in nwbfile.all_children():
-            if isinstance(item, SpatialSeries):
-                spatial_series[item.name] = item
-        return spatial_series
-
     def compute_rate_maps(self):
         import pynapple as nap
         from spatial_maps import SpatialMap
+
+        from ..tools.data_processing import process_tracking
 
         spatial_series = self.spatial_series[self.spatial_series_selector.value]
         x, y = spatial_series.data[:].T
         t = spatial_series.timestamps[:]
 
         # Remove NaNs and zeros
-        mask_nan = np.logical_not(np.isnan(spatial_series.data)).T
-        mask_nan = np.logical_and(mask_nan[0], mask_nan[1])
-        mask_zeros = np.logical_and(x != 0, y != 0)
-        mask = np.logical_and(mask_nan, mask_zeros)
-
-        x = x[mask]
-        y = y[mask]
-        t = t[mask]
+        x, y, t = process_tracking(x, y, t)
 
         nap_position = nap.TsdFrame(
-            d=spatial_series.data[mask],
-            t=spatial_series.timestamps[mask],
+            d=np.array([x, y]).T,
+            t=t,
             columns=["x", "y"],
         )
         self.extent = (
@@ -263,7 +249,7 @@ class UnitRateMapWidget(widgets.VBox):
         rate_maps = []
         for unit_index in self.units.id.data:
             rate_map = sm.rate_map(x, y, t, unit_spike_times[unit_index])
-            rate_maps.append(rate_map)
+            rate_maps.append(rate_map.T)
         self.rate_maps = np.array(rate_maps)
 
     def on_spatial_series_change(self, change):
@@ -290,10 +276,24 @@ class UnitRateMapWidget(widgets.VBox):
         """
         Shows unit rate maps.
 
+        Parameters
+        ----------
+        unit_index: int
+            Index of the unit to show.
+        spatial_series_selector: widget
+            Name of the spatial series to use.
+        smoothing_slider: widget
+            Smoothing factor for the rate map.
+        bin_size_slider: widget
+            Bin size for the rate map.
+        flip_y_axis: widget
+            Whether to flip the y-axis.
+        axs: matplotlib.pyplot.Axes
+            Axes to plot the rate maps on.
+
         Returns
         -------
-        matplotlib.pyplot.Figure
-
+        matplotlib axes
         """
         if unit_index is None:
             return
@@ -307,17 +307,17 @@ class UnitRateMapWidget(widgets.VBox):
                 fig.canvas.header_visible = False
             else:
                 legend_kwargs.update(bbox_to_anchor=(1.01, 1))
-        origin = "lower" if self.flip_y_axis.value else "upper"
+        origin = "lower" if not self.flip_y_axis.value else "upper"
         axs[0].imshow(self.rate_maps[unit_index], cmap="viridis", origin=origin, aspect="auto", extent=self.extent)
         axs[0].set_xlabel("x")
         axs[0].set_ylabel("y")
 
-        tracking_x = self.nap_position["y"]
-        tracking_y = self.nap_position["x"]
+        tracking_x = self.nap_position["x"]
+        tracking_y = self.nap_position["y"]
         spk_pos = self.nap_units[unit_index].value_from(self.nap_position)
-        spike_pos_x = spk_pos["y"]
-        spike_pos_y = spk_pos["x"]
-        if not self.flip_y_axis.value:
+        spike_pos_x = spk_pos["x"]
+        spike_pos_y = spk_pos["y"]
+        if self.flip_y_axis.value:
             tracking_y = 1 - tracking_y
             spike_pos_y = 1 - spike_pos_y
         axs[1].plot(tracking_x, tracking_y, color="grey")
@@ -327,6 +327,204 @@ class UnitRateMapWidget(widgets.VBox):
         fig.tight_layout()
 
         return axs
+
+
+class UnitSummaryWidget(widgets.VBox):
+    def __init__(
+        self,
+        units: "pynwb.misc.Units",
+    ):
+        super().__init__()
+
+        self.units = units
+        self.spatial_series = get_spatial_series(self.units)
+        self.spatial_series_selector = widgets.SelectMultiple(
+            options=sorted(list(self.spatial_series.keys())),
+            disabled=False,
+            layout=dict(width="200px", display="flex", justify_content="flex-start"),
+        )
+        if len(self.spatial_series) == 2:
+            self.spatial_series_selector.value = list(self.spatial_series.keys())
+
+        unit_indices = units.id.data[:]
+        self.unit_list = widgets.Dropdown(
+            options=unit_indices,
+            default=unit_indices[0],
+            description="",
+            layout=dict(width="200px", display="flex", justify_content="flex-start"),
+        )
+
+        self.unit_name_text = widgets.Label("Unit:    ", layout=dict(width="200px"))
+        unit_info_text = "Group:     "
+        if "original_cluster_id" in self.units.colnames:
+            unit_info_text += " - Phy ID:      "
+        self.unit_info_text = widgets.Label(unit_info_text, layout=dict(width="90%"))
+        self.smoothing_slider = widgets.FloatSlider(
+            value=0.03,
+            min=0,
+            max=0.2,
+            step=0.01,
+            description="Smoothing:",
+        )
+        self.bin_size_slider = widgets.FloatSlider(
+            value=0.02,
+            min=0.01,
+            max=0.2,
+            step=0.01,
+            description="Bin size:",
+        )
+
+        spatial_series_label = widgets.Label("Spatial Series:")
+        top_panel = widgets.VBox(
+            [
+                self.unit_list,
+                self.unit_name_text,
+                self.unit_info_text,
+                widgets.HBox([spatial_series_label, self.spatial_series_selector]),
+                widgets.HBox([self.smoothing_slider, self.bin_size_slider]),
+            ]
+        )
+        self.controls = dict(
+            unit_index=self.unit_list,
+            spatial_series_selector=self.spatial_series_selector,
+            smoothing_slider=self.smoothing_slider,
+            bin_size_slider=self.bin_size_slider,
+        )
+
+        out_fig = interactive_output(self.show_unit_summary, self.controls)
+
+        self.children = [top_panel, out_fig]
+
+        self.layout = Layout(width="100%")
+
+        self.unit_list.observe(self.on_unit_change, names="value")
+        self.on_unit_change(None)
+
+    def on_unit_change(self, change):
+        unit_name = self.units["unit_name"][self.unit_list.value]
+        unit_group = self.units["group"][self.unit_list.value]
+
+        self.unit_name_text.value = f"Unit: {unit_name}"
+        unit_info_text = f"Group: {unit_group}"
+        if "original_cluster_id" in self.units.colnames:
+            unit_info_text += f" - Phy ID: {int(self.units['original_cluster_id'][self.unit_list.value])}"
+        self.unit_info_text.value = unit_info_text
+
+    def show_unit_summary(self, unit_index, spatial_series_selector=None, smoothing_slider=None, bin_size_slider=None):
+        """
+        Shows unit summary.
+
+        Parameters
+        ----------
+        unit_index: int
+            Index of the unit to show.
+        spatial_series_selector: widget
+            Name of the spatial series to use.
+        smoothing_slider: widget
+            Smoothing factor for the rate map.
+        bin_size_slider: widget
+            Bin size for the rate map.
+
+        Returns
+        -------
+        matplotlib axes
+
+        """
+        from head_direction import head_direction, head_direction_rate
+        from spatial_maps import SpatialMap
+
+        from ..tools.data_processing import _cut_to_same_len, process_tracking
+        from ..tools.plotting_utils import spike_track
+
+        sm = SpatialMap(
+            bin_size=self.bin_size_slider.value,
+            smoothing=self.smoothing_slider.value,
+        )
+
+        fig, axs = plt.subplots(nrows=2, ncols=4)
+        axs[0, 3].remove()
+        axs[0, 3] = plt.subplot(244, projection="polar")
+
+        spike_train = self.units["spike_times"][unit_index][:]
+        group = self.units["group"][unit_index]
+        if "original_cluster_id" in self.units.colnames:
+            phy_id = int(self.units["original_cluster_id"][unit_index])
+        else:
+            phy_id = None
+        unit_name = self.units["unit_name"][unit_index]
+
+        # ratemap
+        if len(self.spatial_series_selector.value) == 1:
+            spatial_series1 = self.spatial_series[self.spatial_series_selector.value[0]]
+            x1, y1 = spatial_series1.data[:].T
+            t1 = spatial_series1.timestamps[:]
+            x1, y1, t1 = process_tracking(x1, y1, t1)
+            x, y, t = x1, y1, t1
+        elif len(self.spatial_series_selector.value) == 2:
+            spatial_series1 = self.spatial_series[self.spatial_series_selector.value[0]]
+            x1, y1 = spatial_series1.data[:].T
+            t1 = spatial_series1.timestamps[:]
+            spatial_series2 = self.spatial_series[self.spatial_series_selector.value[1]]
+            x2, y2 = spatial_series2.data[:].T
+            t2 = spatial_series2.timestamps[:]
+            x2, y2, t2 = process_tracking(x2, y2, t2)
+            x1, y1, t1, x2, y2, t2 = _cut_to_same_len(x1, y1, t1, x2, y2, t2)
+            x = np.mean([x1, x2], axis=0)
+            y = np.mean([y1, y2], axis=0)
+            t = t1
+
+        ratemap = sm.rate_map(x, y, t, spike_train)
+        axs[0, 0].imshow(ratemap.T, origin="lower")
+        title = f"grp={group}, unit={unit_name}"
+        if phy_id is not None:
+            title += f", phy_id={phy_id}"
+        title += f", #spikes={spike_train.shape[0]}"
+
+        # spikes and tracking
+        axs[0, 1] = spike_track(x, y, t, spike_train, axs[0, 1], spines=False)
+        axs[0, 1].axis("equal")
+
+        # occupancy
+        occupancymap = sm.occupancy_map(x, y, t)
+        axs[0, 2].imshow(occupancymap.T, origin="lower")
+        axs[0, 2].set_title("occupancy")
+
+        if len(self.spatial_series_selector.value) != 2:
+            axs[0, 3].set_title("Select 2 spatial series for head direction")
+        else:
+            ang, ang_t = head_direction(x1, y1, x2, y2, t1)
+            ang_bin, ang_rate = head_direction_rate(spike_train, ang, ang_t)
+            axs[0, 3].plot(ang_bin, ang_rate)
+            axs[0, 3].set_title("Head direction")
+
+        waveform = self.units.waveform_mean[unit_index]
+        if "waveform_sd" in self.units.colnames:
+            waveform_sd = self.units.waveform_sd[unit_index]
+        else:
+            waveform_sd = None
+        min_max = np.min(waveform), np.max(waveform)
+        for i, wf in enumerate(waveform.T):
+            axs[1, i].plot(waveform[:, i], color="C0")
+            axs[1, i].set_ylim(*min_max)
+            if waveform_sd is not None:
+                wf_sd = waveform_sd[:, i]
+                axs[1, i].fill_between(np.arange(len(wf)), wf - wf_sd, wf + wf_sd, alpha=0.2, color="C0")
+        axs[1, 0].set_ylabel("Mean waveform")
+
+        fig.suptitle(title)
+
+        return axs
+
+
+def get_spatial_series(units):
+    from pynwb.behavior import SpatialSeries
+
+    spatial_series = dict()
+    nwbfile = units.get_ancestor("NWBFile")
+    for item in nwbfile.all_children():
+        if isinstance(item, SpatialSeries):
+            spatial_series[item.name] = item
+    return spatial_series
 
 
 def get_custom_spec():
@@ -349,6 +547,7 @@ def get_custom_spec():
     # add custom widgets
     units_view["Waveforms"] = UnitWaveformsWidget
     units_view["Rate Maps"] = UnitRateMapWidget
+    units_view["Unit Summary"] = UnitSummaryWidget
     units_view.move_to_end("table")
 
     custom_neurodata_vis_spec[Units] = units_view

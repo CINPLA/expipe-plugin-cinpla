@@ -4,7 +4,7 @@ import copy
 
 import click
 
-from expipe_plugin_cinpla.imports import *
+from expipe_plugin_cinpla.tools.imports import *
 
 
 def deep_update(d, other):
