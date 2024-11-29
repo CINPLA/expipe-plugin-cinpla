@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from expipe_plugin_cinpla.data_loader import (
+from expipe_plugin_cinpla.tools.data_loader import (
     get_channel_groups,
     get_data_path,
     load_spiketrains,

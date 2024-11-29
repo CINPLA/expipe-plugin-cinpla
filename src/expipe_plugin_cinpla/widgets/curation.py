@@ -7,7 +7,7 @@ import pandas as pd
 from expipe_plugin_cinpla.scripts import curation
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
 
-from ..utils import dump_project_config
+from ..tools.utils import dump_project_config
 from .utils import BaseViewWithLog, required_values_filled
 
 default_qms = [
@@ -47,19 +47,28 @@ class CurationView(BaseViewWithLog):
         from nwbwidgets import nwb2widget
         from pynwb.misc import Units
 
-        from ..nwbutils.nwbwidgetsunitviewer import (
-            UnitRateMapWidget,
-            UnitWaveformsWidget,
-        )
+        from ..nwbutils.nwbwidgetsunitviewer import UnitSummaryWidget
 
         custom_raw_unit_vis = {
-            Units: OrderedDict({"Raw Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget})
+            Units: OrderedDict(
+                {
+                    "Raw Units": UnitSummaryWidget,
+                }
+            )
         }
         custom_main_unit_vis = {
-            Units: OrderedDict({"Main Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget})
+            Units: OrderedDict(
+                {
+                    "Main Units": UnitSummaryWidget,
+                }
+            )
         }
         custom_curated_unit_vis = {
-            Units: OrderedDict({"Curated Waveforms": UnitWaveformsWidget, "Rate Maps": UnitRateMapWidget})
+            Units: OrderedDict(
+                {
+                    "Curated Units": UnitSummaryWidget,
+                }
+            )
         }
 
         all_actions = project.actions
@@ -87,9 +96,8 @@ class CurationView(BaseViewWithLog):
 
         # 1. Load from Phy
         # 2. Use Quality metrics
-        # 3. Use sortingview
         strategy = ipywidgets.RadioButtons(
-            options=["Phy", "Sortingview", "Quality Metrics"],
+            options=["Phy", "Quality Metrics"],
             description="Curation strategy:",
             disabled=False,
             value="Phy",
@@ -113,24 +121,6 @@ class CurationView(BaseViewWithLog):
             tooltip="Restore unsorted clusters",
             layout={"width": "initial"},
         )
-
-        # Sortingview
-        sv_visualization_link = ipywidgets.Text(
-            value="",
-            placeholder="The Sortingview link will appear here",
-            description="Curation link:",
-            disabled=True,
-            layout={"width": "500px"},
-        )
-        sv_curated_link = ipywidgets.Text(
-            value="",
-            placeholder="Enter the link to the curated sorting here",
-            description="Curated link:",
-            disabled=False,
-            layout={"width": "500px"},
-        )
-        apply_sv_curation = ipywidgets.Button(description="Apply", layout={"width": "200px"})
-        apply_sv_curation.style.button_color = "pink"
 
         # Quality metrics
         qm_thresholds = []
@@ -158,8 +148,6 @@ class CurationView(BaseViewWithLog):
                 restore_phy,
             ]
         )
-
-        sortingview_panel = ipywidgets.VBox([sv_visualization_link, sv_curated_link, apply_sv_curation])
 
         qm_panel = ipywidgets.VBox(
             [
@@ -214,9 +202,7 @@ class CurationView(BaseViewWithLog):
                 if units_main is not None:
                     w = nwb2widget(units_main, custom_main_unit_vis)
                     units_viewers["main"] = w
-                if strategy.value == "Sortingview":
-                    sv_visualization_link.value = self.sorting_curator.get_sortingview_link(sorter_list.value[0])
-                elif strategy.value == "Phy":
+                if strategy.value == "Phy":
                     run_phy_command.value = self.sorting_curator.get_phy_run_command(sorter_list.value[0])
                 units_dropdown.value = "Raw"
                 on_choose_units(None)
@@ -235,10 +221,7 @@ class CurationView(BaseViewWithLog):
                     if units_main is not None:
                         w = nwb2widget(units_main, custom_main_unit_vis)
                         units_viewers["main"] = w
-                    if strategy.value == "Sortingview":
-                        # load visualization link
-                        sv_visualization_link.value = self.sorting_curator.get_sortingview_link(sorter_list.value[0])
-                    elif strategy.value == "Phy":
+                    if strategy.value == "Phy":
                         run_phy_command.value = self.sorting_curator.get_phy_run_command(sorter_list.value[0])
                     units_dropdown.value = "Raw"
                     on_choose_units(None)
@@ -253,23 +236,6 @@ class CurationView(BaseViewWithLog):
                 # check if metrics apply
                 if len(sorter_list.value) == 1:
                     check_metrics(project, actions_list, sorter_list.value[0], qc_metrics)
-            elif change["new"] == "Sortingview":
-                curation_panel.children = [strategy, sortingview_panel]
-                if len(sorter_list.value) == 1:
-                    sv_visualization_link.value = self.sorting_curator.get_sortingview_link(sorter_list.value[0])
-
-        @self.output.capture()
-        def on_curated_link(change):
-            required_values_filled(actions_list, sorter_list, sv_curated_link)
-            if len(sorter_list.value) > 1:
-                print("Select one spike sorting output at a time")
-            else:
-                print(f"Applying curation from {sv_curated_link.value}")
-                self.sorting_curator.apply_sortingview_curation(sorter_list.value[0], sv_curated_link.value)
-                units = self.sorting_curator.construct_curated_units()
-                if units:
-                    w = nwb2widget(units, custom_curated_unit_vis)
-                    units_viewers["curated"] = w
 
         def on_add_metric(change):
             action = project.actions[actions_list.value]
@@ -358,7 +324,6 @@ class CurationView(BaseViewWithLog):
         sorter_list.observe(on_sorter)
         set_default_qms.on_click(on_set_default_qms)
         apply_qm_curation.on_click(on_apply_qm_curation)
-        apply_sv_curation.on_click(on_curated_link)
         units_dropdown.observe(on_choose_units)
 
         add_metric_button.on_click(on_add_metric)

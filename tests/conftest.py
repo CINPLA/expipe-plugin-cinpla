@@ -5,7 +5,7 @@ from pathlib import Path
 import expipe
 import pytest
 
-from expipe_plugin_cinpla.utils import dump_project_config
+from expipe_plugin_cinpla.tools.utils import dump_project_config
 
 TEST_DATA_PATH = Path(__file__).parent / "test_data"
 

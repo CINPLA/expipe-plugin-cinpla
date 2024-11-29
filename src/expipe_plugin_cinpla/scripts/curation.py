@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import json
 import shutil
 import warnings
 
@@ -199,37 +198,6 @@ class SortingCurator:
         phy_path = (self.si_path / sorter / "phy" / "params.py").absolute()
         phy_run_command = f"phy template-gui {phy_path}"
         return phy_run_command
-
-    def get_sortingview_link(self, sorter):
-        visualization_json = self.si_path / sorter / "sortingview_links.json"
-        if not visualization_json.is_file():
-            return "Sorting view link not found."
-        with open(visualization_json) as f:
-            sortingview_links = json.load(f)
-        return sortingview_links["raw"]
-
-    def apply_sortingview_curation(self, sorter, curated_link):
-        import spikeinterface.curation as sc
-
-        sorting_raw = self.load_raw_sorting(sorter)
-        assert sorting_raw is not None, f"Could not load raw sorting for {sorter}."
-        sorting_raw = sorting_raw.save(format="memory")
-
-        # delete NWB-specific properties: id, waveform_mean, and waveform_sd properties
-        sorting_raw.delete_property("waveform_mean")
-        sorting_raw.delete_property("waveform_sd")
-        sorting_raw.delete_property("electrodes")
-
-        curated_link_ = curated_link.replace("%22", '"')
-        curation_str = curated_link_[curated_link_.find("sortingCuration") :]
-        uri = curation_str[curation_str.find("sha1://") : -2]
-        sorting_curated = sc.apply_sortingview_curation(sorting_raw, uri_or_json=uri)
-        # exclude noise
-        good_units = sorting_curated.unit_ids[sorting_curated.get_property("noise") == False]  # noqa E712
-        # create single property for SUA and MUA
-        sorting_curated = sorting_curated.select_units(good_units)
-        self.apply_curation(sorter, sorting_curated)
-        self.curation_description = f"Curation manually performed in Sortingview\nLink: {curated_link}"
 
     def apply_qc_curator(self, sorter, query):
         raw_we = self.load_raw_waveforms(sorter)

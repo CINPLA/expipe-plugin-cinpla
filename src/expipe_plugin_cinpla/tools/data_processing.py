@@ -7,7 +7,7 @@ import expipe
 import numpy as np
 import spatial_maps as sp
 
-from expipe_plugin_cinpla.data_loader import (
+from expipe_plugin_cinpla.tools.data_loader import (
     get_channel_groups,
     get_duration,
     load_epochs,
@@ -140,21 +140,8 @@ def load_head_direction(data_path, sampling_rate, low_pass_frequency, box_size):
 
     x1, y1, t1, x2, y2, t2, stop_time = load_leds(data_path)
 
-    x1, y1, t1 = rm_nans(x1, y1, t1)
-    x2, y2, t2 = rm_nans(x2, y2, t2)
-
-    x1, y1, t1 = filter_t_zero_duration(x1, y1, t1, stop_time)
-    x2, y2, t2 = filter_t_zero_duration(x2, y2, t2, stop_time)
-
-    # OE saves 0.0 when signal is lost, these can be removed
-    x1, y1, t1 = filter_xy_zero(x1, y1, t1)
-    x2, y2, t2 = filter_xy_zero(x2, y2, t2)
-
-    # x1, y1, t1 = filter_xy_box_size(x1, y1, t1, box_size)
-    # x2, y2, t2 = filter_xy_box_size(x2, y2, t2, box_size)
-
-    x1, y1, t1 = interp_filt_position(x1, y1, t1, fs=sampling_rate, f_cut=low_pass_frequency)
-    x2, y2, t2 = interp_filt_position(x2, y2, t2, fs=sampling_rate, f_cut=low_pass_frequency)
+    x1, y1, t1 = process_tracking(x1, y1, t1, stop_time, low_pass_frequency)
+    x2, y2, t2 = process_tracking(x2, y2, t2, stop_time, low_pass_frequency)
 
     x1, y1, t1, x2, y2, t2 = _cut_to_same_len(x1, y1, t1, x2, y2, t2)
 
@@ -164,6 +151,24 @@ def load_head_direction(data_path, sampling_rate, low_pass_frequency, box_size):
     angles, times = head_direction(x1, y1, x2, y2, t1)
 
     return angles, times
+
+
+def process_tracking(x, y, t, stop_time=None, low_pass_frequency=6):
+    xp, yp, tp = rm_nans(x, y, t)
+    if stop_time is None:
+        stop_time = tp[-1]
+
+    xp, yp, tp = filter_t_zero_duration(xp, yp, tp, stop_time)
+
+    # OE saves 0.0 when signal is lost, these can be removed
+    xp, yp, tp = filter_xy_zero(xp, yp, tp)
+
+    sampling_rate = 1 / np.median(np.diff(tp))
+
+    if low_pass_frequency is not None:
+        xp, yp, tp = interp_filt_position(xp, yp, tp, fs=sampling_rate, f_cut=low_pass_frequency)
+
+    return xp, yp, tp
 
 
 def check_valid_tracking(x, y, box_size):

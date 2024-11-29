@@ -28,7 +28,6 @@ def process_ecephys(
     overwrite=False,
     singularity_image=None,
     n_components=3,
-    plot_sortingview=True,
     verbose=True,
 ):
     import warnings
@@ -41,7 +40,6 @@ def process_ecephys(
     import spikeinterface.preprocessing as spre
     import spikeinterface.qualitymetrics as sqm
     import spikeinterface.sorters as ss
-    import spikeinterface.widgets as sw
     from neuroconv.tools.spikeinterface import add_recording
     from pynwb import NWBHDF5IO
 
@@ -279,7 +277,7 @@ def process_ecephys(
         _ = spost.compute_template_metrics(we)
         if verbose:
             print("\tComputing QC metrics")
-        qm = sqm.compute_quality_metrics(we, metric_names=metric_names)
+        _ = sqm.compute_quality_metrics(we, metric_names=metric_names)
 
         if verbose:
             print("\tExporting to phy")
@@ -295,43 +293,6 @@ def process_ecephys(
         )
         # generate files to be used with restore
         utils.generate_phy_restore_files(phy_folder)
-
-        if plot_sortingview:
-            if verbose:
-                print("\tGenerating sortingview link")
-            unit_table_properties = ["group"]
-            if "firing_rate" in qm:
-                we.sorting.set_property("firing_rate", np.round(qm["firing_rate"], 2))
-                unit_table_properties.append("firing_rate")
-            if "amplitude_median" in qm:
-                we.sorting.set_property("amplitude", np.round(qm["amplitude_median"]))
-                unit_table_properties.append("firing_rate")
-            try:
-                w = sw.plot_sorting_summary(
-                    we,
-                    backend="sortingview",
-                    curation=True,
-                    unit_table_properties=["group", "firing_rate", "amplitude"],
-                    label_choices=["SUA", "MUA", "noise"],
-                    figlabel=f"{action_id}-{sorter}",
-                )
-                sorting_summary_url = w.url
-                visualization_dict = dict(raw=sorting_summary_url)
-                # save params in output
-                with open(si_folder / sorter / "sortingview_links.json", "w") as f:
-                    json.dump(visualization_dict, f, indent=4)
-            except Exception as e:
-                print(
-                    f"Could not generate sortingview link, probably due to a wrong configuration. "
-                    f"You can setup sortingview using the following instructions:\n"
-                    "https://spikeinterface.readthedocs.io/en/latest/modules/widgets.html#sorting-view"
-                    f"\nError:\n{e}"
-                )
-                w = None
-            if "firing_rate" in qm:
-                we.sorting.delete_property("firing_rate")
-            if "amplitude_median" in qm:
-                we.sorting.delete_property("amplitude")
 
     if verbose:
         print("\nWriting to NWB")
