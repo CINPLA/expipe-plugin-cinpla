@@ -46,36 +46,26 @@ class CurationView(BaseViewWithLog):
         from nwbwidgets import nwb2widget
         from pynwb.misc import Units
 
-        from ..nwbutils.nwbwidgetsunitviewer import (
-            UnitRateMapWidget,
-            UnitSummaryWidget,
-            UnitWaveformsWidget,
-        )
+        from ..nwbutils.nwbwidgetsunitviewer import UnitSummaryWidget
 
         custom_raw_unit_vis = {
             Units: OrderedDict(
                 {
-                    "Raw Waveforms": UnitWaveformsWidget,
-                    "Rate Maps": UnitRateMapWidget,
-                    "Unit Summary": UnitSummaryWidget,
+                    "Raw Units": UnitSummaryWidget,
                 }
             )
         }
         custom_main_unit_vis = {
             Units: OrderedDict(
                 {
-                    "Main Waveforms": UnitWaveformsWidget,
-                    "Rate Maps": UnitRateMapWidget,
-                    "Unit Summary": UnitSummaryWidget,
+                    "Main Units": UnitSummaryWidget,
                 }
             )
         }
         custom_curated_unit_vis = {
             Units: OrderedDict(
                 {
-                    "Curated Waveforms": UnitWaveformsWidget,
-                    "Rate Maps": UnitRateMapWidget,
-                    "Unit Summary": UnitSummaryWidget,
+                    "Curated Units": UnitSummaryWidget,
                 }
             )
         }
