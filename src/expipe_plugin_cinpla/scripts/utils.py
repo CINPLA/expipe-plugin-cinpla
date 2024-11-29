@@ -236,6 +236,10 @@ def add_units_from_sorting_analyzer(
             wf_mean = template_ext.get_unit_template(unit_id, operator="median")
             wf_sd = template_ext.get_unit_template(unit_id, operator="std")
             channel_indices = sorting_analyzer.sparsity.unit_id_to_channel_indices[unit_id]
+
+            # make template sparse
+            wf_mean = wf_mean[:, channel_indices]
+            wf_sd = wf_sd[:, channel_indices]
             if len(channel_indices) < max_channel_in_group:
                 num_missing_channels = max_channel_in_group - len(channel_indices)
                 wf_mean = np.pad(wf_mean, ((0, 0), (0, num_missing_channels)), operator="constant", constant_values=0)
