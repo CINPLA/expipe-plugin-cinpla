@@ -12,6 +12,7 @@ from .register import (
     register_perfuse_view,
     register_surgery_view,
 )
+from .unittracking import DailyUnitTrackViewer
 from .viewer import NwbViewer
 
 
@@ -48,12 +49,13 @@ def display_browser(project_path):
     for i, title in enumerate(process_tab_tab_titles):
         process_tab.set_title(i, title)
 
-    nwb_viewer_tab = NwbViewer(project)
     curation_tab = CurationView(project)
+    nwb_viewer_tab = NwbViewer(project)
+    track_units_tab = DailyUnitTrackViewer(project)
 
-    tab_titles = ["Register", "Process", "Curation", "View"]
+    tab_titles = ["Register", "Process", "Curation", "View", "Track Units"]
     tab = ipywidgets.Tab()
-    tab.children = [register_tab, process_tab, curation_tab, nwb_viewer_tab]
+    tab.children = [register_tab, process_tab, curation_tab, nwb_viewer_tab, track_units_tab]
     for i, title in enumerate(tab_titles):
         tab.set_title(i, title)
     ipd.display(tab)

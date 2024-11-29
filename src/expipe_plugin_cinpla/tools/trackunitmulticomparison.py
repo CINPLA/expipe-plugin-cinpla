@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import uuid
-from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pylab as plt
@@ -15,9 +14,8 @@ from expipe_plugin_cinpla.tools.data_loader import (
     get_data_path,
     load_spiketrains,
 )
-
-from .track_units_tools import plot_template
-from .trackunitcomparison import TrackingSession
+from expipe_plugin_cinpla.tools.track_units_tools import plot_template
+from expipe_plugin_cinpla.tools.trackunitcomparison import TrackingSession
 
 
 class TrackMultipleSessions:
@@ -89,7 +87,8 @@ class TrackMultipleSessions:
 
         self.comparisons = []
         N = len(self.action_list)
-        pbar = self._pbar(total=int((N**2 - N) / 2))
+        if self._pbar is not None:
+            pbar = self._pbar(total=int((N**2 - N) / 2))
         for i in range(N):
             for j in range(i + 1, N):
                 if self._verbose:
@@ -104,8 +103,10 @@ class TrackMultipleSessions:
                 )
                 # comp.save_dissimilarity_matrix()
                 self.comparisons.append(comp)
-                pbar.update(1)
-        pbar.close()
+                if pbar is not None:
+                    pbar.update(1)
+        if pbar is not None:
+            pbar.close()
 
     def make_graphs_from_matches(self):
         """
@@ -143,6 +144,8 @@ class TrackMultipleSessions:
 
             # the graph is symmetrical
             self.graphs[ch] = self.graphs[ch].to_undirected()
+
+        self.remove_edges_with_duplicate_actions()
 
     def compute_time_delta_edges(self):
         """
@@ -274,9 +277,9 @@ class TrackMultipleSessions:
 
                 average_dissimilarity = np.mean([d["weight"] for _, _, d in edges])
 
-                original_ids = defaultdict(list)
+                original_ids = dict()
                 for node in node_set:
-                    original_ids[graph.nodes[node]["action_id"]].append(graph.nodes[node]["unit_id"])
+                    original_ids[graph.nodes[node]["action_id"]] = graph.nodes[node]["unit_id"]
 
                 self._new_units[unit_id] = {
                     "average_dissimilarity": average_dissimilarity,
@@ -351,15 +354,14 @@ class TrackMultipleSessions:
             id_ax = 0
             for unit, avg_dsim in units:
                 axs = None
-                for action_id, unit_ids in unit.items():
-                    for unit_id in unit_ids:
-                        label = f"{action_id} Unit {unit_id} {avg_dsim:.2f}"
-                        template = self.load_template(action_id, ch_group, unit_id)
-                        if template is None:
-                            print(f'Unable to plot "{unit_id}" from action "{action_id}" ch group "{ch_group}"')
-                            continue
-                        # print(f'plotting {action_id}, {ch_group}, {unit_id}')
-                        axs = plot_template(template, fig=fig, gs=gs[id_ax], axs=axs, label=label)
+                for action_id, unit_id in unit.items():
+                    label = f"{action_id} Unit {unit_id} {avg_dsim:.2f}"
+                    template = self.load_template(action_id, ch_group, unit_id)
+                    if template is None:
+                        print(f'Unable to plot "{unit_id}" from action "{action_id}" ch group "{ch_group}"')
+                        continue
+                    # print(f'plotting {action_id}, {ch_group}, {unit_id}')
+                    axs = plot_template(template, fig=fig, gs=gs[id_ax], axs=axs, label=label)
                 id_ax += 1
                 plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
             fig.suptitle("Channel group " + str(ch_group))
