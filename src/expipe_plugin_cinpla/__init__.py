@@ -10,7 +10,7 @@ import importlib.metadata
 
 from .cli import CinplaPlugin
 from .scripts import convert_old_project
-from .tools import DataProcessor
+from .tools.data_processing import DataProcessor
 from .tools.project_loader import ProjectLoader
 from .widgets import display_browser
 
