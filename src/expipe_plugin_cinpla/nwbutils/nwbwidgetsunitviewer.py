@@ -341,7 +341,7 @@ class UnitSummaryWidget(widgets.VBox):
         self.spatial_series_selector = widgets.SelectMultiple(
             options=sorted(list(self.spatial_series.keys())),
             disabled=False,
-            layout=dict(width="200px", display="flex", justify_content="flex-start"),
+            layout=dict(width="400px", display="flex", justify_content="flex-start"),
         )
         if len(self.spatial_series) == 2:
             self.spatial_series_selector.value = list(self.spatial_series.keys())
@@ -354,7 +354,6 @@ class UnitSummaryWidget(widgets.VBox):
             layout=dict(width="200px", display="flex", justify_content="flex-start"),
         )
 
-        self.unit_name_text = widgets.Label("Unit:    ", layout=dict(width="200px"))
         unit_info_text = "Group:     "
         if "original_cluster_id" in self.units.colnames:
             unit_info_text += " - Phy ID:      "
@@ -374,13 +373,20 @@ class UnitSummaryWidget(widgets.VBox):
             description="Bin size:",
         )
 
-        spatial_series_label = widgets.Label("Spatial Series:")
+        spatial_series_label = widgets.Label("Spatial Series:", layout=dict(width="400px", justify_content="flex-end"))
         top_panel = widgets.VBox(
             [
-                self.unit_list,
-                self.unit_name_text,
-                self.unit_info_text,
-                widgets.HBox([spatial_series_label, self.spatial_series_selector]),
+                widgets.HBox(
+                    [
+                        widgets.VBox(
+                            [
+                                self.unit_list,
+                                self.unit_info_text,
+                            ]
+                        ),
+                        widgets.HBox([spatial_series_label, self.spatial_series_selector]),
+                    ]
+                ),
                 widgets.HBox([self.smoothing_slider, self.bin_size_slider]),
             ]
         )
@@ -401,10 +407,7 @@ class UnitSummaryWidget(widgets.VBox):
         self.on_unit_change(None)
 
     def on_unit_change(self, change):
-        unit_name = self.units["unit_name"][self.unit_list.value]
         unit_group = self.units["group"][self.unit_list.value]
-
-        self.unit_name_text.value = f"Unit: {unit_name}"
         unit_info_text = f"Group: {unit_group}"
         if "original_cluster_id" in self.units.colnames:
             unit_info_text += f" - Phy ID: {int(self.units['original_cluster_id'][self.unit_list.value])}"
@@ -441,7 +444,7 @@ class UnitSummaryWidget(widgets.VBox):
             smoothing=self.smoothing_slider.value,
         )
 
-        fig, axs = plt.subplots(nrows=2, ncols=4)
+        fig, axs = plt.subplots(nrows=2, ncols=4, figsize=(12, 7))
         axs[0, 3].remove()
         axs[0, 3] = plt.subplot(244, projection="polar")
 
@@ -451,7 +454,6 @@ class UnitSummaryWidget(widgets.VBox):
             phy_id = int(self.units["original_cluster_id"][unit_index])
         else:
             phy_id = None
-        unit_name = self.units["unit_name"][unit_index]
 
         # ratemap
         if len(self.spatial_series_selector.value) == 1:
@@ -464,6 +466,7 @@ class UnitSummaryWidget(widgets.VBox):
             spatial_series1 = self.spatial_series[self.spatial_series_selector.value[0]]
             x1, y1 = spatial_series1.data[:].T
             t1 = spatial_series1.timestamps[:]
+            x1, y1, t1 = process_tracking(x1, y1, t1)
             spatial_series2 = self.spatial_series[self.spatial_series_selector.value[1]]
             x2, y2 = spatial_series2.data[:].T
             t2 = spatial_series2.timestamps[:]
@@ -475,19 +478,26 @@ class UnitSummaryWidget(widgets.VBox):
 
         ratemap = sm.rate_map(x, y, t, spike_train)
         axs[0, 0].imshow(ratemap.T, origin="lower")
-        title = f"grp={group}, unit={unit_name}"
+        title = f"grp={group}"
         if phy_id is not None:
             title += f", phy_id={phy_id}"
         title += f", #spikes={spike_train.shape[0]}"
+        axs[0, 0].axis("equal")
+        axs[0, 0].set_title("Rate map")
+        axs[0, 0].axis("off")
 
         # spikes and tracking
         axs[0, 1] = spike_track(x, y, t, spike_train, axs[0, 1], spines=False)
         axs[0, 1].axis("equal")
+        axs[0, 1].set_title("Spike track")
+        axs[0, 1].axis("off")
 
         # occupancy
         occupancymap = sm.occupancy_map(x, y, t)
         axs[0, 2].imshow(occupancymap.T, origin="lower")
-        axs[0, 2].set_title("occupancy")
+        axs[0, 2].axis("equal")
+        axs[0, 2].set_title("Occupancy")
+        axs[0, 2].axis("off")
 
         if len(self.spatial_series_selector.value) != 2:
             axs[0, 3].set_title("Select 2 spatial series for head direction")
@@ -502,15 +512,23 @@ class UnitSummaryWidget(widgets.VBox):
             waveform_sd = self.units.waveform_sd[unit_index]
         else:
             waveform_sd = None
-        min_max = np.min(waveform), np.max(waveform)
+        min_y, max_y = 0, 0
         for i, wf in enumerate(waveform.T):
-            axs[1, i].plot(waveform[:, i], color="C0")
-            axs[1, i].set_ylim(*min_max)
+            ax = axs[1, i]
+            ax.plot(waveform[:, i], color="C0")
+            ylim = ax.get_ylim()
+            min_y = min([min_y, ylim[0]])
+            max_y = max([max_y, ylim[1]])
             if waveform_sd is not None:
                 wf_sd = waveform_sd[:, i]
-                axs[1, i].fill_between(np.arange(len(wf)), wf - wf_sd, wf + wf_sd, alpha=0.2, color="C0")
-        axs[1, 0].set_ylabel("Mean waveform")
-
+                ax.fill_between(np.arange(len(wf)), wf - wf_sd, wf + wf_sd, alpha=0.2, color="C0")
+            if i != 0:
+                ax.axis("off")
+            else:
+                ax.spines[["top", "right", "bottom"]].set_visible(False)
+        for ax in axs[1]:
+            ax.set_ylim(min_y, max_y)
+        axs[1, 0].set_ylabel("Mean waveform ($\\mu V$)")
         fig.suptitle(title)
 
         return axs
@@ -545,8 +563,6 @@ def get_custom_spec():
         units_view.pop("Combined")
 
     # add custom widgets
-    units_view["Waveforms"] = UnitWaveformsWidget
-    units_view["Rate Maps"] = UnitRateMapWidget
     units_view["Unit Summary"] = UnitSummaryWidget
     units_view.move_to_end("table")
 
