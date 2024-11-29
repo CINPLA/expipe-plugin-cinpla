@@ -9,9 +9,9 @@
 import importlib.metadata
 
 from .cli import CinplaPlugin
-from .project_loader import ProjectLoader
 from .scripts import convert_old_project
 from .tools import DataProcessor
+from .tools.project_loader import ProjectLoader
 from .widgets import display_browser
 
 __version__ = importlib.metadata.version(__package__)
