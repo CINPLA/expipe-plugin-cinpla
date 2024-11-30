@@ -17,17 +17,18 @@ classifiers = [
 
 dependencies = [
     "expipe>=0.6.0",
-    "neuroconv>=0.4.6,<0.5.0",
+    "neuroconv>=0.5.0",
     "pyopenephys>=1.2.0",
-    "spikeinterface[full,widgets]>=0.100.0,<0.101.0",
-    "scikit-learn<1.5.0",
-    "pynwb>=2.5.0",
+    "spikeinterface[full,widgets]>=0.101.2",
+    "scikit-learn>=1.5.0",
+    "pynwb>=2.8.0",
     "ipywidgets>=8.1.1",
     "nwbwidgets>=0.11.3",
     "tbb>=2021.11.0; platform_system != 'Darwin'",
     "pynapple>=0.5.1",
     "lxml",
-    "spatial_maps"
+    "spatial-maps",
+    "head-direction"
 ]
 
 [project.urls]

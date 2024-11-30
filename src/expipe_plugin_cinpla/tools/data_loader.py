@@ -73,9 +73,12 @@ def view_active_channels(action, sorter):
     sorter_path = path.parent / "spikeinterface" / sorter
     if not sorter_path.is_dir():
         raise ValueError(f"Action {action.id} has not been sorted with {sorter}")
-    waveforms_folder = sorter_path / "waveforms"
-    we = si.load_waveforms(waveforms_folder, with_recording=False)
-    return we.channel_ids
+    if (sorter_path / "waveforms").is_dir():
+        waveforms_folder = sorter_path / "waveforms"
+        analyzer = si.load_waveforms(waveforms_folder, output="SortingAnalyzer")
+    else:
+        analyzer = si.load_sorting_analyzer(sorter_path / "analyzer")
+    return analyzer.channel_ids
 
 
 def load_leds(data_path):
