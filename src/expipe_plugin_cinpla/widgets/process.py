@@ -75,7 +75,7 @@ def process_ecephys_view(project):
     sorter_param = ParameterSelectList(
         description="Spike sorting options",
         param_dict=sorter_initial_params,
-        layout={"width": "initial", "height": f"{30 * num_params}px", "overflow": "scroll"},
+        layout={"width": "initial", "height": f"{10 * num_params}px", "overflow": "scroll"},
     )
     sorter_param.layout.visibility = "hidden"
 

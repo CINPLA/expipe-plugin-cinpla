@@ -2,7 +2,6 @@
 from collections import OrderedDict
 
 import ipywidgets
-import pandas as pd
 
 from expipe_plugin_cinpla.scripts import curation
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
@@ -238,12 +237,10 @@ class CurationView(BaseViewWithLog):
                     check_metrics(project, actions_list, sorter_list.value[0], qc_metrics)
 
         def on_add_metric(change):
-            action = project.actions[actions_list.value]
-            si_path = _get_data_path(action).parent / "spikeinterface"
             selected_sorters = sorter_list.value
             assert len(selected_sorters) == 1, "Select one sorter"
-            qm_csv = si_path / selected_sorters[0] / "waveforms" / "quality_metrics" / "metrics.csv"
-            selected_qm = pd.read_csv(qm_csv, index_col=0)
+            analyzer = self.sorting_curator.load_raw_analyzer(selected_sorters[0])
+            selected_qm = analyzer.get_extension("quality_metrics").get_data()
             qc_metrics.children += (QualityThreshold(qm_names=list(selected_qm.columns)),)
 
         def on_remove_metric(change):
@@ -315,6 +312,10 @@ class CurationView(BaseViewWithLog):
         def on_save_to_nwb(change):
             required_values_filled(sorter_list, actions_list)
             self.sorting_curator.save_to_nwb()
+            units_main = self.sorting_curator.load_main_units()
+            if units_main is not None:
+                w = nwb2widget(units_main, custom_main_unit_vis)
+                units_viewers["main"] = w
 
         actions_list.observe(on_action)
         load_from_phy.on_click(on_load_phy)
@@ -336,10 +337,10 @@ class CurationView(BaseViewWithLog):
 
 
 def check_metrics(project, actions_list, sorter, qm_panel):
-    action = project.actions[actions_list.value]
-    si_path = _get_data_path(action).parent / "spikeinterface"
-    qm_csv = si_path / sorter / "waveforms" / "quality_metrics" / "metrics.csv"
-    qm_table = pd.read_csv(qm_csv, index_col=0)
+    sorting_curator = curation.SortingCurator(project)
+    sorting_curator.set_action(actions_list.value)
+    analyzer = sorting_curator.load_raw_analyzer(sorter)
+    qm_table = analyzer.get_extension("quality_metrics").get_data()
 
     valid_children = []
     for qm in qm_panel.children:

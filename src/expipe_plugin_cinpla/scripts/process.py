@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import contextlib
 import json
+import os
 import shutil
 import time
 
@@ -36,14 +37,13 @@ def process_ecephys(
     import spikeinterface.curation as sc
     import spikeinterface.exporters as sexp
     import spikeinterface.extractors as se
-    import spikeinterface.postprocessing as spost
     import spikeinterface.preprocessing as spre
     import spikeinterface.qualitymetrics as sqm
     import spikeinterface.sorters as ss
     from neuroconv.tools.spikeinterface import add_recording
     from pynwb import NWBHDF5IO
 
-    from .utils import add_units_from_waveform_extractor, compute_and_set_unit_groups
+    from .utils import add_units_from_sorting_analyzer, compute_and_set_unit_groups
 
     warnings.filterwarnings("ignore")
 
@@ -124,6 +124,8 @@ def process_ecephys(
         print(f"\nPreprocessing recording:\n\tNum channels: {recording.get_num_channels()}\n\tDuration: {duration} s")
     si_folder = nwb_path.parent / "spikeinterface"
     output_base_folder = si_folder / sorter
+    if output_base_folder.is_dir():
+        shutil.rmtree(output_base_folder)
 
     freq_min_hp = 300
     freq_max_hp = 3000
@@ -207,7 +209,7 @@ def process_ecephys(
                     sorting = ss.run_sorter_by_property(
                         sorter,
                         recording_cmr,
-                        working_folder=output_folder,
+                        folder=output_folder,
                         grouping_property="group",
                         verbose=False,
                         delete_output_folder=True,
@@ -219,7 +221,7 @@ def process_ecephys(
                     sorting = ss.run_sorter(
                         sorter,
                         recording_cmr,
-                        output_folder=output_folder,
+                        folder=output_folder,
                         verbose=False,
                         delete_output_folder=True,
                         remove_existing_folder=True,
@@ -245,7 +247,6 @@ def process_ecephys(
         # extract waveforms
         if verbose:
             print("\nPostprocessing")
-            print("\tExtracting waveforms")
         # if not sort by group, extract dense and estimate group
         if "group" not in sorting.get_property_keys():
             compute_and_set_unit_groups(sorting, recording_cmr)
@@ -254,30 +255,36 @@ def process_ecephys(
         if sparsity_temp_folder.is_dir():
             shutil.rmtree(sparsity_temp_folder)
 
-        we = si.extract_waveforms(
-            recording_cmr,
+        sorting_analyzer = si.create_sorting_analyzer(
             sorting,
-            folder=output_base_folder / "waveforms",
+            recording_cmr,
+            format="binary_folder",
+            folder=output_base_folder / "analyzer",
             overwrite=True,
-            ms_before=ms_before,
-            ms_after=ms_after,
-            sparsity_temp_folder=sparsity_temp_folder,
             sparse=True,
-            max_spikes_per_unit=None,
             method="by_property",
             by_property="group",
         )
 
-        _ = spost.compute_spike_amplitudes(we)
-        _ = spost.compute_unit_locations(we)
-        _ = spost.compute_correlograms(we)
-        _ = spost.compute_template_similarity(we)
-        _ = spost.compute_isi_histograms(we)
-        _ = spost.compute_principal_components(we, n_components=n_components)
-        _ = spost.compute_template_metrics(we)
+        if verbose:
+            print("\tComputing extensions")
+        extension_list = {
+            "noise_levels": {},
+            "random_spikes": {},
+            "waveforms": {"ms_before": ms_before, "ms_after": ms_after},
+            "templates": {"operators": ["average", "std", "median"]},
+            "spike_amplitudes": {},
+            "unit_locations": {},
+            "correlograms": {},
+            "template_similarity": {},
+            "isi_histograms": {},
+            "principal_components": {"n_components": n_components},
+            "template_metrics": {},
+        }
+        sorting_analyzer.compute(extension_list, n_jobs=-1, progress_bar=False)
         if verbose:
             print("\tComputing QC metrics")
-        _ = sqm.compute_quality_metrics(we, metric_names=metric_names)
+        _ = sqm.compute_quality_metrics(sorting_analyzer, metric_names=metric_names)
 
         if verbose:
             print("\tExporting to phy")
@@ -285,7 +292,7 @@ def process_ecephys(
         if phy_folder.is_dir():
             shutil.rmtree(phy_folder)
         sexp.export_to_phy(
-            we,
+            sorting_analyzer,
             output_folder=phy_folder,
             copy_binary=True,
             use_relative_path=True,
@@ -304,8 +311,8 @@ def process_ecephys(
                 if verbose:
                     print("\tAdding units table")
 
-                add_units_from_waveform_extractor(
-                    we=we,
+                add_units_from_sorting_analyzer(
+                    sorting_analyzer=sorting_analyzer,
                     nwbfile=nwbfile_out,
                     unit_table_name=f"RawUnits-{sorter}",
                     unit_table_description=f"Raw units from {sorter} output",
@@ -361,9 +368,16 @@ def process_ecephys(
     with open(output_base_folder / "recording_cmr" / "provenance.json") as f:
         provenance = json.load(f)
     provenance_str = json.dumps(provenance)
-    provenance_str = provenance_str.replace("main_tmp.nwb", "main.nwb")
+    provenance_str = provenance_str.replace("../../../main_tmp.nwb", str(nwb_path))
+    provenance_str = provenance_str.replace('"relative_paths": true', '"relative_paths": false')
     preprocessed_file = output_base_folder / "preprocessed.json"
     preprocessed_file.write_text(provenance_str)
+    # update analyzer path
+    analyer_recording_str = provenance_str.replace(
+        str(nwb_path), os.path.relpath(nwb_path, str(output_base_folder / "analyzer"))
+    )
+    analyzer_recording_json = output_base_folder / "analyzer" / "recording.json"
+    analyzer_recording_json.write_text(analyer_recording_str)
     if (output_base_folder / "recording_cmr").is_dir():
         shutil.rmtree(output_base_folder / "recording_cmr")
     try:

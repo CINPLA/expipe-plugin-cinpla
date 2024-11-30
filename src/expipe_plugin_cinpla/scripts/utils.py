@@ -213,28 +213,40 @@ def register_templates(action, templates, overwrite=False):
                 raise e
 
 
-def add_units_from_waveform_extractor(
-    we, nwbfile, unit_table_name, unit_table_description, write_in_processing_module=False, write_electrodes_column=True
+def add_units_from_sorting_analyzer(
+    sorting_analyzer,
+    nwbfile,
+    unit_table_name,
+    unit_table_description,
+    write_in_processing_module=False,
+    write_electrodes_column=True,
 ):
     from neuroconv.tools.spikeinterface import add_units_table
 
-    sorting = we.sorting
-    sorting.register_recording(we.recording)
+    sorting = sorting_analyzer.sorting
+    sorting.register_recording(sorting_analyzer.recording)
     # Take care of uneven sparsity
-    if "group" in we.sorting.get_property_keys():
+    if "group" in sorting_analyzer.sorting.get_property_keys():
         waveform_means, waveform_sds, unit_electrode_indices = [], [], []
-        max_channel_in_group = np.max([rec.get_num_channels() for rec in we.recording.split_by("group").values()])
-        for unit_id in we.unit_ids:
-            wf_mean = we.get_template(unit_id, mode="median")
-            wf_sd = we.get_template(unit_id, mode="std")
-            channel_indices = we.sparsity.unit_id_to_channel_indices[unit_id]
+        max_channel_in_group = np.max(
+            [rec.get_num_channels() for rec in sorting_analyzer.recording.split_by("group").values()]
+        )
+        template_ext = sorting_analyzer.get_extension("templates")
+        for unit_id in sorting_analyzer.unit_ids:
+            wf_mean = template_ext.get_unit_template(unit_id, operator="median")
+            wf_sd = template_ext.get_unit_template(unit_id, operator="std")
+            channel_indices = sorting_analyzer.sparsity.unit_id_to_channel_indices[unit_id]
+
+            # make template sparse
+            wf_mean = wf_mean[:, channel_indices]
+            wf_sd = wf_sd[:, channel_indices]
             if len(channel_indices) < max_channel_in_group:
                 num_missing_channels = max_channel_in_group - len(channel_indices)
-                wf_mean = np.pad(wf_mean, ((0, 0), (0, num_missing_channels)), mode="constant", constant_values=0)
-                wf_sd = np.pad(wf_sd, ((0, 0), (0, num_missing_channels)), mode="constant", constant_values=0)
+                wf_mean = np.pad(wf_mean, ((0, 0), (0, num_missing_channels)), operator="constant", constant_values=0)
+                wf_sd = np.pad(wf_sd, ((0, 0), (0, num_missing_channels)), operator="constant", constant_values=0)
                 max_index = np.max(channel_indices)
                 # add fake missing channel indices
-                if max_index < len(we.channel_ids) - num_missing_channels:
+                if max_index < len(sorting_analyzer.channel_ids) - num_missing_channels:
                     channel_indices = list(channel_indices) + list(
                         range(max_index + 1, max_index + num_missing_channels + 1)
                     )
@@ -245,21 +257,23 @@ def add_units_from_waveform_extractor(
             waveform_sds.append(wf_sd)
             unit_electrode_indices.append(list(channel_indices))
     else:
-        waveform_means = we.get_all_templates()
-        waveform_sds = we.get_all_templates(mode="std")
-        channel_indices = np.array([list(we.channel_ids).index(ch) for ch in we.channel_ids])
-        unit_electrode_indices = [channel_indices] * len(we.unit_ids)
+        waveform_means = template_ext.get_templates()
+        waveform_sds = template_ext.get_all_templates(mode="std")
+        channel_indices = np.array(
+            [list(sorting_analyzer.channel_ids).index(ch) for ch in sorting_analyzer.channel_ids]
+        )
+        unit_electrode_indices = [channel_indices] * len(sorting_analyzer.unit_ids)
 
     if not write_electrodes_column:
         unit_electrode_indices = None
 
     # Add QM and TM properties to add to NWB Units table
-    if we.has_extension("quality_metrics"):
-        qm = we.load_extension("quality_metrics").get_data()
+    if sorting_analyzer.has_extension("quality_metrics"):
+        qm = sorting_analyzer.get_extension("quality_metrics").get_data()
         for metric in qm.columns:
             sorting.set_property(metric, qm[metric].values)
-    if we.has_extension("template_metrics"):
-        tm = we.load_extension("template_metrics").get_data()
+    if sorting_analyzer.has_extension("template_metrics"):
+        tm = sorting_analyzer.get_extension("template_metrics").get_data()
         for metric in tm.columns:
             sorting.set_property(metric, tm[metric].values)
 
@@ -292,8 +306,9 @@ def compute_and_set_unit_groups(sorting, recording):
         sorting.set_property("group", np.zeros(len(sorting.unit_ids), dtype="int64"))
     else:
         if "group" not in sorting.get_property_keys():
-            we_mem = si.extract_waveforms(recording, sorting, folder=None, mode="memory", sparse=False)
-            extremum_channel_indices = si.get_template_extremum_channel(we_mem, outputs="index")
+            sorting_analyzer = si.create_sorting_analyzer(sorting, recording, sparse=False)
+            sorting_analyzer.compute(["random_spikes", "templates"], progress_bar=False)
+            extremum_channel_indices = si.get_template_extremum_channel(sorting_analyzer, outputs="index")
             unit_groups = recording.get_channel_groups()[np.array(list(extremum_channel_indices.values()))]
             sorting.set_property("group", unit_groups)
         else:
@@ -302,10 +317,9 @@ def compute_and_set_unit_groups(sorting, recording):
             unit_ids_without_group = np.array(sorting.unit_ids)[np.where(unit_groups == "nan")[0]]
             if len(unit_ids_without_group) > 0:
                 sorting_no_group = sorting.select_units(unit_ids=unit_ids_without_group)
-                we_mem = si.extract_waveforms(
-                    recording, sorting_no_group, folder=None, mode="memory", sparse=False, progress_bar=False
-                )
-                extremum_channel_indices = si.get_template_extremum_channel(we_mem, outputs="index")
+                sorting_analyzer = si.create_sorting_analyzer(sorting_no_group, recording, sparse=False)
+                sorting_analyzer.compute(["random_spikes", "templates"], progress_bar=False)
+                extremum_channel_indices = si.get_template_extremum_channel(sorting_analyzer, outputs="index")
                 unit_groups[sorting.ids_to_indices(unit_ids_without_group)] = recording.get_channel_groups()[
                     np.array(list(extremum_channel_indices.values()))
                 ]
