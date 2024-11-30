@@ -3,8 +3,8 @@ import h5py
 import ipywidgets
 import matplotlib.pyplot as plt
 import numpy as np
-import tqdm.auto as tqdm
 from pynwb import NWBHDF5IO
+from tqdm.auto import tqdm
 
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
 from expipe_plugin_cinpla.tools.project_loader import ProjectLoader
@@ -12,34 +12,28 @@ from expipe_plugin_cinpla.tools.project_loader import ProjectLoader
 from .utils import BaseViewWithLog
 
 
-# TODO: make 2 tabs, one for tracking and one for plotting
 class DailyUnitTrackViewer(ipywidgets.Tab):
 
     def __init__(self, project):
         project_loader = ProjectLoader(project.path)
         df_meta = project_loader.metadata
         entities = project_loader.entities
-        entity_selector = ipywidgets.SelectMultiple(
+        entity_selector_compute = ipywidgets.SelectMultiple(
             options=entities,
-            values=entities,
             description="Entities",
         )
+        entity_selector_compute.value = entity_selector_compute.options
         dates = list(np.unique(df_meta["date"]))
-
         # Create widgets for compute tab
-        date_selector = ipywidgets.SelectMultiple(
+        date_selector_compute = ipywidgets.SelectMultiple(
             options=dates,
-            values=dates,
             description="Dates",
         )
-        dissimilarity = ipywidgets.FloatText(
-            value=0.1,
-            description="Dissimilarity threshold",
-        )
+        date_selector_compute.value = date_selector_compute.options
+        dissimilarity_label = ipywidgets.Label("Dissimilarity threshold", layout=dict(width="300px"))
+        dissimilarity = ipywidgets.FloatText(value=0.1, description="", layout=dict(width="300px"))
 
-        track_units_button = ipywidgets.Button(
-            description="Track Units", layout={"height": "50px", "width": "50%"}, style={"button_color": "pink"}
-        )
+        track_units_button = ipywidgets.Button(description="Track Units", layout={"height": "50px", "width": "50%"})
         track_units_label = ipywidgets.Button(
             description="Status: Ready",
             disabled=True,
@@ -47,45 +41,78 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
             style={"button_color": "green"},
         )
         track_box = ipywidgets.HBox([track_units_button, track_units_label])
-        save_to_nwb_button = ipywidgets.Button(
-            description="Save to NWB", layout={"height": "50px", "width": "50%"}, style={"button_color": "pink"}
-        )
 
         main_box_compute = ipywidgets.VBox(
-            [ipywidgets.HBox([entity_selector, date_selector]), dissimilarity, track_box, save_to_nwb_button]
+            [
+                ipywidgets.HBox([entity_selector_compute, date_selector_compute]),
+                dissimilarity_label,
+                dissimilarity,
+                track_box,
+            ]
         )
 
-        view_compute = BaseViewWithLog(self, main_box=main_box_compute, project=project)
+        view_compute = BaseViewWithLog(main_box=main_box_compute, project=project)
 
         # Create widgets for plot tab
+        entity_selector_view = ipywidgets.Dropdown(
+            options=entities,
+            description="Entities",
+        )
+        # Create widgets for compute tab
+        date_selector_view = ipywidgets.Dropdown(
+            options=(),
+            description="Dates",
+        )
+
+        save_selected_nwb_button = ipywidgets.Button(
+            description="Save selected matches to NWB",
+            layout={"height": "50px", "width": "50%"},
+            style={"button_color": "pink"},
+        )
+        save_all_nwb_button = ipywidgets.Button(
+            description="Save all matches to NWB",
+            layout={"height": "50px", "width": "50%"},
+            style={"button_color": "pink"},
+        )
+
         output = ipywidgets.Output()
         with output:
             self.figure = plt.figure(figsize=(10, 10))
             plt.show()
 
-        matched_units = ipywidgets.SelectMultiple(
+        matched_units = ipywidgets.Dropdown(
             options=[],
             description="Matched units",
         )
-        main_box_plot = ipywidgets.VBox([matched_units, output])
+        main_box_plot = ipywidgets.VBox(
+            [
+                ipywidgets.HBox([entity_selector_view, date_selector_view]),
+                ipywidgets.HBox([save_selected_nwb_button, save_all_nwb_button]),
+                matched_units,
+                output,
+            ]
+        )
 
-        view_plot = BaseViewWithLog(self, main_box=main_box_plot, project=project)
+        view_plot = BaseViewWithLog(main_box=main_box_plot, project=project)
 
+        # this is shared across tabs
         self.unit_matching = {}
 
-        @self.output.capture()
+        @view_compute.output.capture()
         def on_track_units(change):
             from ..tools.trackunitmulticomparison import TrackMultipleSessions
 
             df_meta_selected = df_meta[
-                df_meta["entity"].isin(entity_selector.value) & df_meta["date"].isin(date_selector.value)
+                df_meta["entity"].isin(entity_selector_compute.value)
+                & df_meta["date"].isin(date_selector_compute.value)
             ]
             g_by_entity_date = df_meta_selected.groupby(["entity", "date"])
-            print(f"Processing {len(g_by_entity_date)} days")
+            print(f"Processing {len(g_by_entity_date.groups)} days")
             track_units_label.description = "Status: Processing"
             track_units_label.style.button_color = "yellow"
 
-            for g_names, g_df in tqdm(g_by_entity_date, desc="Identyfing units"):
+            for g_name in tqdm(g_by_entity_date.groups, desc="Identyfing units"):
+                g_df = g_by_entity_date.get_group(g_name)
                 unit_matching = TrackMultipleSessions(
                     project.actions,
                     action_list=g_df["action_id"].tolist(),
@@ -102,13 +129,32 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 unit_matching.remove_edges_above_threshold("weight", dissimilarity.value)
                 unit_matching.identify_units()
 
-                self.unit_matching[g_names] = unit_matching
+                self.unit_matching[g_name] = unit_matching
 
             track_units_label.description = "Status: Done"
             track_units_label.style.button_color = "green"
 
-        @self.output.capture()
-        def save_to_nwb():
+        def on_entity_view_change(change):
+            entity = change["new"]
+            dates = df_meta[df_meta["entity"] == entity]["date"].unique()
+            date_selector_view.options = dates
+
+        @view_plot.output.capture()
+        def on_date_view_change(change):
+            entity = entity_selector_view.value
+            date = change["new"]
+            unit_matching = self.unit_matching.get((entity, date))
+            if unit_matching is None:
+                print(f"No matching found for {entity} on {date}")
+            else:
+                matched_units_options = []
+                for group in unit_matching.identified_units:
+                    identified_units_in_group = unit_matching.identified_units[group]
+                    matched_units_options.extend(list(identified_units_in_group.keys()))
+                matched_units.options = matched_units_options
+
+        @view_plot.output.capture()
+        def save_all_to_nwb():
             for _, unit_matching in self.unit_matching.items():
                 for action in unit_matching.actions_list:
                     nwb_path = _get_data_path(self.action)
@@ -144,8 +190,27 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                     units.create_dataset("daily_unique_id", data=daily_ids, dtype="U16")
                     f.close()
 
+        @view_plot.output.capture()
+        def save_selected_to_nwb():
+            pass
+
+        def plot_matched_units(change):
+            entity = entity_selector_view.value
+            date = date_selector_view.value
+            unit_matching = self.unit_matching.get((entity, date))
+            if unit_matching is None:
+                print(f"No matching found for {entity} on {date}")
+            else:
+                unit_id = matched_units.value
+                unit_dict = unit_matching.identified_units[unit_id]
+                unit_matching.plot_unit(unit_dict)
+
+        entity_selector_view.observe(on_entity_view_change, names="value")
+        date_selector_view.observe(on_date_view_change, names="value")
+        matched_units.observe(plot_matched_units, names="value")
         track_units_button.on_click(on_track_units)
-        save_to_nwb_button.on_click(save_to_nwb)
+        save_selected_nwb_button.on_click(save_selected_to_nwb)
+        save_all_nwb_button.on_click(save_all_to_nwb)
 
         super().__init__(children=(view_compute, view_plot))
         self.titles = ["Compute", "Plot"]
