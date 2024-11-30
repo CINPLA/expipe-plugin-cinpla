@@ -4,12 +4,12 @@ import warnings
 import numpy as np
 import pyopenephys
 from neuroconv import BaseDataInterface
-from neuroconv.utils import FolderPathType
+from pydantic import DirectoryPath
 from pynwb.behavior import Position, SpatialSeries
 
 
 class OpenEphysTrackingInterface(BaseDataInterface):
-    def __init__(self, folder_path: FolderPathType):
+    def __init__(self, folder_path: DirectoryPath):
         """ """
         openephys_file = pyopenephys.File(str(folder_path))
         experiments = openephys_file.experiments

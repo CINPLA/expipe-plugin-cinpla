@@ -7,7 +7,6 @@ import networkx as nx
 import numpy as np
 import yaml
 from matplotlib import gridspec
-from tqdm import tqdm
 
 from expipe_plugin_cinpla.tools.data_loader import (
     get_channel_groups,
@@ -69,7 +68,7 @@ class TrackMultipleSessions:
         self._actions = actions
         self.channel_groups = channel_groups
         self._verbose = verbose
-        self._pbar = tqdm if progress_bar is None else progress_bar
+        self._pbar = progress_bar
         self._templates = {}
         if self.channel_groups is None:
             dp = get_data_path(self._actions[self.action_list[0]])
