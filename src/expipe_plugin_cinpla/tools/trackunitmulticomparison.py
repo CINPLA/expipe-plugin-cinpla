@@ -88,6 +88,8 @@ class TrackMultipleSessions:
         N = len(self.action_list)
         if self._pbar is not None:
             pbar = self._pbar(total=int((N**2 - N) / 2))
+        else:
+            pbar = None
         for i in range(N):
             for j in range(i + 1, N):
                 if self._verbose:
