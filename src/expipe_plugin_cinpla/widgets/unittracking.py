@@ -75,9 +75,14 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
             style={"button_color": "pink"},
         )
 
-        output = ipywidgets.Output()
-        with output:
-            self.figure = plt.figure(figsize=(10, 10))
+        output_waveforms = ipywidgets.Output()
+        with output_waveforms:
+            self.figure_waveforms = plt.figure(figsize=(7, 10))
+            plt.show()
+
+        output_ratemaps = ipywidgets.Output()
+        with output_ratemaps:
+            self.figure_ratemaps = plt.figure(figsize=(7, 10))
             plt.show()
 
         matched_units = ipywidgets.Dropdown(
@@ -89,7 +94,8 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 ipywidgets.HBox([entity_selector_view, date_selector_view]),
                 ipywidgets.HBox([save_selected_nwb_button, save_all_nwb_button]),
                 matched_units,
-                output,
+                output_waveforms,
+                output_ratemaps,
             ]
         )
 
@@ -156,8 +162,9 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
         @view_plot.output.capture()
         def save_all_to_nwb():
             for _, unit_matching in self.unit_matching.items():
-                for action in unit_matching.actions_list:
-                    nwb_path = _get_data_path(self.action)
+                for action_id in unit_matching.actions_list:
+                    action = self.project.actions[action_id]
+                    nwb_path = _get_data_path(action)
                     io = NWBHDF5IO(nwb_path, mode="r")
                     nwbfile = io.read()
                     unit_ids = list(nwbfile.units.id[:])
@@ -167,7 +174,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                     for group in unit_matching.identified_units:
                         identified_units_in_group = unit_matching.identified_units[group]
                         for unique_unit, unit_dict in identified_units_in_group.items():
-                            original_unit_id = unit_dict["original_unit_ids"].get(action)
+                            original_unit_id = unit_dict["original_unit_ids"].get(action_id)
                             if action is not None:
                                 unit_index = unit_ids.index(original_unit_id)
                                 daily_ids[unit_index] = f"d_{unique_unit}"
@@ -202,8 +209,8 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 print(f"No matching found for {entity} on {date}")
             else:
                 unit_id = matched_units.value
-                unit_dict = unit_matching.identified_units[unit_id]
-                unit_matching.plot_unit(unit_dict)
+                plot_unit_templates(self.project, unit_matching, unit_id, fig=self.figure_waveforms)
+                plot_rate_maps(self.project, unit_matching, unit_id, fig=self.figure_ratemaps)
 
         entity_selector_view.observe(on_entity_view_change, names="value")
         date_selector_view.observe(on_date_view_change, names="value")
@@ -214,3 +221,64 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
 
         super().__init__(children=(view_compute, view_plot))
         self.titles = ["Compute", "Plot"]
+
+
+def plot_unit_templates(project, unit_matching, unit_id, fig):
+    identified_units = unit_matching.identified_units
+    unit_dict = None
+    for ch_group in identified_units:
+        units = identified_units[ch_group]
+        if unit_id in units:
+            unit_dict = units[unit_id]
+            break
+    if unit_dict is None:
+        print(f"Unit {unit_id} not found in identified units")
+    else:
+        fig.clear()
+        axs = fig.subplots(num_cols=len(unit_dict["original_unit_ids"]))
+        for i, (action_id, original_unit_id) in enumerate(unit_dict["original_unit_ids"].items()):
+            ax = axs[i]
+            template = unit_matching.load_template(action_id, ch_group, original_unit_id)
+            if template is None:
+                print(f'Unable to plot "{unit_id}" from action "{action_id}" ch group "{ch_group}"')
+                continue
+            ax.plot(template, label=f"{original_unit_id}")
+        ax.legend()
+        fig.suptitle(f"Unit {unit_id} on channel group {ch_group}")
+        fig.canvas.draw()
+
+
+def plot_rate_maps(project, unit_matching, unit_id, fig):
+    from spatial_maps import SpatialMap
+
+    from ..tools.data_processing import load_spiketrains, load_tracking
+
+    identified_units = unit_matching.identified_units
+    unit_dict = None
+    for ch_group in identified_units:
+        units = identified_units[ch_group]
+        if unit_id in units:
+            unit_dict = units[unit_id]
+            break
+    if unit_dict is None:
+        print(f"Unit {unit_id} not found in identified units")
+    else:
+        fig.clear()
+        axs = fig.subplots(num_cols=len(unit_dict["original_unit_ids"]))
+        original_unit_ids = unit_dict["original_unit_ids"]
+        action_ids = sorted(list(original_unit_ids.keys()))
+        sm = SpatialMap()
+        for i, action_id in enumerate(action_ids):
+            ax = axs[i]
+            original_unit_id = original_unit_ids[action_id]
+            action = project.actions[action_id]
+            nwb_path = _get_data_path(action)
+            x, y, t, _ = load_tracking(nwb_path)
+            spike_trains = load_spiketrains(nwb_path)
+            unit_names = [st.annotations["name"] for st in spike_trains]
+            if original_unit_id in unit_names:
+                spike_train = spike_trains[unit_names.index(original_unit_id)]
+                ratemap = sm.rate_map(x, y, t, spike_train)
+                ax.imshow(ratemap.T, origin="lower")
+            ax.set_title(action_id)
+            ax.axis("off")
