@@ -242,8 +242,8 @@ def add_units_from_sorting_analyzer(
             wf_sd = wf_sd[:, channel_indices]
             if len(channel_indices) < max_channel_in_group:
                 num_missing_channels = max_channel_in_group - len(channel_indices)
-                wf_mean = np.pad(wf_mean, ((0, 0), (0, num_missing_channels)), operator="constant", constant_values=0)
-                wf_sd = np.pad(wf_sd, ((0, 0), (0, num_missing_channels)), operator="constant", constant_values=0)
+                wf_mean = np.pad(wf_mean, ((0, 0), (0, num_missing_channels)), mode="constant", constant_values=0)
+                wf_sd = np.pad(wf_sd, ((0, 0), (0, num_missing_channels)), mode="constant", constant_values=0)
                 max_index = np.max(channel_indices)
                 # add fake missing channel indices
                 if max_index < len(sorting_analyzer.channel_ids) - num_missing_channels:
@@ -258,7 +258,7 @@ def add_units_from_sorting_analyzer(
             unit_electrode_indices.append(list(channel_indices))
     else:
         waveform_means = template_ext.get_templates()
-        waveform_sds = template_ext.get_all_templates(mode="std")
+        waveform_sds = template_ext.get_all_templates(operator="std")
         channel_indices = np.array(
             [list(sorting_analyzer.channel_ids).index(ch) for ch in sorting_analyzer.channel_ids]
         )
