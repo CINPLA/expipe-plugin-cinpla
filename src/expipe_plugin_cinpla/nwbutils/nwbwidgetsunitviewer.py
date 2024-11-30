@@ -481,7 +481,7 @@ class UnitSummaryWidget(widgets.VBox):
         title = f"grp={group}"
         if phy_id is not None:
             title += f", phy_id={phy_id}"
-        title += f", #spikes={spike_train.shape[0]}"
+        title += f", #spikes={len(spike_train)}"
         axs[0, 0].axis("equal")
         axs[0, 0].set_title("Rate map")
         axs[0, 0].axis("off")
