@@ -125,7 +125,10 @@ class SortingCurator:
 
     def load_processed_recording(self, sorter):
         preprocessed_json = self.si_path / sorter / "preprocessed.json"
-        recording = si.load_extractor(preprocessed_json)
+        try:
+            recording = si.load_extractor(preprocessed_json)
+        except Exception:
+            recording = si.load_extractor(preprocessed_json, base_folder=self.si_path / sorter / "recording_cmr")
         return recording
 
     def load_raw_analyzer(self, sorter):
@@ -246,7 +249,7 @@ class SortingCurator:
             nwbfile_out = io.read()
             print("Adding curated units table")
             add_units_from_sorting_analyzer(
-                we=self.curated_analyzer,
+                sorting_analyzer=self.curated_analyzer,
                 nwbfile=nwbfile_out,
                 unit_table_name="units",
                 unit_table_description=self.curation_description,

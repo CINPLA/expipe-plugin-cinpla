@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import contextlib
 import json
+import os
 import shutil
 import time
 
@@ -367,12 +368,13 @@ def process_ecephys(
     with open(output_base_folder / "recording_cmr" / "provenance.json") as f:
         provenance = json.load(f)
     provenance_str = json.dumps(provenance)
-    provenance_str = provenance_str.replace("../../../main.nwb", str(nwb_path))
+    provenance_str = provenance_str.replace("../../../main_tmp.nwb", str(nwb_path))
+    provenance_str = provenance_str.replace('"relative_paths": true', '"relative_paths": false')
     preprocessed_file = output_base_folder / "preprocessed.json"
     preprocessed_file.write_text(provenance_str)
     # update analyzer path
     analyer_recording_str = provenance_str.replace(
-        str(nwb_path), str(nwb_path.relative_to(output_base_folder / "analyzer"))
+        str(nwb_path), os.path.relpath(nwb_path, str(output_base_folder / "analyzer"))
     )
     analyzer_recording_json = output_base_folder / "analyzer" / "recording.json"
     analyzer_recording_json.write_text(analyer_recording_str)

@@ -312,6 +312,10 @@ class CurationView(BaseViewWithLog):
         def on_save_to_nwb(change):
             required_values_filled(sorter_list, actions_list)
             self.sorting_curator.save_to_nwb()
+            units_main = self.sorting_curator.load_main_units()
+            if units_main is not None:
+                w = nwb2widget(units_main, custom_main_unit_vis)
+                units_viewers["main"] = w
 
         actions_list.observe(on_action)
         load_from_phy.on_click(on_load_phy)
