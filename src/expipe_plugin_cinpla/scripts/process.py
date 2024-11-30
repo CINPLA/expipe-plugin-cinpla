@@ -123,6 +123,8 @@ def process_ecephys(
         print(f"\nPreprocessing recording:\n\tNum channels: {recording.get_num_channels()}\n\tDuration: {duration} s")
     si_folder = nwb_path.parent / "spikeinterface"
     output_base_folder = si_folder / sorter
+    if output_base_folder.is_dir():
+        shutil.rmtree(output_base_folder)
 
     freq_min_hp = 300
     freq_max_hp = 3000
@@ -365,9 +367,15 @@ def process_ecephys(
     with open(output_base_folder / "recording_cmr" / "provenance.json") as f:
         provenance = json.load(f)
     provenance_str = json.dumps(provenance)
-    provenance_str = provenance_str.replace("main_tmp.nwb", "main.nwb")
+    provenance_str = provenance_str.replace("../../../main.nwb", str(nwb_path))
     preprocessed_file = output_base_folder / "preprocessed.json"
     preprocessed_file.write_text(provenance_str)
+    # update analyzer path
+    analyer_recording_str = provenance_str.replace(
+        str(nwb_path), str(nwb_path.relative_to(output_base_folder / "analyzer"))
+    )
+    analyzer_recording_json = output_base_folder / "analyzer" / "recording.json"
+    analyzer_recording_json.write_text(analyer_recording_str)
     if (output_base_folder / "recording_cmr").is_dir():
         shutil.rmtree(output_base_folder / "recording_cmr")
     try:
