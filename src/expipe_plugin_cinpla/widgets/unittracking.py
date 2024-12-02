@@ -63,12 +63,10 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
         save_selected_nwb_button = ipywidgets.Button(
             description="Save selected matches to NWB",
             layout={"height": "50px", "width": "50%"},
-            style={"primary"},
         )
         save_all_nwb_button = ipywidgets.Button(
             description="Save all matches to NWB",
             layout={"height": "50px", "width": "50%"},
-            style={"primary"},
         )
         plot_button = ipywidgets.Button(
             description="Plot templates and maps", layout={"height": "50px", "width": "100%"}
