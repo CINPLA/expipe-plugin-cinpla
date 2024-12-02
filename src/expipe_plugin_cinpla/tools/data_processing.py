@@ -185,7 +185,7 @@ def check_valid_tracking(x, y, box_size):
         )
 
 
-def load_tracking(data_path, low_pass_frequency=6, box_size=1, velocity_threshold=5):
+def load_tracking(data_path, low_pass_frequency=6, box_size=[1, 1], velocity_threshold=5):
     x1, y1, t1, x2, y2, t2, stop_time = load_leds(data_path)
     x1, y1, t1 = rm_nans(x1, y1, t1)
     x2, y2, t2 = rm_nans(x2, y2, t2)
@@ -303,7 +303,6 @@ class DataProcessor:
         if action_id not in self._tracking:
             x, y, t, speed = load_tracking(
                 self.data_path(action_id),
-                sampling_rate=self.params["position_sampling_rate"],
                 low_pass_frequency=self.params["position_low_pass_frequency"],
                 box_size=self.params["box_size"],
             )

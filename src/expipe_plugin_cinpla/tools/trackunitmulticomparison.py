@@ -168,6 +168,14 @@ class TrackMultipleSessions:
             for n0, n1 in graph.edges():
                 action_id_0 = graph.nodes[n0]["action_id"]
                 action_id_1 = graph.nodes[n1]["action_id"]
+                if "channel_group_location" not in self._actions[action_id_0].modules:
+                    continue
+                if "channel_group_location" not in self._actions[action_id_1].modules:
+                    continue
+                if "depth" not in self._actions[action_id_0].modules:
+                    continue
+                if "depth" not in self._actions[action_id_1].modules:
+                    continue
                 loc_0 = self._actions[action_id_0].modules["channel_group_location"][ch_num]
                 loc_1 = self._actions[action_id_1].modules["channel_group_location"][ch_num]
                 assert loc_0 == loc_1
@@ -350,7 +358,9 @@ class TrackMultipleSessions:
             if num_units == 0:
                 print(f"Zero units found on channel group {ch_group}")
                 continue
+
             fig = plt.figure(figsize=(figsize[0], figsize[1] * num_units))
+
             gs = gridspec.GridSpec(num_units, 1)
             id_ax = 0
             for unit, avg_dsim in units:

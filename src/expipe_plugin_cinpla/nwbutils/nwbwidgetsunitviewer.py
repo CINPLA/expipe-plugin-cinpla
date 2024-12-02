@@ -357,6 +357,8 @@ class UnitSummaryWidget(widgets.VBox):
         unit_info_text = "Group:     "
         if "original_cluster_id" in self.units.colnames:
             unit_info_text += " - Phy ID:      "
+        if "daily_unit_id" in self.units.colnames:
+            unit_info_text += " - Daily ID:      "
         self.unit_info_text = widgets.Label(unit_info_text, layout=dict(width="90%"))
         self.smoothing_slider = widgets.FloatSlider(
             value=0.03,
@@ -411,6 +413,8 @@ class UnitSummaryWidget(widgets.VBox):
         unit_info_text = f"Group: {unit_group}"
         if "original_cluster_id" in self.units.colnames:
             unit_info_text += f" - Phy ID: {int(self.units['original_cluster_id'][self.unit_list.value])}"
+        if "daily_unit_id" in self.units.colnames:
+            unit_info_text += f" - Daily ID: {str(self.units['daily_unit_id'][self.unit_list.value])}"
         self.unit_info_text.value = unit_info_text
 
     def show_unit_summary(self, unit_index, spatial_series_selector=None, smoothing_slider=None, bin_size_slider=None):
@@ -522,10 +526,14 @@ class UnitSummaryWidget(widgets.VBox):
             if waveform_sd is not None:
                 wf_sd = waveform_sd[:, i]
                 ax.fill_between(np.arange(len(wf)), wf - wf_sd, wf + wf_sd, alpha=0.2, color="C0")
+                min_y -= np.max(wf_sd)
+                max_y += np.max(wf_sd)
             if i != 0:
                 ax.axis("off")
             else:
                 ax.spines[["top", "right", "bottom"]].set_visible(False)
+                ax.set_xticklabels([])
+                ax.set_xticks([])
         for ax in axs[1]:
             ax.set_ylim(min_y, max_y)
         axs[1, 0].set_ylabel("Mean waveform ($\\mu V$)")
