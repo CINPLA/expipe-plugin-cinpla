@@ -97,7 +97,7 @@ def save_to_nwb(project_loader, action_id, unit_matching):
         else:
             # directly overwrite hdf5
             f = h5py.File(nwb_path_tmp, mode="r+")
-            f["units"]["daily_unit_id"] = [u.encode("utf-8") for u in daily_ids]
+            f["units"]["daily_unit_id"][:] = [u.encode("utf-8") for u in daily_ids]
         nwb_path.unlink()
         shutil.copy(nwb_path_tmp, nwb_path)
     except Exception as e:
