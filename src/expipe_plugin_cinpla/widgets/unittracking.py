@@ -96,6 +96,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
 
         @view_compute.output.capture()
         def on_track_units(change):
+            original_color = track_units_button.style.button_color
             track_units_button.style.button_color = "yellow"
             self.unit_matching = track_units(
                 project_loader,
@@ -103,7 +104,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 date_selector_compute.value,
                 dissimilarity.value,
             )
-            track_units_button.button_style = "primary"
+            track_units_button.style.button_color = original_color
 
         def on_entity_view_change(change):
             entity = change["new"]
@@ -123,10 +124,13 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
 
         @view_plot.output.capture()
         def on_plot_button(change):
+            original_color = plot_button.style.button_color
             plot_button.style.button_color = "yellow"
             plot_matched_units()
-            main_box_plot.children = main_box_plot.children + [output_waveforms, output_ratemaps]
-            plot_button.button_style = "primary"
+            view_plot.children = (
+                list(view_plot.children[:-2]) + [output_waveforms, output_ratemaps] + list(view_plot.children[-2:])
+            )
+            plot_button.style.button_color = original_color
 
         def on_hide_plot_button(change):
             main_box_plot.children = main_box_plot.children[:-2]
@@ -134,6 +138,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
         @view_plot.output.capture()
         def save_all_to_nwb(change):
             print("Saving all matches to NWB")
+            original_color = save_all_nwb_button.style.button_color
             save_all_nwb_button.style.button_color = "yellow"
             for _, unit_matching in self.unit_matching.items():
                 for action_id in unit_matching.action_list:
@@ -143,12 +148,13 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                         action_id,
                         unit_matching,
                     )
-            save_all_nwb_button.button_style = "primary"
+            save_all_nwb_button.style.button_color = original_color
             print("Done!")
 
         @view_plot.output.capture()
         def save_selected_to_nwb(change):
             print("Saving selected entities/dates to NWB")
+            original_color = save_selected_nwb_button.style.button_color
             save_selected_nwb_button.style.button_color = "yellow"
             for _, unit_matching in self.unit_matching.items():
                 for action_id in unit_matching.action_list:
@@ -160,7 +166,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                             unit_matching,
                         )
             print("Done!")
-            save_selected_nwb_button.button_style = "primary"
+            save_selected_nwb_button.style.button_color = original_color
 
         def plot_matched_units():
             entity = entity_selector_view.value
@@ -169,7 +175,6 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
             if unit_matching is None:
                 print(f"No matching found for {entity} on {date}")
             else:
-                print(f"Plotting templates and ratemaps for {entity} - {date}. Be patient!")
                 figure_waveforms, _ = plt.subplots(figsize=(10, 5))
                 plot_unit_templates(self.project_loader, unit_matching, fig=figure_waveforms)
                 # unit_matching.plot_matches(fig=figure_waveforms)
@@ -183,7 +188,6 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 with output_ratemaps:
                     figure_ratemaps.show()
                     show_inline_matplotlib_plots()
-                print("Plotting complete")
 
         entity_selector_view.observe(on_entity_view_change, names="value")
         date_selector_view.observe(on_date_view_change, names="value")
