@@ -159,6 +159,12 @@ class SortingCurator:
             # if "group" is not available or some missing groups, extract dense and estimate group
             compute_and_set_unit_groups(curated_sorting, recording)
 
+            # load extension params from previously computed raw analyzer
+            raw_analyzer = self.load_raw_analyzer(sorter)
+            ms_before = raw_analyzer.get_extension("waveforms").params["ms_before"]
+            ms_after = raw_analyzer.get_extension("waveforms").params["ms_after"]
+            n_components = raw_analyzer.get_extension("principal_components").params["n_components"]
+
             self.curated_analyzer = si.create_sorting_analyzer(
                 curated_sorting,
                 recording,
@@ -166,11 +172,17 @@ class SortingCurator:
                 method="by_property",
                 by_property="group",
             )
-            print("Extracting waveforms on curated sorting")
-            self.curated_analyzer.compute(["random_spikes", "waveforms", "templates"], n_jobs=-1, progress_bar=False)
-            # recompute PC, template and quality metrics
-            print("Recomputing PC, template and quality metrics")
-            self.curated_analyzer.compute(["principal_components", "template_metrics"])
+            print("Recomputing extensions")
+
+            extension_list = {
+                "noise_levels": {},
+                "random_spikes": {},
+                "waveforms": {"ms_before": ms_before, "ms_after": ms_after},
+                "templates": {"operators": ["average", "std", "median"]},
+                "principal_components": {"n_components": n_components},
+                "template_metrics": {},
+            }
+            self.curated_analyzer.compute(extension_list, n_jobs=-1, progress_bar=False)
             metric_names = []
             for property_name in curated_sorting.get_property_keys():
                 for metric_str in metric_metric_str_to_si_metric_name:
