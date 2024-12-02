@@ -103,7 +103,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 date_selector_compute.value,
                 dissimilarity.value,
             )
-            track_units_button.style = "primary"
+            track_units_button.button_style = "primary"
 
         def on_entity_view_change(change):
             entity = change["new"]
@@ -126,7 +126,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
             plot_button.style.button_color = "yellow"
             plot_matched_units()
             main_box_plot.children = main_box_plot.children + [output_waveforms, output_ratemaps]
-            plot_button.style = "primary"
+            plot_button.button_style = "primary"
 
         def on_hide_plot_button(change):
             main_box_plot.children = main_box_plot.children[:-2]
@@ -143,7 +143,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                         action_id,
                         unit_matching,
                     )
-            save_all_nwb_button.style.button_color = "primary"
+            save_all_nwb_button.button_style = "primary"
             print("Done!")
 
         @view_plot.output.capture()
@@ -160,7 +160,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                             unit_matching,
                         )
             print("Done!")
-            save_selected_nwb_button.style.button_color = "primary"
+            save_selected_nwb_button.button_style = "primary"
 
         def plot_matched_units():
             entity = entity_selector_view.value
