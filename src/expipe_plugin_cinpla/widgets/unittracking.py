@@ -63,12 +63,12 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
         save_selected_nwb_button = ipywidgets.Button(
             description="Save selected matches to NWB",
             layout={"height": "50px", "width": "50%"},
-            style={"button_color": "primary"},
+            style={"primary"},
         )
         save_all_nwb_button = ipywidgets.Button(
             description="Save all matches to NWB",
             layout={"height": "50px", "width": "50%"},
-            style={"button_color": "primary"},
+            style={"primary"},
         )
         plot_button = ipywidgets.Button(
             description="Plot templates and maps", layout={"height": "50px", "width": "100%"}
@@ -105,7 +105,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 date_selector_compute.value,
                 dissimilarity.value,
             )
-            track_units_button.style.button_color = "primary"
+            track_units_button.style = "primary"
 
         def on_entity_view_change(change):
             entity = change["new"]
@@ -128,7 +128,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
             plot_button.style.button_color = "yellow"
             plot_matched_units()
             main_box_plot.children = main_box_plot.children + [output_waveforms, output_ratemaps]
-            plot_button.style.button_color = "primary"
+            plot_button.style = "primary"
 
         def on_hide_plot_button(change):
             main_box_plot.children = main_box_plot.children[:-2]
