@@ -175,10 +175,15 @@ class CurationView(BaseViewWithLog):
             options=["Raw", "Main", "Curated"],
             description="Display:",
             disabled=False,
-            layout={"width": "500px"},
+            layout={"width": "50%"},
             value="Raw",
         )
         load_status = ipywidgets.Label(value="Units not loaded", layout={"width": "100%"})
+        load_status = ipywidgets.Button(
+            description="Status: Units not loaded",
+            disabled=True,
+            layout={"height": "50px", "width": "50%"},
+        )
         units_col = ipywidgets.VBox([ipywidgets.HBox([units_dropdown, load_status]), units_number, units_placeholder])
 
         curation_box = ipywidgets.HBox([actions_panel, curation_panel], layout={"width": "100%"})
