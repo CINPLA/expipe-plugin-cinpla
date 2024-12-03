@@ -71,9 +71,11 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
         plot_button = ipywidgets.Button(
             description="Plot templates and maps", layout={"height": "50px", "width": "100%"}
         )
-        hide_plot_button = ipywidgets.Button(description="Hide plots", layout={"height": "50px", "width": "100%"})
+        show_hide_plot_button = ipywidgets.Button(
+            description="Show/Hide plots", layout={"height": "50px", "width": "100%"}
+        )
 
-        buttons_box = ipywidgets.HBox([plot_button, hide_plot_button])
+        buttons_box = ipywidgets.HBox([plot_button, show_hide_plot_button])
 
         output_waveforms = ipywidgets.Output(layout={"height": "600px", "overflow": "scroll"})
         output_ratemaps = ipywidgets.Output(layout={"height": "600px", "overflow": "scroll"})
@@ -132,7 +134,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
             )
             plot_button.style.button_color = original_color
 
-        def on_hide_plot_button(change):
+        def on_show_hide_plot_button(change):
             main_box_plot.children = main_box_plot.children[:-2]
 
         @view_plot.output.capture()
@@ -176,7 +178,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 print(f"No matching found for {entity} on {date}")
             else:
                 figure_waveforms, _ = plt.subplots(figsize=(10, 5))
-                plot_unit_templates(self.project_loader, unit_matching, fig=figure_waveforms)
+                plot_unit_templates(unit_matching, fig=figure_waveforms)
                 # unit_matching.plot_matches(fig=figure_waveforms)
                 output_waveforms.clear_output()
                 with output_waveforms:
@@ -195,7 +197,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
         save_selected_nwb_button.on_click(save_selected_to_nwb)
         save_all_nwb_button.on_click(save_all_to_nwb)
         plot_button.on_click(on_plot_button)
-        hide_plot_button.on_click(on_hide_plot_button)
+        show_hide_plot_button.on_click(on_show_hide_plot_button)
 
         super().__init__(children=(view_compute, view_plot))
         self.titles = ["Compute", "Plot"]

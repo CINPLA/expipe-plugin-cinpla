@@ -2,7 +2,6 @@
 import shutil
 import warnings
 
-import h5py
 import numpy as np
 from pynwb import NWBHDF5IO
 from tqdm.auto import tqdm
@@ -77,27 +76,21 @@ def save_to_nwb(project_loader, action_id, unit_matching):
             original_unit_id = unit_dict["original_unit_ids"].get(action_id)
             if original_unit_id is not None:
                 unit_index = unit_ids.index(str(original_unit_id))
-                daily_ids[unit_index] = f"d_{unique_unit}"
+                daily_ids[unit_index] = unique_unit
 
     try:
-        has_daily_unit_ids = False
-        with NWBHDF5IO(str(nwb_path_tmp), mode="r") as io:
+        with NWBHDF5IO(str(nwb_path_tmp), mode="a") as io:
             nwbfile = io.read()
             if "daily_unit_id" in nwbfile.units.colnames:
-                has_daily_unit_ids = True
-                print("Overwriting existing daily unit IDs")
-
-        if not has_daily_unit_ids:
-            with NWBHDF5IO(str(nwb_path_tmp), mode="a") as io:
-                nwbfile = io.read()
+                print("Overwriting existing daily_unit_id column")
+                daily_units_vector = nwbfile.units["daily_unit_id"]
+                daily_units_vector.data[:] = daily_ids
+                daily_units_vector.set_modified(True)
+            else:
                 nwbfile.add_unit_column(
                     name="daily_unit_id", description="Unique unid ID over same day", data=daily_ids
                 )
-                io.write(nwbfile)
-        else:
-            # directly overwrite hdf5
-            f = h5py.File(nwb_path_tmp, mode="r+")
-            f["units"]["daily_unit_id"][:] = [u.encode("utf-8") for u in daily_ids]
+            io.write(nwbfile)
         nwb_path.unlink()
         shutil.copy(nwb_path_tmp, nwb_path)
     except Exception as e:
@@ -105,7 +98,7 @@ def save_to_nwb(project_loader, action_id, unit_matching):
         nwb_path_tmp.unlink()
 
 
-def plot_unit_templates(project_loader, unit_matching, fig, unit_id=None):
+def plot_unit_templates(unit_matching, fig):
     fig.clear()
     identified_units = unit_matching.identified_units
     num_matches = sum([len(matches) for g, matches in identified_units.items()])
@@ -151,7 +144,7 @@ def plot_unit_templates(project_loader, unit_matching, fig, unit_id=None):
     fig.subplots_adjust(hspace=0.3, wspace=0.3, right=0.9)
 
 
-def plot_rate_maps(project_loader, unit_matching, fig, unit_id=None):
+def plot_rate_maps(project_loader, unit_matching, fig):
     from spatial_maps import SpatialMap
 
     from ..tools.data_processing import load_spiketrains, load_tracking
