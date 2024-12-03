@@ -135,7 +135,7 @@ def filter_t_zero_duration(x, y, t, duration):
     return [np.delete(a, idxs) for a in [x, y, t]]
 
 
-def load_head_direction(data_path, sampling_rate, low_pass_frequency, box_size):
+def load_head_direction(data_path, low_pass_frequency, box_size):
     from head_direction.head import head_direction
 
     x1, y1, t1, x2, y2, t2, stop_time = load_leds(data_path)
@@ -185,7 +185,7 @@ def check_valid_tracking(x, y, box_size):
         )
 
 
-def load_tracking(data_path, sampling_rate, low_pass_frequency, box_size, velocity_threshold=5):
+def load_tracking(data_path, low_pass_frequency=6, box_size=[1, 1], velocity_threshold=5):
     x1, y1, t1, x2, y2, t2, stop_time = load_leds(data_path)
     x1, y1, t1 = rm_nans(x1, y1, t1)
     x2, y2, t2 = rm_nans(x2, y2, t2)
@@ -207,6 +207,7 @@ def load_tracking(data_path, sampling_rate, low_pass_frequency, box_size, veloci
     # remove velocity artifacts
     x, y, t = velocity_filter(x, y, t, velocity_threshold)
 
+    sampling_rate = 1 / np.median(np.diff(t))
     x, y, t = interp_filt_position(x, y, t, fs=sampling_rate, f_cut=low_pass_frequency)
 
     check_valid_tracking(x, y, box_size)
@@ -302,7 +303,6 @@ class DataProcessor:
         if action_id not in self._tracking:
             x, y, t, speed = load_tracking(
                 self.data_path(action_id),
-                sampling_rate=self.params["position_sampling_rate"],
                 low_pass_frequency=self.params["position_low_pass_frequency"],
                 box_size=self.params["box_size"],
             )

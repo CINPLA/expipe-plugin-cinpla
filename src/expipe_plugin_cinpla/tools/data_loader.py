@@ -260,12 +260,6 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
     spiketrains: list of NEO spike trains
         The spike trains
     """
-    # from pynwb import NWBHDF5IO
-
-    # get the session start time
-    # TODO: are io and nwbfile needed?
-    # io = NWBHDF5IO(str(data_path), "r")
-    # nwbfile = io.read()
     recording = se.read_nwb_recording(str(data_path), electrical_series_path="acquisition/ElectricalSeries")
     sorting = se.read_nwb_sorting(str(data_path), electrical_series_path="acquisition/ElectricalSeries")
 

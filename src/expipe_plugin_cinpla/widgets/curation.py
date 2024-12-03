@@ -87,9 +87,14 @@ class CurationView(BaseViewWithLog):
         )
         sorter_list = ipywidgets.SelectMultiple(description="Spike sorters", options=[], layout={"width": "initial"})
         run_save = ipywidgets.Button(
-            description="Save as NWB Units", layout={"width": "initial"}, tooltip="Save curated units to NWB file."
+            description="Save as NWB Units", layout={"width": "100%"}, tooltip="Save curated units to NWB file."
         )
         run_save.style.button_color = "pink"
+        load_status = ipywidgets.Button(
+            description="Status: Units not loaded",
+            disabled=True,
+            layout={"width": "100%"},
+        )
 
         # curation strategies
 
@@ -138,7 +143,9 @@ class CurationView(BaseViewWithLog):
         apply_qm_curation.style.button_color = "pink"
         qc_controls = ipywidgets.HBox([add_metric_button, remove_metric_button, set_default_qms, apply_qm_curation])
 
-        actions_panel = ipywidgets.VBox([actions_list, sorter_list, run_save])
+        actions_panel = ipywidgets.VBox([actions_list, sorter_list])
+
+        buttons_panel = ipywidgets.HBox([load_status, run_save])
 
         phy_panel = ipywidgets.VBox(
             [
@@ -175,13 +182,13 @@ class CurationView(BaseViewWithLog):
             options=["Raw", "Main", "Curated"],
             description="Display:",
             disabled=False,
-            layout={"width": "500px"},
+            layout={"width": "50%"},
             value="Raw",
         )
         units_col = ipywidgets.VBox([units_dropdown, units_number, units_placeholder])
 
         curation_box = ipywidgets.HBox([actions_panel, curation_panel], layout={"width": "100%"})
-        main_box = ipywidgets.VBox([curation_box, units_col])
+        main_box = ipywidgets.VBox([curation_box, buttons_panel, units_col])
         super().__init__(main_box=main_box, project=project)
 
         self.sorting_curator = curation.SortingCurator(project)
@@ -192,19 +199,15 @@ class CurationView(BaseViewWithLog):
             si_path = _get_data_path(action).parent / "spikeinterface"
             sorters = [p.name for p in si_path.iterdir() if p.is_dir()]
             sorter_list.options = sorters
-            if len(sorter_list.value) == 1:
-                units_raw = self.sorting_curator.load_raw_units(sorter_list.value[0])
-                if units_raw is not None:
-                    w = nwb2widget(units_raw, custom_raw_unit_vis)
-                    units_viewers["raw"] = w
-                units_main = self.sorting_curator.load_main_units()
-                if units_main is not None:
-                    w = nwb2widget(units_main, custom_main_unit_vis)
-                    units_viewers["main"] = w
-                if strategy.value == "Phy":
-                    run_phy_command.value = self.sorting_curator.get_phy_run_command(sorter_list.value[0])
-                units_dropdown.value = "Raw"
-                on_choose_units(None)
+            units_dropdown.value = "Raw"
+            sorter_list.value = []
+            units_number.value = "Number of units: "
+            load_status.description = "Units not loaded"
+            units_col.children = [units_dropdown, units_number, units_placeholder]
+            units_main = self.sorting_curator.load_main_units()
+            if units_main is not None:
+                w = nwb2widget(units_main, custom_main_unit_vis)
+                units_viewers["main"] = w
 
         def on_sorter(change):
             required_values_filled(actions_list)
@@ -216,10 +219,6 @@ class CurationView(BaseViewWithLog):
                     if units_raw is not None:
                         w = nwb2widget(units_raw, custom_raw_unit_vis)
                         units_viewers["raw"] = w
-                    units_main = self.sorting_curator.load_main_units()
-                    if units_main is not None:
-                        w = nwb2widget(units_main, custom_main_unit_vis)
-                        units_viewers["main"] = w
                     if strategy.value == "Phy":
                         run_phy_command.value = self.sorting_curator.get_phy_run_command(sorter_list.value[0])
                     units_dropdown.value = "Raw"
@@ -247,13 +246,20 @@ class CurationView(BaseViewWithLog):
             if len(qc_metrics.children) > 1:
                 qc_metrics.children = qc_metrics.children[:-1]
 
+        @self.output.capture()
         def on_choose_units(change):
+            original_color = load_status.style.button_color
+            load_status.style.button_color = "yellow"
+            load_status.description = "Loading..."
             units_widget = units_viewers[units_dropdown.value.lower()]
             if units_widget is not None:
                 units_number.value = f"Number of units: {len(units_widget.children[0].units)}"
                 units_col.children = [units_dropdown, units_number, units_widget]
+                load_status.description = f"Units {units_dropdown.value} loaded"
             else:
                 units_col.children = [units_dropdown, sorting_not_found]
+                load_status.description = f"Units {units_dropdown.value} not found"
+            load_status.style.button_color = original_color
 
         @self.output.capture()
         def on_set_default_qms(change):
@@ -272,11 +278,14 @@ class CurationView(BaseViewWithLog):
             if len(sorter_list.value) > 1:
                 print("Select one spike sorting output at a time")
             else:
+                load_from_phy.style.button_color = "yellow"
+
                 self.sorting_curator.load_from_phy(sorter_list.value[0])
                 units = self.sorting_curator.construct_curated_units()
                 if units:
                     w = nwb2widget(units, custom_curated_unit_vis)
                     units_viewers["curated"] = w
+                load_from_phy.style.button_color = "pink"
 
         @self.output.capture()
         def on_restore_phy(change):
@@ -301,21 +310,26 @@ class CurationView(BaseViewWithLog):
             if len(sorter_list.value) > 1:
                 print("Select one spike sorting output at a time")
             else:
+                apply_qm_curation.style.button_color = "yellow"
+
                 query = " and ".join([qm.get_query() for qm in qc_metrics.children])
                 self.sorting_curator.apply_qc_curator(sorter_list.value[0], query)
                 units = self.sorting_curator.construct_curated_units()
                 if units:
                     w = nwb2widget(units, custom_curated_unit_vis)
                     units_viewers["curated"] = w
+                apply_qm_curation.style.button_color = "pink"
 
         @self.output.capture()
         def on_save_to_nwb(change):
             required_values_filled(sorter_list, actions_list)
+            run_save.style.button_color = "yellow"
             self.sorting_curator.save_to_nwb()
             units_main = self.sorting_curator.load_main_units()
             if units_main is not None:
                 w = nwb2widget(units_main, custom_main_unit_vis)
                 units_viewers["main"] = w
+            run_save.style.button_color = "pink"
 
         actions_list.observe(on_action)
         load_from_phy.on_click(on_load_phy)
