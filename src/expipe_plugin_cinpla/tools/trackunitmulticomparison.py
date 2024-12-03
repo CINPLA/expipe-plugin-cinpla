@@ -178,7 +178,8 @@ class TrackMultipleSessions:
                     continue
                 loc_0 = self._actions[action_id_0].modules["channel_group_location"][ch_num]
                 loc_1 = self._actions[action_id_1].modules["channel_group_location"][ch_num]
-                assert loc_0 == loc_1
+                if loc_0 != loc_1:
+                    continue
                 depth_0 = self._actions[action_id_0].modules["depth"][loc_0]["probe_0"]
                 depth_1 = self._actions[action_id_0].modules["depth"][loc_1]["probe_0"]
                 depth_0 = float(depth_0.rescale("um"))
