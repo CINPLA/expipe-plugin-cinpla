@@ -178,7 +178,8 @@ class CurationView(BaseViewWithLog):
             layout={"width": "500px"},
             value="Raw",
         )
-        units_col = ipywidgets.VBox([units_dropdown, units_number, units_placeholder])
+        load_status = ipywidgets.Label(value="Units not loaded", layout={"width": "100%"})
+        units_col = ipywidgets.VBox([ipywidgets.HBox([units_dropdown, load_status]), units_number, units_placeholder])
 
         curation_box = ipywidgets.HBox([actions_panel, curation_panel], layout={"width": "100%"})
         main_box = ipywidgets.VBox([curation_box, units_col])
@@ -239,12 +240,18 @@ class CurationView(BaseViewWithLog):
                 qc_metrics.children = qc_metrics.children[:-1]
 
         def on_choose_units(change):
+            original_color = load_status.style.button_color
+            load_status.style.button_color = "yellow"
+            load_status.value = "Loading..."
             units_widget = units_viewers[units_dropdown.value.lower()]
             if units_widget is not None:
                 units_number.value = f"Number of units: {len(units_widget.children[0].units)}"
                 units_col.children = [units_dropdown, units_number, units_widget]
+                load_status.value = f"Units {units_dropdown.value} loaded"
             else:
                 units_col.children = [units_dropdown, sorting_not_found]
+                load_status.value = f"Units {units_dropdown.value} not found"
+            load_status.style.button_color = original_color
 
         @self.output.capture()
         def on_set_default_qms(change):
