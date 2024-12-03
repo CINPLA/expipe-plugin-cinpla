@@ -135,8 +135,10 @@ class SortingCurator:
         if (self.si_path / sorter / "waveforms").is_dir():
             waveforms_folder = self.si_path / sorter / "waveforms"
             raw_analyzer = si.load_waveforms(waveforms_folder, output="SortingAnalyzer")
-        else:
+        elif (self.si_path / sorter / "analyzer").is_dir():
             raw_analyzer = si.load_sorting_analyzer(self.si_path / sorter / "analyzer")
+        else:
+            return None
         recording = self.load_processed_recording(sorter)
         raw_analyzer.set_temporary_recording(recording)
         return raw_analyzer
@@ -163,9 +165,15 @@ class SortingCurator:
 
             # load extension params from previously computed raw analyzer
             raw_analyzer = self.load_raw_analyzer(sorter)
-            ms_before = raw_analyzer.get_extension("waveforms").params["ms_before"]
-            ms_after = raw_analyzer.get_extension("waveforms").params["ms_after"]
-            n_components = raw_analyzer.get_extension("principal_components").params["n_components"]
+            if raw_analyzer is None:
+                print("No raw analyzer found. Using default values.")
+                ms_before = 1
+                ms_after = 2
+                n_components = 3
+            else:
+                ms_before = raw_analyzer.get_extension("waveforms").params["ms_before"]
+                ms_after = raw_analyzer.get_extension("waveforms").params["ms_after"]
+                n_components = raw_analyzer.get_extension("principal_components").params["n_components"]
 
             self.curated_analyzer = si.create_sorting_analyzer(
                 curated_sorting,
