@@ -90,6 +90,11 @@ class CurationView(BaseViewWithLog):
             description="Save as NWB Units", layout={"width": "initial"}, tooltip="Save curated units to NWB file."
         )
         run_save.style.button_color = "pink"
+        load_status = ipywidgets.Button(
+            description="Status: Units not loaded",
+            disabled=True,
+            layout={"width": "initial"},
+        )
 
         # curation strategies
 
@@ -138,7 +143,9 @@ class CurationView(BaseViewWithLog):
         apply_qm_curation.style.button_color = "pink"
         qc_controls = ipywidgets.HBox([add_metric_button, remove_metric_button, set_default_qms, apply_qm_curation])
 
-        actions_panel = ipywidgets.VBox([actions_list, sorter_list, run_save])
+        actions_panel = ipywidgets.VBox([actions_list, sorter_list])
+
+        buttons_panel = ipywidgets.HBox([load_status, run_save])
 
         phy_panel = ipywidgets.VBox(
             [
@@ -178,15 +185,10 @@ class CurationView(BaseViewWithLog):
             layout={"width": "50%"},
             value="Raw",
         )
-        load_status = ipywidgets.Button(
-            description="Status: Units not loaded",
-            disabled=True,
-            layout={"height": "50px", "width": "50%"},
-        )
-        units_col = ipywidgets.VBox([ipywidgets.HBox([units_dropdown, load_status]), units_number, units_placeholder])
+        units_col = ipywidgets.VBox([units_dropdown, units_number, units_placeholder])
 
         curation_box = ipywidgets.HBox([actions_panel, curation_panel], layout={"width": "100%"})
-        main_box = ipywidgets.VBox([curation_box, units_col])
+        main_box = ipywidgets.VBox([curation_box, buttons_panel, units_col])
         super().__init__(main_box=main_box, project=project)
 
         self.sorting_curator = curation.SortingCurator(project)
