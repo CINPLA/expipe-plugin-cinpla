@@ -87,13 +87,13 @@ class CurationView(BaseViewWithLog):
         )
         sorter_list = ipywidgets.SelectMultiple(description="Spike sorters", options=[], layout={"width": "initial"})
         run_save = ipywidgets.Button(
-            description="Save as NWB Units", layout={"width": "initial"}, tooltip="Save curated units to NWB file."
+            description="Save as NWB Units", layout={"width": "100%"}, tooltip="Save curated units to NWB file."
         )
         run_save.style.button_color = "pink"
         load_status = ipywidgets.Button(
             description="Status: Units not loaded",
             disabled=True,
-            layout={"width": "initial"},
+            layout={"width": "100%"},
         )
 
         # curation strategies
@@ -202,6 +202,7 @@ class CurationView(BaseViewWithLog):
             units_dropdown.value = "Raw"
             sorter_list.value = []
             units_number.value = "Number of units: "
+            load_status.description = "Units not loaded"
             units_col.children = [units_dropdown, units_number, units_placeholder]
 
         def on_sorter(change):
