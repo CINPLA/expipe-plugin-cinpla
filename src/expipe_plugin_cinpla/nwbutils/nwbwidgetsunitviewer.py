@@ -358,7 +358,7 @@ class UnitSummaryWidget(widgets.VBox):
         if "original_cluster_id" in self.units.colnames:
             unit_info_text += " - Phy ID:      "
         if "daily_unit_id" in self.units.colnames:
-            unit_info_text += " - Daily ID:      "
+            unit_info_text += " - Daily ID: " + " " * 36
         self.unit_info_text = widgets.Label(unit_info_text, layout=dict(width="90%"))
         self.smoothing_slider = widgets.FloatSlider(
             value=0.03,
