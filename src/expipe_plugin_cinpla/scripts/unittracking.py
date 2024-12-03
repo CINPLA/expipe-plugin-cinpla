@@ -57,7 +57,7 @@ def track_units(project_loader, actions, dates, dissimilarity):
         unit_matching_dict[g_name] = unit_matching
 
     for g_name, unit_matching in unit_matching_dict.items():
-        num_matches = sum([len(matches) for g, matches in unit_matching.items()])
+        num_matches = sum([len(matches) for g, matches in unit_matching.identified_units.items()])
         print(f"Number of identified units for {g_name}: {num_matches}")
     return unit_matching_dict
 

@@ -359,7 +359,7 @@ class UnitSummaryWidget(widgets.VBox):
             unit_info_text += " - Phy ID:      "
         if "daily_unit_id" in self.units.colnames:
             unit_info_text += " - Daily ID: " + " " * 36
-        self.unit_info_text = widgets.Label(unit_info_text, layout=dict(width="90%"))
+        self.unit_info_text = widgets.Label(unit_info_text, layout=dict(width="500px"))
         self.smoothing_slider = widgets.FloatSlider(
             value=0.03,
             min=0,
@@ -386,7 +386,7 @@ class UnitSummaryWidget(widgets.VBox):
                                 self.unit_info_text,
                             ]
                         ),
-                        widgets.HBox([spatial_series_label, self.spatial_series_selector]),
+                        widgets.HBox([spatial_series_label, self.spatial_series_selector], layout=dict(width="30%")),
                     ]
                 ),
                 widgets.HBox([self.smoothing_slider, self.bin_size_slider]),
