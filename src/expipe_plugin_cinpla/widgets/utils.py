@@ -59,7 +59,7 @@ class BaseViewWithLog(ipywidgets.VBox):
         output = ipywidgets.Output(layout={"border": "1px solid black", "height": "300px", "overflow": "scroll"})
         output_box = output
         # log
-        show_log = ipywidgets.Checkbox(description="Show log", value=True)
+        show_log = ipywidgets.Checkbox(description="Show log", value=True, layout={"width": "50%"})
         clear_log = ipywidgets.Button(description="Clear log", layout={"width": "50%"})
         log_row = ipywidgets.HBox([show_log, clear_log])
 

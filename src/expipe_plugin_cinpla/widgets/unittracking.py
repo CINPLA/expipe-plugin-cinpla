@@ -162,6 +162,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 for action_id in unit_matching.action_list:
                     entity, date, _ = action_id.split("-")
                     if entity in entity_selector_view.value and date in date_selector_view.value:
+                        print(f"Saving action id: {action_id}")
                         save_to_nwb(
                             project_loader,
                             action_id,

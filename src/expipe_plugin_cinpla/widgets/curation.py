@@ -239,6 +239,7 @@ class CurationView(BaseViewWithLog):
             if len(qc_metrics.children) > 1:
                 qc_metrics.children = qc_metrics.children[:-1]
 
+        @self.output.capture()
         def on_choose_units(change):
             original_color = load_status.style.button_color
             load_status.style.button_color = "yellow"
