@@ -72,7 +72,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
             description="Plot templates and maps", layout={"height": "50px", "width": "100%"}
         )
         show_hide_plot_button = ipywidgets.Button(
-            description="Show/Hide plots", layout={"height": "50px", "width": "100%"}
+            description="Hide/Show plots", layout={"height": "50px", "width": "100%"}
         )
 
         buttons_box = ipywidgets.HBox([plot_button, show_hide_plot_button])
@@ -82,14 +82,13 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
 
         matched_unit_labels = ipywidgets.Label("Number of matches")
         matched_units = ipywidgets.Text("", disabled=True)
-        main_box_plot = ipywidgets.VBox(
-            [
-                ipywidgets.HBox([entity_selector_view, date_selector_view]),
-                ipywidgets.HBox([matched_unit_labels, matched_units]),
-                buttons_box,
-                ipywidgets.HBox([save_selected_nwb_button, save_all_nwb_button]),
-            ]
-        )
+        main_children = [
+            ipywidgets.HBox([entity_selector_view, date_selector_view]),
+            ipywidgets.HBox([matched_unit_labels, matched_units]),
+            buttons_box,
+            ipywidgets.HBox([save_selected_nwb_button, save_all_nwb_button]),
+        ]
+        main_box_plot = ipywidgets.VBox(main_children)
 
         view_plot = BaseViewWithLog(main_box=main_box_plot, project=project)
 
@@ -124,18 +123,24 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 num_matches = sum([len(matches) for g, matches in unit_matching.identified_units.items()])
                 matched_units.value = str(int(num_matches))
 
-        @view_plot.output.capture()
         def on_plot_button(change):
             original_color = plot_button.style.button_color
             plot_button.style.button_color = "yellow"
             plot_matched_units()
-            view_plot.children = (
-                list(view_plot.children[:-2]) + [output_waveforms, output_ratemaps] + list(view_plot.children[-2:])
-            )
+            view_plot.children = main_children + [output_waveforms, output_ratemaps] + list(view_plot.children[-2:])
             plot_button.style.button_color = original_color
 
         def on_show_hide_plot_button(change):
-            main_box_plot.children = main_box_plot.children[:-2]
+            main_children = [
+                ipywidgets.HBox([entity_selector_view, date_selector_view]),
+                ipywidgets.HBox([matched_unit_labels, matched_units]),
+                buttons_box,
+                ipywidgets.HBox([save_selected_nwb_button, save_all_nwb_button]),
+            ]
+            if len(view_plot.children) == len(main_children) + 2:
+                view_plot.children = main_children + [output_waveforms, output_ratemaps] + list(view_plot.children[-2:])
+            else:
+                view_plot.children = main_children + list(view_plot.children[-2:])
 
         @view_plot.output.capture()
         def save_all_to_nwb(change):

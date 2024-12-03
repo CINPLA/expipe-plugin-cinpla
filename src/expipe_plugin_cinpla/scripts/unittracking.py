@@ -55,8 +55,10 @@ def track_units(project_loader, actions, dates, dissimilarity):
         unit_matching.remove_edges_above_threshold("weight", dissimilarity)
         unit_matching.identify_units()
         unit_matching_dict[g_name] = unit_matching
+
     for g_name, unit_matching in unit_matching_dict.items():
-        print(f"Number of identified units for {g_name}: {len(unit_matching.identified_units)}")
+        num_matches = sum([len(matches) for g, matches in unit_matching.identified_units.items()])
+        print(f"Number of identified units for {g_name}: {num_matches}")
     return unit_matching_dict
 
 
