@@ -50,8 +50,10 @@ class ProjectLoader:
         self._metadata_path = self._project.path / "actions_metadata.parquet"
 
         # Check if the metadata file exists, and process it if it doesn't
-        if not self._metadata_path.is_file():
-            self.process_metadata()
+        # if not self._metadata_path.is_file():
+        # This is relatively fast, so it's better to always process the metadata
+        # to ensure it's up-to-date
+        self.process_metadata()
 
         # Initialize the project information dictionary
         self._info = defaultdict(str)
