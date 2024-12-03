@@ -204,6 +204,10 @@ class CurationView(BaseViewWithLog):
             units_number.value = "Number of units: "
             load_status.description = "Units not loaded"
             units_col.children = [units_dropdown, units_number, units_placeholder]
+            units_main = self.sorting_curator.load_main_units()
+            if units_main is not None:
+                w = nwb2widget(units_main, custom_main_unit_vis)
+                units_viewers["main"] = w
 
         def on_sorter(change):
             required_values_filled(actions_list)
@@ -215,10 +219,6 @@ class CurationView(BaseViewWithLog):
                     if units_raw is not None:
                         w = nwb2widget(units_raw, custom_raw_unit_vis)
                         units_viewers["raw"] = w
-                    units_main = self.sorting_curator.load_main_units()
-                    if units_main is not None:
-                        w = nwb2widget(units_main, custom_main_unit_vis)
-                        units_viewers["main"] = w
                     if strategy.value == "Phy":
                         run_phy_command.value = self.sorting_curator.get_phy_run_command(sorter_list.value[0])
                     units_dropdown.value = "Raw"
