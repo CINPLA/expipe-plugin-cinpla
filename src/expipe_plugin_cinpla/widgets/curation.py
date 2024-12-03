@@ -178,7 +178,6 @@ class CurationView(BaseViewWithLog):
             layout={"width": "50%"},
             value="Raw",
         )
-        load_status = ipywidgets.Label(value="Units not loaded", layout={"width": "100%"})
         load_status = ipywidgets.Button(
             description="Status: Units not loaded",
             disabled=True,
@@ -248,15 +247,15 @@ class CurationView(BaseViewWithLog):
         def on_choose_units(change):
             original_color = load_status.style.button_color
             load_status.style.button_color = "yellow"
-            load_status.value = "Loading..."
+            load_status.description = "Loading..."
             units_widget = units_viewers[units_dropdown.value.lower()]
             if units_widget is not None:
                 units_number.value = f"Number of units: {len(units_widget.children[0].units)}"
                 units_col.children = [units_dropdown, units_number, units_widget]
-                load_status.value = f"Units {units_dropdown.value} loaded"
+                load_status.description = f"Units {units_dropdown.value} loaded"
             else:
                 units_col.children = [units_dropdown, sorting_not_found]
-                load_status.value = f"Units {units_dropdown.value} not found"
+                load_status.description = f"Units {units_dropdown.value} not found"
             load_status.style.button_color = original_color
 
         @self.output.capture()
