@@ -208,6 +208,7 @@ class CurationView(BaseViewWithLog):
             if units_main is not None:
                 w = nwb2widget(units_main, custom_main_unit_vis)
                 units_viewers["main"] = w
+            units_viewers["curated"] = None
 
         def on_sorter(change):
             required_values_filled(actions_list)
@@ -222,6 +223,7 @@ class CurationView(BaseViewWithLog):
                     if strategy.value == "Phy":
                         run_phy_command.value = self.sorting_curator.get_phy_run_command(sorter_list.value[0])
                     units_dropdown.value = "Raw"
+                    units_viewers["curated"] = None
                     on_choose_units(None)
 
         def on_change_strategy(change):
