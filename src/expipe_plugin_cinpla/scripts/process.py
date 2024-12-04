@@ -372,12 +372,15 @@ def process_ecephys(
     provenance_str = provenance_str.replace('"relative_paths": true', '"relative_paths": false')
     preprocessed_file = output_base_folder / "preprocessed.json"
     preprocessed_file.write_text(provenance_str)
-    # update analyzer path
-    analyer_recording_str = provenance_str.replace(
-        str(nwb_path), os.path.relpath(nwb_path, str(output_base_folder / "analyzer"))
-    )
-    analyzer_recording_json = output_base_folder / "analyzer" / "recording.json"
-    analyzer_recording_json.write_text(analyer_recording_str)
+
+    if spikesort:
+        # update analyzer path
+        analyer_recording_str = provenance_str.replace(
+            str(nwb_path), os.path.relpath(nwb_path, str(output_base_folder / "analyzer"))
+        )
+        analyzer_recording_json = output_base_folder / "analyzer" / "recording.json"
+        analyzer_recording_json.write_text(analyer_recording_str)
+
     if (output_base_folder / "recording_cmr").is_dir():
         shutil.rmtree(output_base_folder / "recording_cmr")
     try:
