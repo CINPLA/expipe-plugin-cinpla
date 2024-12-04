@@ -42,6 +42,7 @@ def process_ecephys(
     import spikeinterface.sorters as ss
     from neuroconv.tools.spikeinterface import add_recording
     from pynwb import NWBHDF5IO
+    from spikeinterface.core.core_tools import SIJsonEncoder
 
     from .utils import add_units_from_sorting_analyzer, compute_and_set_unit_groups
 
@@ -364,12 +365,15 @@ def process_ecephys(
     provenance_file = output_base_folder / "recording_cmr" / "provenance.json"
     if not provenance_file.is_file():
         (output_base_folder / "recording_cmr").mkdir(parents=True, exist_ok=True)
-        recording_cmr.dump_to_json(output_base_folder / "recording_cmr" / "provenance.json")
-    with open(output_base_folder / "recording_cmr" / "provenance.json") as f:
-        provenance = json.load(f)
-    provenance_str = json.dumps(provenance)
-    provenance_str = provenance_str.replace("../../../main_tmp.nwb", str(nwb_path))
-    provenance_str = provenance_str.replace('"relative_paths": true', '"relative_paths": false')
+        provenance = recording_cmr.to_dict(recursive=True)
+        provenance_str = json.dumps(provenance, cls=SIJsonEncoder)
+        provenance_str = provenance_str.replace("main_tmp.nwb", "main.nwb")
+    else:
+        with open(output_base_folder / "recording_cmr" / "provenance.json") as f:
+            provenance = json.load(f)
+        provenance_str = json.dumps(provenance)
+        provenance_str = provenance_str.replace("../../../main_tmp.nwb", str(nwb_path))
+        provenance_str = provenance_str.replace('"relative_paths": true', '"relative_paths": false')
     preprocessed_file = output_base_folder / "preprocessed.json"
     preprocessed_file.write_text(provenance_str)
 

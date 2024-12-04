@@ -81,7 +81,7 @@ class SortingCurator:
             )
             return sorting_raw
         except Exception as e:
-            print(f"Could not load raw sorting for {sorter}. Using None: {e}")
+            print(f"Could not load raw sorting for {sorter}. Using None.\nError: {e}")
             return None
 
     def load_raw_units(self, sorter):
