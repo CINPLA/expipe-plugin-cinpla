@@ -163,6 +163,15 @@ class SortingCurator:
             # if "group" is not available or some missing groups, extract dense and estimate group
             compute_and_set_unit_groups(curated_sorting, recording)
 
+            # sort by group and phy ID (if present)
+            if "original_cluster_id" in curated_sorting.get_property_keys():
+                sort_unit_indices = np.lexsort(
+                    (curated_sorting.get_property("original_cluster_id"), curated_sorting.get_property("group"))
+                )
+            else:
+                sort_unit_indices = np.argsort(curated_sorting.get_property("group"))
+            curated_sorting = curated_sorting.select_units(curated_sorting.unit_ids[sort_unit_indices])
+
             # load extension params from previously computed raw analyzer
             raw_analyzer = self.load_raw_analyzer(sorter)
             if raw_analyzer is None:

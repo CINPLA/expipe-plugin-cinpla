@@ -481,7 +481,7 @@ class UnitSummaryWidget(widgets.VBox):
             t = t1
 
         ratemap = sm.rate_map(x, y, t, spike_train)
-        axs[0, 0].imshow(ratemap.T, origin="lower")
+        axs[0, 0].imshow(ratemap.T, origin="upper")
         title = f"grp={group}"
         if phy_id is not None:
             title += f", phy_id={phy_id}"
@@ -491,14 +491,14 @@ class UnitSummaryWidget(widgets.VBox):
         axs[0, 0].axis("off")
 
         # spikes and tracking
-        axs[0, 1] = spike_track(x, y, t, spike_train, axs[0, 1], spines=False)
+        axs[0, 1] = spike_track(x, 1 - y, t, spike_train, axs[0, 1], spines=False)
         axs[0, 1].axis("equal")
         axs[0, 1].set_title("Spike track")
         axs[0, 1].axis("off")
 
         # occupancy
         occupancymap = sm.occupancy_map(x, y, t)
-        axs[0, 2].imshow(occupancymap.T, origin="lower")
+        axs[0, 2].imshow(occupancymap.T, origin="upper")
         axs[0, 2].axis("equal")
         axs[0, 2].set_title("Occupancy")
         axs[0, 2].axis("off")
