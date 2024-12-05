@@ -99,13 +99,17 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
         def on_track_units(change):
             original_color = track_units_button.style.button_color
             track_units_button.style.button_color = "yellow"
-            self.unit_matching = track_units(
-                project_loader,
-                entity_selector_compute.value,
-                date_selector_compute.value,
-                dissimilarity.value,
-            )
-            track_units_button.style.button_color = original_color
+            try:
+                self.unit_matching = track_units(
+                    project_loader,
+                    entity_selector_compute.value,
+                    date_selector_compute.value,
+                    dissimilarity.value,
+                )
+                track_units_button.style.button_color = original_color
+            except Exception as e:
+                print(f"Track units failed!\nError: {e}")
+                track_units_button.style.button_color = "red"
 
         def on_entity_view_change(change):
             entity = change["new"]

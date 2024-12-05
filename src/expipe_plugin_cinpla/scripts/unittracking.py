@@ -184,7 +184,8 @@ def plot_rate_maps(project_loader, unit_matching, fig):
                         spike_train = spike_trains[unit_names.index(str(original_unit_id))]
                         ratemap = sm.rate_map(x, y, t, spike_train)
                         ax.imshow(ratemap.T, origin="lower")
-                        firing_rate = np.round(spike_train.annotations["firing_rate"], 2)
+                        firing_rate = spike_train.annotations.get("firing_rate") or spike_train.annotations.get("fr")
+                        firing_rate = np.round(firing_rate, 2)
                         phy_id = spike_train.annotations.get("original_cluster_id")
                         if phy_id is not None:
                             xlabel = f"Phy ID: {phy_id}\nFR: {firing_rate} Hz"
