@@ -202,4 +202,4 @@ def plot_rate_maps(project_loader, unit_matching, fig):
                 if i == center_ax:
                     ax.text(title_x, 1.3, f"{unique_unit_id} ({ch_group})", transform=ax.transAxes, fontsize=12)
             ax_idx += 1
-    fig.subplots_adjust(hspace=0.5, wspace=0.3, top=0.9)
+    fig.subplots_adjust(hspace=0.2, wspace=0.3, top=0.9)
