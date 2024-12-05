@@ -194,7 +194,11 @@ def plot_rate_maps(project_loader, unit_matching, fig):
                 else:
                     ax.imshow(np.zeros((10, 10)) * np.nan)
                 ax.set_title(action_id, fontsize=10)
-                ax.axis("off")
+                ax.set_yticklabels([])
+                ax.set_xticklabels([])
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.spines[["top", "right", "bottom", "left"]].set_visible(False)
                 if i == center_ax:
                     ax.text(title_x, 1.3, f"{unique_unit_id} ({ch_group})", transform=ax.transAxes, fontsize=12)
             ax_idx += 1
