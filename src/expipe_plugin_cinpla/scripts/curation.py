@@ -106,7 +106,7 @@ class SortingCurator:
         return nwbfile.units
 
     def construct_curated_units(self):
-        if len(self.curated_analyzer.unit_ids) == 0:
+        if self.curated_analyzer is None:
             print("No units left after curation.")
             return
         from pynwb import NWBHDF5IO
