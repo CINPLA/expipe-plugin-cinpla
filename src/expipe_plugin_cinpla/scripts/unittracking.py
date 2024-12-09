@@ -59,7 +59,7 @@ def track_units(project_loader, actions, dates, dissimilarity):
     for g_name, unit_matching in unit_matching_dict.items():
         num_sessions_matched = {}
         for _, matches in unit_matching.identified_units.items():
-            num_sessions_matched[matches["num_sessions_matched"]] += 1
+            num_sessions_matched[matches["num_session_matched"]] += 1
         for num_sessions, num_units in num_sessions_matched.items():
             if num_sessions == len(unit_matching.action_list):
                 print(f"\t# {num_sessions} sessions: {num_units} (all)")
@@ -120,7 +120,7 @@ def plot_unit_templates(unit_matching, fig, min_matches=1):
     for ch_group in identified_units:
         units = identified_units[ch_group]
         for unique_unit_id, unit_dict in units.items():
-            if unit_dict["num_sessions_matched"] < min_matches:
+            if unit_dict["num_session_matched"] < min_matches:
                 continue
             actions_in_match = sorted(list(unit_dict["original_unit_ids"].keys()))
             for i, action_id in enumerate(actions_in_match):
@@ -165,9 +165,9 @@ def plot_rate_maps(project_loader, unit_matching, fig, min_matches=1):
     fig.clear()
     num_matches = sum(
         [
-            matches["num_sessions_matched"]
+            matches["num_session_matched"]
             for _, matches in identified_units.items()
-            if matches["num_sessions_matched"] >= min_matches
+            if matches["num_session_matched"] >= min_matches
         ]
     )
     fig.set_size_inches(10, 4 * num_matches)
