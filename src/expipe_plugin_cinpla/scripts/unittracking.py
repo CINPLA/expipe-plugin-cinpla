@@ -57,8 +57,16 @@ def track_units(project_loader, actions, dates, dissimilarity):
         unit_matching_dict[g_name] = unit_matching
 
     for g_name, unit_matching in unit_matching_dict.items():
-        num_matches = sum([len(matches) for g, matches in unit_matching.identified_units.items()])
-        print(f"Number of identified units for {g_name}: {num_matches}")
+        num_sessions_matched = {}
+        for _, matches in unit_matching.identified_units.items():
+            num_sessions_matched[matches["num_sessions_matched"]] += 1
+        for num_sessions, num_units in num_sessions_matched.items():
+            if num_sessions == len(unit_matching.action_list):
+                print(f"\t# {num_sessions} sessions: {num_units} (all)")
+            elif num_sessions == 1:
+                print(f"\t# unmatched: {num_units}")
+            else:
+                print(f"\t# {num_sessions} sessions: {num_units}")
     return unit_matching_dict
 
 
@@ -100,7 +108,7 @@ def save_to_nwb(project_loader, action_id, unit_matching):
         nwb_path_tmp.unlink()
 
 
-def plot_unit_templates(unit_matching, fig):
+def plot_unit_templates(unit_matching, fig, min_matches=1):
     fig.clear()
     identified_units = unit_matching.identified_units
     num_matches = sum([len(matches) for g, matches in identified_units.items()])
@@ -112,6 +120,8 @@ def plot_unit_templates(unit_matching, fig):
     for ch_group in identified_units:
         units = identified_units[ch_group]
         for unique_unit_id, unit_dict in units.items():
+            if unit_dict["num_sessions_matched"] < min_matches:
+                continue
             actions_in_match = sorted(list(unit_dict["original_unit_ids"].keys()))
             for i, action_id in enumerate(actions_in_match):
                 original_unit_id = unit_dict["original_unit_ids"][action_id]
@@ -146,14 +156,20 @@ def plot_unit_templates(unit_matching, fig):
     fig.subplots_adjust(hspace=0.3, wspace=0.3, right=0.9)
 
 
-def plot_rate_maps(project_loader, unit_matching, fig):
+def plot_rate_maps(project_loader, unit_matching, fig, min_matches=1):
     from spatial_maps import SpatialMap
 
     from ..tools.data_processing import load_spiketrains, load_tracking
 
     identified_units = unit_matching.identified_units
     fig.clear()
-    num_matches = sum([len(matches) for g, matches in identified_units.items()])
+    num_matches = sum(
+        [
+            matches["num_sessions_matched"]
+            for _, matches in identified_units.items()
+            if matches["num_sessions_matched"] >= min_matches
+        ]
+    )
     fig.set_size_inches(10, 4 * num_matches)
     num_actions = len(unit_matching.action_list)
     axs = fig.subplots(nrows=num_matches, ncols=num_actions)
