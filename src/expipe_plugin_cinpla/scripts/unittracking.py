@@ -61,12 +61,10 @@ def track_units(project_loader, actions, dates, dissimilarity):
         for _, matches in unit_matching.identified_units.items():
             num_sessions_matched[matches["num_session_matched"]] += 1
         for num_sessions, num_units in num_sessions_matched.items():
-            if num_sessions == len(unit_matching.action_list):
-                print(f"\t# {num_sessions} sessions: {num_units} (all)")
-            elif num_sessions == 1:
-                print(f"\t# unmatched: {num_units}")
+            if num_sessions == 1:
+                print(f"\t{num_units} unmatched")
             else:
-                print(f"\t# {num_sessions} sessions: {num_units}")
+                print(f"\t{num_units} # {num_sessions}/{len(unit_matching.action_list)} sessions")
     return unit_matching_dict
 
 
