@@ -278,12 +278,11 @@ class TrackMultipleSessions:
         for ch, graph in self.graphs.items():
             # extract agrrement from graph
             self._new_units = {}
+            all_connected_nodes = set()
             for node_set in nx.connected_components(graph):
+                all_connected_nodes.update(node_set)
                 unit_id = str(uuid.uuid4())
                 edges = graph.edges(node_set, data=True)
-
-                if len(node_set) < 2:
-                    continue
 
                 average_dissimilarity = np.mean([d["weight"] for _, _, d in edges])
 
@@ -293,8 +292,24 @@ class TrackMultipleSessions:
 
                 self._new_units[unit_id] = {
                     "average_dissimilarity": average_dissimilarity,
+                    "num_session_matched": len(node_set),
                     "original_unit_ids": original_ids,
                 }
+
+            # assign a unique unit id to unconnected nodes
+            for node in graph.nodes:
+                if node not in all_connected_nodes:
+                    unit_id = str(uuid.uuid4())
+                    self._new_units[unit_id] = {
+                        "average_dissimilarity": 0,
+                        "num_session_matched": 1,
+                        "original_unit_ids": {graph.nodes[node]["action_id"]: graph.nodes[node]["unit_id"]},
+                    }
+
+            # sort new units by number of sessions matched
+            self._new_units = dict(
+                sorted(self._new_units.items(), key=lambda x: x[1]["num_session_matched"], reverse=True)
+            )
 
             self.identified_units[ch] = self._new_units
 
@@ -357,7 +372,7 @@ class TrackMultipleSessions:
             ]
             num_units = sum([len(u) for u in units])
             if num_units == 0:
-                print(f"Zero units found on channel group {ch_group}")
+                print(f"Zero units matched across sessions on channel group {ch_group}")
                 continue
 
             fig = plt.figure(figsize=(figsize[0], figsize[1] * num_units))
