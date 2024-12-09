@@ -57,8 +57,15 @@ def track_units(project_loader, actions, dates, dissimilarity):
         unit_matching_dict[g_name] = unit_matching
 
     for g_name, unit_matching in unit_matching_dict.items():
-        num_matches = sum([len(matches) for g, matches in unit_matching.identified_units.items()])
-        print(f"Number of identified units for {g_name}: {num_matches}")
+        num_sessions_matched = {i: 0 for i in np.arange(1, len(unit_matching.action_list) + 1)[::-1]}
+        for _, matches in unit_matching.identified_units.items():
+            for match_dict in matches.values():
+                num_sessions_matched[match_dict["num_session_matched"]] += 1
+        for num_sessions, num_units in num_sessions_matched.items():
+            if num_sessions == 1:
+                print(f"\t{num_units} unmatched")
+            else:
+                print(f"\t{num_units} # {num_sessions}/{len(unit_matching.action_list)} sessions")
     return unit_matching_dict
 
 
@@ -100,18 +107,24 @@ def save_to_nwb(project_loader, action_id, unit_matching):
         nwb_path_tmp.unlink()
 
 
-def plot_unit_templates(unit_matching, fig):
+def plot_unit_templates(unit_matching, fig, min_matches=1):
     fig.clear()
     identified_units = unit_matching.identified_units
-    num_matches = sum([len(matches) for g, matches in identified_units.items()])
-    fig.set_size_inches(10, 3 * num_matches)
+    num_matches = 0
+    for identified_units_group in identified_units.values():
+        for matches_dict in identified_units_group.values():
+            if matches_dict["num_session_matched"] >= min_matches:
+                num_matches += 1
 
+    fig.set_size_inches(10, 3 * num_matches)
     ax_idx = 0
     axs = None
 
     for ch_group in identified_units:
         units = identified_units[ch_group]
         for unique_unit_id, unit_dict in units.items():
+            if unit_dict["num_session_matched"] < min_matches:
+                continue
             actions_in_match = sorted(list(unit_dict["original_unit_ids"].keys()))
             for i, action_id in enumerate(actions_in_match):
                 original_unit_id = unit_dict["original_unit_ids"][action_id]
@@ -146,14 +159,20 @@ def plot_unit_templates(unit_matching, fig):
     fig.subplots_adjust(hspace=0.3, wspace=0.3, right=0.9)
 
 
-def plot_rate_maps(project_loader, unit_matching, fig):
+def plot_rate_maps(project_loader, unit_matching, fig, min_matches=1):
     from spatial_maps import SpatialMap
 
     from ..tools.data_processing import load_spiketrains, load_tracking
 
     identified_units = unit_matching.identified_units
     fig.clear()
-    num_matches = sum([len(matches) for g, matches in identified_units.items()])
+
+    num_matches = 0
+    for identified_units_group in identified_units.values():
+        for matches_dict in identified_units_group.values():
+            if matches_dict["num_session_matched"] >= min_matches:
+                num_matches += 1
+
     fig.set_size_inches(10, 4 * num_matches)
     num_actions = len(unit_matching.action_list)
     axs = fig.subplots(nrows=num_matches, ncols=num_actions)
@@ -168,6 +187,8 @@ def plot_rate_maps(project_loader, unit_matching, fig):
     for ch_group in identified_units:
         units = identified_units[ch_group]
         for unique_unit_id, unit_dict in units.items():
+            if unit_dict["num_session_matched"] < min_matches:
+                continue
             original_unit_ids = unit_dict["original_unit_ids"]
             sm = SpatialMap()
 
@@ -183,7 +204,7 @@ def plot_rate_maps(project_loader, unit_matching, fig):
                     if str(original_unit_id) in unit_names:
                         spike_train = spike_trains[unit_names.index(str(original_unit_id))]
                         ratemap = sm.rate_map(x, y, t, spike_train)
-                        ax.imshow(ratemap.T, origin="lower")
+                        ax.imshow(ratemap.T, origin="upper")
                         firing_rate = spike_train.annotations.get("firing_rate") or spike_train.annotations.get("fr")
                         firing_rate = np.round(firing_rate, 2)
                         phy_id = spike_train.annotations.get("original_cluster_id")

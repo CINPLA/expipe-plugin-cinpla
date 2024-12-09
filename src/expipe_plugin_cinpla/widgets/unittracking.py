@@ -60,6 +60,10 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
             description="Dates",
         )
 
+        min_matches_slider = ipywidgets.IntSlider(
+            value=1, min=1, max=10, step=1, description="Minimum # sessions:", style={"description_width": "initial"}
+        )
+
         save_selected_nwb_button = ipywidgets.Button(
             description="Save selected matches to NWB",
             layout={"height": "50px", "width": "50%"},
@@ -80,11 +84,11 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
         output_waveforms = ipywidgets.Output(layout={"height": "600px", "overflow": "scroll"})
         output_ratemaps = ipywidgets.Output(layout={"height": "600px", "overflow": "scroll"})
 
-        matched_unit_labels = ipywidgets.Label("Number of matches")
-        matched_units = ipywidgets.Text("", disabled=True)
+        matched_unit_labels = ipywidgets.Label("Number of unique units")
+        num_unique_units = ipywidgets.Text("", disabled=True)
         main_children = [
             ipywidgets.HBox([entity_selector_view, date_selector_view]),
-            ipywidgets.HBox([matched_unit_labels, matched_units]),
+            ipywidgets.HBox([matched_unit_labels, num_unique_units, min_matches_slider]),
             buttons_box,
             ipywidgets.HBox([save_selected_nwb_button, save_all_nwb_button]),
         ]
@@ -125,19 +129,20 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 print(f"No matching found for {entity} on {date}")
             else:
                 num_matches = sum([len(matches) for g, matches in unit_matching.identified_units.items()])
-                matched_units.value = str(int(num_matches))
+                num_unique_units.value = str(int(num_matches))
+                min_matches_slider.max = len(unit_matching.action_list)
 
         def on_plot_button(change):
             original_color = plot_button.style.button_color
             plot_button.style.button_color = "yellow"
-            plot_matched_units()
+            plot_num_unique_units()
             view_plot.children = main_children + [output_waveforms, output_ratemaps] + list(view_plot.children[-2:])
             plot_button.style.button_color = original_color
 
         def on_show_hide_plot_button(change):
             main_children = [
                 ipywidgets.HBox([entity_selector_view, date_selector_view]),
-                ipywidgets.HBox([matched_unit_labels, matched_units]),
+                ipywidgets.HBox([matched_unit_labels, num_unique_units]),
                 buttons_box,
                 ipywidgets.HBox([save_selected_nwb_button, save_all_nwb_button]),
             ]
@@ -180,7 +185,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
             print("Done!")
             save_selected_nwb_button.style.button_color = original_color
 
-        def plot_matched_units():
+        def plot_num_unique_units():
             entity = entity_selector_view.value
             date = date_selector_view.value
             unit_matching = self.unit_matching.get((entity, date))
@@ -188,14 +193,16 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
                 print(f"No matching found for {entity} on {date}")
             else:
                 figure_waveforms, _ = plt.subplots(figsize=(10, 5))
-                plot_unit_templates(unit_matching, fig=figure_waveforms)
+                plot_unit_templates(unit_matching, fig=figure_waveforms, min_matches=min_matches_slider.value)
                 # unit_matching.plot_matches(fig=figure_waveforms)
                 output_waveforms.clear_output()
                 with output_waveforms:
                     figure_waveforms.show()
                     show_inline_matplotlib_plots()
                 figure_ratemaps, _ = plt.subplots(figsize=(10, 3))
-                plot_rate_maps(self.project_loader, unit_matching, fig=figure_ratemaps)
+                plot_rate_maps(
+                    self.project_loader, unit_matching, fig=figure_ratemaps, min_matches=min_matches_slider.value
+                )
                 output_ratemaps.clear_output()
                 with output_ratemaps:
                     figure_ratemaps.show()

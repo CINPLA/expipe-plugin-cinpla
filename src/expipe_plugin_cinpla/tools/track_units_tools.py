@@ -28,6 +28,16 @@ def compute_dissimilarity(template_0, template_1):
 
     max_val = np.max([np.max(np.abs(template_0)), np.max(np.abs(template_1))])
 
+    # discard channels that are all zeros
+    skip_channels = []
+    for t_i, (t0, t1) in enumerate(zip(template_0.T, template_1.T)):
+        if np.all(t0 == 0) or np.all(t1 == 0):
+            skip_channels.append(t_i)
+
+    if len(skip_channels) > 0:
+        template_0 = np.delete(template_0, skip_channels, axis=1)
+        template_1 = np.delete(template_1, skip_channels, axis=1)
+
     template_0_scaled = template_0 / max_val
     template_1_scaled = template_1 / max_val
     # root sum square, averaged over channels
