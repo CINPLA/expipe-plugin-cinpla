@@ -61,10 +61,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
         )
 
         min_matches_slider = ipywidgets.IntSlider(
-            value=1,
-            min=1,
-            max=10,
-            step=1,
+            value=1, min=1, max=10, step=1, description="Minimum # sessions:", style={"description_width": "initial"}
         )
 
         save_selected_nwb_button = ipywidgets.Button(
@@ -91,7 +88,7 @@ class DailyUnitTrackViewer(ipywidgets.Tab):
         num_unique_units = ipywidgets.Text("", disabled=True)
         main_children = [
             ipywidgets.HBox([entity_selector_view, date_selector_view]),
-            ipywidgets.HBox([matched_unit_labels, num_unique_units]),
+            ipywidgets.HBox([matched_unit_labels, num_unique_units, min_matches_slider]),
             buttons_box,
             ipywidgets.HBox([save_selected_nwb_button, save_all_nwb_button]),
         ]

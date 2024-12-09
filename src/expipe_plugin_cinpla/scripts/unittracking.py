@@ -57,10 +57,10 @@ def track_units(project_loader, actions, dates, dissimilarity):
         unit_matching_dict[g_name] = unit_matching
 
     for g_name, unit_matching in unit_matching_dict.items():
-        num_sessions_matched = {}
+        num_sessions_matched = {i: 0 for i in np.arange(1, len(unit_matching.action_list) + 1)[::-1]}
         for _, matches in unit_matching.identified_units.items():
-            for match in matches:
-                num_sessions_matched[match["num_session_matched"]] += 1
+            for match_dict in matches.values():
+                num_sessions_matched[match_dict["num_session_matched"]] += 1
         for num_sessions, num_units in num_sessions_matched.items():
             if num_sessions == 1:
                 print(f"\t{num_units} unmatched")
@@ -110,9 +110,13 @@ def save_to_nwb(project_loader, action_id, unit_matching):
 def plot_unit_templates(unit_matching, fig, min_matches=1):
     fig.clear()
     identified_units = unit_matching.identified_units
-    num_matches = sum([len(matches) for g, matches in identified_units.items()])
-    fig.set_size_inches(10, 3 * num_matches)
+    num_matches = 0
+    for identified_units_group in identified_units.values():
+        for matches_dict in identified_units_group.values():
+            if matches_dict["num_session_matched"] >= min_matches:
+                num_matches += 1
 
+    fig.set_size_inches(10, 3 * num_matches)
     ax_idx = 0
     axs = None
 
@@ -162,13 +166,13 @@ def plot_rate_maps(project_loader, unit_matching, fig, min_matches=1):
 
     identified_units = unit_matching.identified_units
     fig.clear()
-    num_matches = sum(
-        [
-            matches["num_session_matched"]
-            for _, matches in identified_units.items()
-            if matches["num_session_matched"] >= min_matches
-        ]
-    )
+
+    num_matches = 0
+    for identified_units_group in identified_units.values():
+        for matches_dict in identified_units_group.values():
+            if matches_dict["num_session_matched"] >= min_matches:
+                num_matches += 1
+
     fig.set_size_inches(10, 4 * num_matches)
     num_actions = len(unit_matching.action_list)
     axs = fig.subplots(nrows=num_matches, ncols=num_actions)
@@ -183,6 +187,8 @@ def plot_rate_maps(project_loader, unit_matching, fig, min_matches=1):
     for ch_group in identified_units:
         units = identified_units[ch_group]
         for unique_unit_id, unit_dict in units.items():
+            if unit_dict["num_session_matched"] < min_matches:
+                continue
             original_unit_ids = unit_dict["original_unit_ids"]
             sm = SpatialMap()
 
