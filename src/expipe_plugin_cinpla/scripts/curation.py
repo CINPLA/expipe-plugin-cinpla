@@ -225,7 +225,8 @@ class SortingCurator:
         sorting_phy = se.read_phy(phy_path, exclude_cluster_groups=["noise"])
         sorting_phy = sorting_phy.rename_units(sorting_phy.unit_ids.astype(str))
         print(f"Loaded Phy-curated sorting for {sorter}:\n{sorting_phy}")
-        sorting_phy.set_property("group", sorting_phy.get_property("channel_group"))
+        if "group" not in sorting_phy.get_property_keys() and "channel_group" in sorting_phy.get_property_keys():
+            sorting_phy.set_property("group", sorting_phy.get_property("channel_group"))
         self.apply_curation(sorter, sorting_phy)
         self.curation_description = "Curation manually performed in Phy."
 
