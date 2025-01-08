@@ -229,10 +229,14 @@ class SortingCurator:
             sorting_phy.set_property("group", sorting_phy.get_property("channel_group"))
 
         # for converted Phy folders, we have to rename the groups from "0", "1", etc. to "tetrode0", "tetrode1", etc.
+        # note that depending on the versions, the dtype of the group property can be either int or float
         if "group" in sorting_phy.get_property_keys():
             unit_groups = sorting_phy.get_property("group")
             if unit_groups.dtype.kind == "i":
                 unit_groups_tetrodes = [f"tetrode{g}" for g in unit_groups]
+                sorting_phy.set_property("group", unit_groups_tetrodes)
+            elif unit_groups.dtype.kind == "f":
+                unit_groups_tetrodes = [f"tetrode{int(g)}" for g in unit_groups]
                 sorting_phy.set_property("group", unit_groups_tetrodes)
 
         self.apply_curation(sorter, sorting_phy)
