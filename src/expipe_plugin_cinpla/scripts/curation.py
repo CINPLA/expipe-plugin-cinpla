@@ -236,7 +236,12 @@ class SortingCurator:
                 unit_groups_tetrodes = [f"tetrode{g}" for g in unit_groups]
                 sorting_phy.set_property("group", unit_groups_tetrodes)
             elif unit_groups.dtype.kind == "f":
-                unit_groups_tetrodes = [f"tetrode{int(g)}" for g in unit_groups]
+                unit_groups_tetrodes = []
+                for g in unit_groups:
+                    if np.isnan(g):
+                        unit_groups_tetrodes.append("nan")
+                    else:
+                        unit_groups_tetrodes.append(f"tetrode{int(g)}")
                 sorting_phy.set_property("group", unit_groups_tetrodes)
 
         self.apply_curation(sorter, sorting_phy)
