@@ -230,7 +230,6 @@ def process_ecephys(
                         **spikesorter_params,
                     )
         except Exception as e:
-            shutil.rmtree(output_folder)
             raise Exception(f"Spike sorting failed:\n\n{e}")
         if verbose:
             print(f"\tFound {len(sorting.get_unit_ids())} units!")
