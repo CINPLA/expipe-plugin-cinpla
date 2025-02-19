@@ -58,7 +58,10 @@ def process_ecephys(
     if nwb_path_tmp.is_file():
         nwb_path_tmp.unlink()
 
-    si.set_global_job_kwargs(n_jobs=-1, progress_bar=False)
+    # We need to use the number of allocated CPUs, if available
+    n_jobs = int(os.environ.get("SLURM_CPUS_ON_NODE", -1))
+    print("N JOBS", n_jobs)
+    si.set_global_job_kwargs(n_jobs=n_jobs, progress_bar=False)
 
     if overwrite:
         if verbose:
