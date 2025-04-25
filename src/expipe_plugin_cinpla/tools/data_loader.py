@@ -242,7 +242,7 @@ def get_channel_groups(data_path):
     return channel_groups
 
 
-def load_spiketrains(data_path, t_start=None, t_stop=None, channel_group=None):
+def load_spiketrains(data_path, t_start=None, t_stop=None, channel_group=None, subtract_session_start_time=False):
     """
     Load the spike trains as a list of NEO SpikeTrain objects.
 
@@ -256,6 +256,9 @@ def load_spiketrains(data_path, t_start=None, t_stop=None, channel_group=None):
         The end time in seconds. Defaults to the end time of the recording.
     channel_group: str, optional
         The channel group to load. If None, all channel groups are loaded
+    subtract_session_start_time: bool, optional
+        Whether to subtract the session start time from the spike times.
+        If `True`, the start time of the recording will be 0.
 
     Returns
     -------
@@ -263,20 +266,14 @@ def load_spiketrains(data_path, t_start=None, t_stop=None, channel_group=None):
         The spike trains
     """
 
-    from pynwb import NWBHDF5IO
-
-    with NWBHDF5IO(str(data_path), "r") as nwb_io:
-        nwb_file = nwb_io.read()
-
-    start_time = nwb_file.acquisition["ElectricalSeries"].starting_time
     recording, sorting = se.read_nwb(
         str(data_path), load_recording=True, load_sorting=True, electrical_series_path="acquisition/ElectricalSeries"
     )
 
     times = recording.get_times()
 
-    # subtract the session start time
-    times -= start_time
+    if subtract_session_start_time:
+        times -= times[0]
 
     t_start = t_start if t_start is not None else times[0]
     t_stop = t_stop if t_stop is not None else times[-1]
@@ -295,8 +292,8 @@ def load_spiketrains(data_path, t_start=None, t_stop=None, channel_group=None):
     for unit in unit_ids:
         spike_times = sorting.get_unit_spike_train(unit, return_times=True)
 
-        # subtract the session start time
-        spike_times -= start_time
+        if subtract_session_start_time:
+            spike_times -= times[0]
 
         mask = (spike_times >= t_start) & (spike_times <= t_stop)
         spike_times = spike_times[mask]
