@@ -242,26 +242,41 @@ def get_channel_groups(data_path):
     return channel_groups
 
 
-def load_spiketrains(data_path, channel_group=None, lim=None):
+def load_spiketrains(data_path, t_start=None, t_stop=None, channel_group=None, subtract_session_start_time=False):
     """
-    Returns the spike trains as a list of NEO spike trains
+    Load the spike trains as a list of NEO SpikeTrain objects.
 
     Parameters
     ----------
     data_path: str / Path
         The action data path
+    t_start: float, optional
+        The start time in seconds. Defaults to the start time of the recording.
+    t_stop: float, optional
+        The end time in seconds. Defaults to the end time of the recording.
     channel_group: str, optional
         The channel group to load. If None, all channel groups are loaded
-    lim: list, optional
-        The time limits to load the spike trains. If None, the entire spike train is loaded
+    subtract_session_start_time: bool, optional
+        Whether to subtract the session start time from the spike times.
+        If `True`, the start time of the recording will be 0.
 
     Returns
     -------
-    spiketrains: list of NEO spike trains
+    spiketrains: list of NEO SpikeTrain objects
         The spike trains
     """
-    recording = se.read_nwb_recording(str(data_path), electrical_series_path="acquisition/ElectricalSeries")
-    sorting = se.read_nwb_sorting(str(data_path), electrical_series_path="acquisition/ElectricalSeries")
+
+    recording, sorting = se.read_nwb(
+        str(data_path), load_recording=True, load_sorting=True, electrical_series_path="acquisition/ElectricalSeries"
+    )
+
+    times = recording.get_times()
+
+    if subtract_session_start_time:
+        times -= times[0]
+
+    t_start = t_start if t_start is not None else times[0]
+    t_stop = t_stop if t_stop is not None else times[-1]
 
     if channel_group is None:
         unit_ids = sorting.unit_ids
@@ -271,28 +286,29 @@ def load_spiketrains(data_path, channel_group=None, lim=None):
         unit_ids = [
             unit_id for unit_index, unit_id in enumerate(sorting.unit_ids) if groups[unit_index] == channel_group
         ]
+
     sptr = []
     # build neo objects
     for unit in unit_ids:
         spike_times = sorting.get_unit_spike_train(unit, return_times=True)
-        # subtract the session start time
-        spike_times = spike_times * pq.s
-        if lim is None:
-            times = recording.get_times() * pq.s
-            t_start = times[0]
-            t_stop = times[-1]
-        else:
-            t_start = pq.Quantity(lim[0], "s")
-            t_stop = pq.Quantity(lim[1], "s")
+
+        if subtract_session_start_time:
+            spike_times -= times[0]
+
         mask = (spike_times >= t_start) & (spike_times <= t_stop)
         spike_times = spike_times[mask]
 
         st = neo.SpikeTrain(
-            times=spike_times, t_start=t_start, t_stop=t_stop, sampling_rate=sorting.sampling_frequency * pq.Hz
+            times=spike_times * pq.s,
+            t_start=t_start * pq.s,
+            t_stop=t_stop * pq.s,
+            sampling_rate=sorting.sampling_frequency * pq.Hz,
         )
+
         st.annotations.update({"name": unit})
         for p in sorting.get_property_keys():
             st.annotations.update({p: sorting.get_unit_property(unit, p)})
+
         sptr.append(st)
 
     return sptr
