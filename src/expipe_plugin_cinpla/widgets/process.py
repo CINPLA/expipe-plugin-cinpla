@@ -52,8 +52,10 @@ def process_ecephys_view(project):
 
     available_sorters = ss.available_sorters()
     # klusta and YASS are legacy
-    available_sorters.remove("klusta")
-    available_sorters.remove("yass")
+    if "klusta" in available_sorters:
+        available_sorters.remove("klusta")
+    if "yass" in available_sorters:
+        available_sorters.remove("yass")
     installed_sorters = ss.installed_sorters()
 
     sorters_string_to_name = dict()
