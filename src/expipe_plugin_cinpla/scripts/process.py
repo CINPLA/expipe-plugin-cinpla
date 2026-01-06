@@ -154,10 +154,13 @@ def process_ecephys(
             recording_cmr = spre.common_reference(recording_bp, operator=reference)
         elif split == "half":
             num_half = recording.get_num_channels() // 2
-            groups = [
+            groups_all = [
                 recording.channel_ids[:num_half],
                 recording.channel_ids[num_half:],
             ]
+            groups = []
+            for gr in groups_all:
+                groups.append([ch for ch in gr if ch in recording_bp.channel_ids])
             recording_cmr = spre.common_reference(recording_bp, groups=groups, operator=reference)
         else:
             if isinstance(split, list):
