@@ -50,10 +50,12 @@ class TrackingSession:
         self.matches = {}
         self.templates = {}
         self.unit_ids = {}
+        self.channel_names = {}
         for chan in self.channel_groups:
             self.matches[chan] = dict()
             self.templates[chan] = list()
             self.unit_ids[chan] = list()
+            self.electrode_names[chan] = list()
 
         self.units_0 = load_spiketrains(data_path_0)
         self.units_1 = load_spiketrains(data_path_1)
@@ -63,12 +65,17 @@ class TrackingSession:
 
             self.unit_ids[channel_group] = [
                 [int(u.annotations["name"]) for u in us_0],
-                [int(u.annotations["name"]) for u in us_1],
+                [int(u.annotations["name"]) for u in us_1]
             ]
             self.templates[channel_group] = [
                 [u.annotations["waveform_mean"] for u in us_0],
-                [u.annotations["waveform_mean"] for u in us_1],
+                [u.annotations["waveform_mean"] for u in us_1]
             ]
+            self.electrode_names[channel_group] = [
+                [u.annotations["electrode_names"] for u in us_0],
+                [u.annotations["electrode_names"] for u in us_1]
+            ]
+
             if len(us_0) > 0 and len(us_1) > 0:
                 self._do_dissimilarity(channel_group)
                 self._do_matching(channel_group)
@@ -93,12 +100,34 @@ class TrackingSession:
 
     def make_dissimilary_matrix(self, channel_group):
         templates_0, templates_1 = self.templates[channel_group]
+        names_0, names_1 = self.electrode_names[channel_group]
+
         diss_matrix = np.zeros((len(templates_0), len(templates_1)))
 
         unit_ids_0, unit_ids_1 = self.unit_ids[channel_group]
 
-        for i, w0 in enumerate(templates_0):
-            for j, w1 in enumerate(templates_1):
+        # loop over waveforms and corresponding electrode names
+        for i, (w0, n0) in enumerate(zip(templates_0, names_0)):
+            for j, (w1, n1) in enumerate(zip(templates_1, names_1)):
+                w0_indices = []
+                w1_indices = []
+
+                # rearrange w0, w1 such that all non-zero electrodes with the
+                # same name have the same index.
+                # indices where either w0 or w1 are all zero are ignored in
+                # compute_dissimilarity, so their order is irrelevant.
+                common_names = set(n0).intersection(set(n1))
+                for name in common_names:
+                    if name == -1:
+                        w0_indices.append(np.nonzero(n0 == name)[0])
+                        w1_indices.append(np.nonzero(n1 == name)[0])
+                    else:
+                        w0_indices.insert(0, np.nonzero(n0 == name)[0])
+                        w1_indices.insert(0, np.nonzero(n0 == name)[0])
+
+                w0 = w0[:,w0_indices]
+                w1 = w1[:,w1_indices]
+
                 diss_matrix[i, j] = compute_dissimilarity(w0, w1)
 
         diss_matrix = pd.DataFrame(diss_matrix, index=unit_ids_0, columns=unit_ids_1)
