@@ -51,6 +51,7 @@ class TrackingSession:
         self.templates = {}
         self.unit_ids = {}
         self.channel_names = {}
+        self.electrode_names = {}
         for chan in self.channel_groups:
             self.matches[chan] = dict()
             self.templates[chan] = list()
@@ -119,15 +120,24 @@ class TrackingSession:
                 common_names = set(n0).intersection(set(n1))
                 for name in common_names:
                     if name == -1:
-                        w0_indices.append(np.nonzero(n0 == name)[0])
-                        w1_indices.append(np.nonzero(n1 == name)[0])
+                        w0_indices.append(np.nonzero(n0 == name)[0].item())
+                        w1_indices.append(np.nonzero(n1 == name)[0].item())
                     else:
-                        w0_indices.insert(0, np.nonzero(n0 == name)[0])
-                        w1_indices.insert(0, np.nonzero(n0 == name)[0])
+                        w0_indices.insert(0, np.nonzero(n0 == name)[0].item())
+                        w1_indices.insert(0, np.nonzero(n0 == name)[0].item())
 
+#                 print("w0.shape: ", w0.shape)
+#                 print("w1.shape: ", w1.shape)
+# 
+#                 print("w0_indices: ", w0_indices)
+#                 print("w1_indices: ", w1_indices)
                 w0 = w0[:,w0_indices]
                 w1 = w1[:,w1_indices]
 
+#                 print("w0.shape: ", w0.shape)
+#                 print("w1.shape: ", w1.shape)
+
+#                 print()
                 diss_matrix[i, j] = compute_dissimilarity(w0, w1)
 
         diss_matrix = pd.DataFrame(diss_matrix, index=unit_ids_0, columns=unit_ids_1)

@@ -218,10 +218,10 @@ def add_units_from_sorting_analyzer(
     nwbfile,
     unit_table_name,
     unit_table_description,
-    write_in_processing_module=False,
+    write_as="units",
     write_electrodes_column=True,
 ):
-    from neuroconv.tools.spikeinterface import add_units_table
+    from neuroconv.tools.spikeinterface import add_sorting_to_nwbfile
 
     sorting = sorting_analyzer.sorting
     sorting.register_recording(sorting_analyzer.recording)
@@ -277,12 +277,13 @@ def add_units_from_sorting_analyzer(
         for metric in tm.columns:
             sorting.set_property(metric, tm[metric].values)
 
-    add_units_table(
+   
+    add_sorting_to_nwbfile(
         sorting=sorting,
         nwbfile=nwbfile,
-        write_in_processing_module=write_in_processing_module,
-        units_table_name=unit_table_name,
-        unit_table_description=unit_table_description,
+        write_as=write_as,
+        units_name=unit_table_name,
+        units_description=unit_table_description,
         waveform_means=waveform_means,
         waveform_sds=waveform_sds,
         unit_electrode_indices=unit_electrode_indices,
