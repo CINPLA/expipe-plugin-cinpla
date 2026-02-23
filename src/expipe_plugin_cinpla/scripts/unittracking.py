@@ -9,6 +9,8 @@ from tqdm.auto import tqdm
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
 from expipe_plugin_cinpla.tools.data_loader import load_spiketrains
 
+from expipe_plugin_cinpla.tools.track_units_tools import order_waveforms_by_electrode_names
+
 warnings.filterwarnings("ignore")
 
 
@@ -126,9 +128,19 @@ def plot_unit_templates(unit_matching, fig, min_matches=1):
             if unit_dict["num_session_matched"] < min_matches:
                 continue
             actions_in_match = sorted(list(unit_dict["original_unit_ids"].keys()))
+
+            templates = []
+            electrode_names = []
+            for action_id in actions_in_match:
+                original_unit_id = unit_dict["original_unit_ids"][action_id]
+                template, electrode_name = unit_matching.load_template(action_id, ch_group, original_unit_id)
+                templates.append(template)
+                electrode_names.append(electrode_name)
+
+            templates, action_orders = order_waveforms_by_electrode_names(templates, electrode_names)
             for i, action_id in enumerate(actions_in_match):
                 original_unit_id = unit_dict["original_unit_ids"][action_id]
-                template = unit_matching.load_template(action_id, ch_group, original_unit_id)
+                template = templates[i]
                 num_channels = template.shape[1]
                 if np.mod(num_channels, 2) == 0:
                     center_ax = num_channels // 2 - 1

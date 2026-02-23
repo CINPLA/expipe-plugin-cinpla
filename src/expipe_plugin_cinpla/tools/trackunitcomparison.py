@@ -15,6 +15,7 @@ from .track_units_tools import (
     make_best_match,
     make_hungarian_match,
     make_possible_match,
+    order_waveforms_by_electrode_names
 )
 
 
@@ -99,7 +100,7 @@ class TrackingSession:
     def session_1_name(self):
         return self.name_list[1]
 
-    def make_dissimilary_matrix(self, channel_group):
+    def make_dissimilarity_matrix(self, channel_group):
         templates_0, templates_1 = self.templates[channel_group]
         names_0, names_1 = self.electrode_names[channel_group]
 
@@ -110,36 +111,8 @@ class TrackingSession:
         # loop over waveforms and corresponding electrode names
         for i, (w0, n0) in enumerate(zip(templates_0, names_0)):
             for j, (w1, n1) in enumerate(zip(templates_1, names_1)):
-                w0_indices = []
-                w1_indices = []
-
-                # rearrange w0, w1 such that all non-zero electrodes with the
-                # same name have the same index.
-                # indices where either w0 or w1 are all zero are ignored in
-                # compute_dissimilarity, so their order is irrelevant.
-                common_names = set(n0).intersection(set(n1))
-                for name in common_names:
-                    if name == -1:
-                        w0_indices.append(np.nonzero(n0 == name)[0].item())
-                        w1_indices.append(np.nonzero(n1 == name)[0].item())
-                    else:
-                        w0_indices.insert(0, np.nonzero(n0 == name)[0].item())
-                        w1_indices.insert(0, np.nonzero(n0 == name)[0].item())
-
-#                 print("w0.shape: ", w0.shape)
-#                 print("w1.shape: ", w1.shape)
-# 
-#                 print("w0_indices: ", w0_indices)
-#                 print("w1_indices: ", w1_indices)
-                w0 = w0[:,w0_indices]
-                w1 = w1[:,w1_indices]
-
-#                 print("w0.shape: ", w0.shape)
-#                 print("w1.shape: ", w1.shape)
-
-#                 print()
-                diss_matrix[i, j] = compute_dissimilarity(w0, w1)
-
+                (w0_, w1_), order = order_waveforms_by_electrode_names([w0, w1], [n0, n1])
+                diss_matrix[i, j] = compute_dissimilarity(w0_, w1_)
         diss_matrix = pd.DataFrame(diss_matrix, index=unit_ids_0, columns=unit_ids_1)
 
         return diss_matrix
@@ -149,7 +122,7 @@ class TrackingSession:
             print("Agreement scores...")
 
         # agreement matrix score for each pair
-        self.matches[channel_group]["dissimilarity_scores"] = self.make_dissimilary_matrix(channel_group)
+        self.matches[channel_group]["dissimilarity_scores"] = self.make_dissimilarity_matrix(channel_group)
 
     def _do_matching(self, channel_group):
         # must be implemented in subclass
