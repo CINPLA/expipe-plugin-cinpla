@@ -227,7 +227,7 @@ def add_units_from_sorting_analyzer(
     sorting.register_recording(sorting_analyzer.recording)
     # Take care of uneven sparsity
     if "group" in sorting_analyzer.sorting.get_property_keys():
-        waveform_means, waveform_sds, unit_electrode_indices = [], [], []
+        waveform_means, waveform_sds, unit_electrode_indices, unit_electrode_names = [], [], [], []
         max_channel_in_group = np.max(
             [rec.get_num_channels() for rec in sorting_analyzer.recording.split_by("group").values()]
         )
@@ -236,6 +236,7 @@ def add_units_from_sorting_analyzer(
             wf_mean = template_ext.get_unit_template(unit_id, operator="median")
             wf_sd = template_ext.get_unit_template(unit_id, operator="std")
             channel_indices = sorting_analyzer.sparsity.unit_id_to_channel_indices[unit_id]
+            channel_ids = sorting_analyzer.sparsity.unit_id_to_channel_ids[unit_id]
 
             # make template sparse
             wf_mean = wf_mean[:, channel_indices]
@@ -244,25 +245,30 @@ def add_units_from_sorting_analyzer(
                 num_missing_channels = max_channel_in_group - len(channel_indices)
                 wf_mean = np.pad(wf_mean, ((0, 0), (0, num_missing_channels)), mode="constant", constant_values=0)
                 wf_sd = np.pad(wf_sd, ((0, 0), (0, num_missing_channels)), mode="constant", constant_values=0)
-                max_index = np.max(channel_indices)
-                # add fake missing channel indices
-                if max_index < len(sorting_analyzer.channel_ids) - num_missing_channels:
-                    channel_indices = list(channel_indices) + list(
-                        range(max_index + 1, max_index + num_missing_channels + 1)
-                    )
-                else:
-                    min_index = np.min(channel_indices)
-                    channel_indices = list(channel_indices) + list(range(min_index - num_missing_channels, min_index))
+
+                channel_ids = list(channel_ids) + [-1] * num_missing_channels
+#                 max_index = np.max(channel_indices)
+# 
+#                 # add fake missing channel indices
+#                 if max_index < len(sorting_analyzer.channel_ids) - num_missing_channels:
+#                     channel_indices = list(channel_indices) + list(
+#                         range(max_index + 1, max_index + num_missing_channels + 1)
+#                     )
+#                 else:
+#                     min_index = np.min(channel_indices)
+#                     channel_indices = list(channel_indices) + list(range(min_index - num_missing_channels, min_index))
             waveform_means.append(wf_mean)
             waveform_sds.append(wf_sd)
-            unit_electrode_indices.append(list(channel_indices))
+#             unit_electrode_indices.append(list(channel_indices))
+            unit_electrode_names.append(list(channel_names))
     else:
         waveform_means = template_ext.get_templates()
         waveform_sds = template_ext.get_all_templates(operator="std")
-        channel_indices = np.array(
-            [list(sorting_analyzer.channel_ids).index(ch) for ch in sorting_analyzer.channel_ids]
-        )
-        unit_electrode_indices = [channel_indices] * len(sorting_analyzer.unit_ids)
+#         channel_indices = np.array(
+#             [list(sorting_analyzer.channel_ids).index(ch) for ch in sorting_analyzer.channel_ids]
+#         )
+        channel_ids = list(sorting_analyzer.channel_ids)
+        unit_electrode_ids = [channel_ids] * len(sorting_analyzer.unit_ids)
 
     if not write_electrodes_column:
         unit_electrode_indices = None
@@ -277,7 +283,7 @@ def add_units_from_sorting_analyzer(
         for metric in tm.columns:
             sorting.set_property(metric, tm[metric].values)
 
-   
+
     add_sorting_to_nwbfile(
         sorting=sorting,
         nwbfile=nwbfile,
