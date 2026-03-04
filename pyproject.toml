@@ -28,7 +28,8 @@ dependencies = [
     "pynapple>=0.5.1",
     "lxml",
     "spatial-maps",
-    "head-direction"
+    "head-direction",
+    "pytz",
 ]
 
 [project.urls]
