@@ -15,7 +15,7 @@ from .track_units_tools import (
     make_best_match,
     make_hungarian_match,
     make_possible_match,
-    order_waveforms_by_electrode_names
+    order_waveforms_by_electrode_names,
 )
 
 
@@ -67,15 +67,15 @@ class TrackingSession:
 
             self.unit_ids[channel_group] = [
                 [int(u.annotations["name"]) for u in us_0],
-                [int(u.annotations["name"]) for u in us_1]
+                [int(u.annotations["name"]) for u in us_1],
             ]
             self.templates[channel_group] = [
                 [u.annotations["waveform_mean"] for u in us_0],
-                [u.annotations["waveform_mean"] for u in us_1]
+                [u.annotations["waveform_mean"] for u in us_1],
             ]
             self.electrode_names[channel_group] = [
                 [u.annotations["electrode_names"] for u in us_0],
-                [u.annotations["electrode_names"] for u in us_1]
+                [u.annotations["electrode_names"] for u in us_1],
             ]
 
             if len(us_0) > 0 and len(us_1) > 0:

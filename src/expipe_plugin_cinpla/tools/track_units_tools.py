@@ -18,7 +18,7 @@ def order_waveforms_by_electrode_names(templates, names):
 
     uq_names = set().union(*[set(name) for name in names]).difference({-1})
 
-    assert len(uq_names) <= templates[0].shape[1] # number of names can be max number of electrodes
+    assert len(uq_names) <= templates[0].shape[1]  # number of names can be max number of electrodes
 
     # order of the waveforms
     order = sorted(uq_names)
@@ -34,16 +34,15 @@ def order_waveforms_by_electrode_names(templates, names):
         if num_dead > 0:
             dead_index = dead_channels[0].item()
 
-
         order_indices = [np.nonzero(name == order_name)[0] for order_name in order]
         order_indices = [ind.item() if ind.size == 1 else dead_index for ind in order_indices]
 
         # in case some channel is missing from all trials
         if len(order_indices) < num_electrodes:
-            order_indices.extend([dead_index]*(num_electrodes - len(order_indices)))
+            order_indices.extend([dead_index] * (num_electrodes - len(order_indices)))
 
         action_orders.append(order_indices)
-        new_templates.append(template[:,order_indices])
+        new_templates.append(template[:, order_indices])
 
     return new_templates, action_orders
 

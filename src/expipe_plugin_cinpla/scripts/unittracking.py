@@ -8,8 +8,9 @@ from tqdm.auto import tqdm
 
 from expipe_plugin_cinpla.scripts.utils import _get_data_path
 from expipe_plugin_cinpla.tools.data_loader import load_spiketrains
-
-from expipe_plugin_cinpla.tools.track_units_tools import order_waveforms_by_electrode_names
+from expipe_plugin_cinpla.tools.track_units_tools import (
+    order_waveforms_by_electrode_names,
+)
 
 warnings.filterwarnings("ignore")
 
