@@ -4,6 +4,7 @@
 import itertools
 import re
 from collections import defaultdict
+from pathlib import Path
 
 import expipe
 import pandas as pd
@@ -31,13 +32,13 @@ class ProjectLoader:
         Dictionary containing project-specific information.
     """
 
-    def __init__(self, project_path):
+    def __init__(self, project_path: str | Path):
         """
         Initializes the ProjectLoader with the given project path.
 
         Parameters:
         ----------
-        project_path : str
+        project_path : str or pathlib.Path
             The path to the expipe project to be loaded.
         """
 
@@ -49,8 +50,6 @@ class ProjectLoader:
         self._entities = sorted(list(self._project.entities))
         self._metadata_path = self._project.path / "actions_metadata.parquet"
 
-        # Check if the metadata file exists, and process it if it doesn't
-        # if not self._metadata_path.is_file():
         # This is relatively fast, so it's better to always process the metadata
         # to ensure it's up-to-date
         self.process_metadata()
@@ -67,7 +66,7 @@ class ProjectLoader:
         Custom display method for IPython environments. Displays project
         information as HTML in Jupyter notebooks.
         """
-        expipe.widgets.display.display_dict_html(self.info)
+        expipe.widgets.display.display_dict_html(self.info)  # type: ignore
 
     @property
     def path(self):
@@ -141,7 +140,7 @@ class ProjectLoader:
         """
         return pd.read_parquet(self._metadata_path, dtype_backend="numpy_nullable")
 
-    def select_metadata(self, action_ids):
+    def select_metadata(self, action_ids: list[str] | str):
         """
         Selects metadata for specific action IDs.
 
@@ -159,7 +158,7 @@ class ProjectLoader:
         mask = self.metadata["action_id"].isin(action_ids)
         return self.metadata[mask]
 
-    def get_actions(self, action_ids):
+    def get_actions(self, action_ids: list[str] | str):
         """
         Retrieve actions based on provided action IDs.
 
@@ -176,13 +175,13 @@ class ProjectLoader:
         action_ids_lst = [action_ids] if isinstance(action_ids, (str, bytes)) else action_ids
         return [self._actions[action_id] for action_id in action_ids_lst]
 
-    def get_action_ids(self, actions):
+    def get_action_ids(self, actions: list[expipe.core.Action] | expipe.core.Action):
         """
         Retrieve action IDs based on provided actions.
 
         Parameters:
         ----------
-        action_ids : list or str
+        actions : list or expipe.core.Action
             List of actions or a single action.
 
         Returns:
@@ -206,7 +205,7 @@ class ProjectLoader:
         recording_action_ids = sorted(recording_action_ids)
         return self.get_actions(recording_action_ids)
 
-    def require_action(self, action_name):
+    def require_action(self, action_name: str):
         """
         Create an action on the project or return an existing action if it already exists.
 
@@ -222,7 +221,12 @@ class ProjectLoader:
         """
         return self._project.require_action(action_name)
 
-    def filter_actions(self, entity="*", date="*", recording_id="*"):
+    def filter_actions(
+        self,
+        entity: str | list[str] = "*",
+        date: str | list[str] = "*",
+        recording_id: str | list[str] = "*",
+    ):
         """
         Filters actions based on provided entity, date, and recording ID.
 
@@ -261,11 +265,11 @@ class ProjectLoader:
 
                     # Handle wildcard patterns
                     if entity is None or entity == "*":
-                        entity = "(\d+)"
+                        entity = r"(\d+)"
                     if date is None or date == "*":
-                        date = "(\d+)"
+                        date = r"(\d+)"
                     if recording_id is None or recording_id == "*":
-                        recording_id = "(\d+)"
+                        recording_id = r"(\d+)"
 
                     # Compile a regex pattern for matching actions based on entity-date-recording_id format
                     pattern = re.compile(f"^{entity}-{date}-{recording_id}$")
