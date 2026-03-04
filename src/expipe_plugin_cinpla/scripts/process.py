@@ -40,7 +40,7 @@ def process_ecephys(
     import spikeinterface.preprocessing as spre
     import spikeinterface.qualitymetrics as sqm
     import spikeinterface.sorters as ss
-    from neuroconv.tools.spikeinterface import add_recording
+    from neuroconv.tools.spikeinterface import add_recording_to_nwbfile
     from pynwb import NWBHDF5IO
     from spikeinterface.core.core_tools import SIJsonEncoder
 
@@ -176,7 +176,7 @@ def process_ecephys(
             if verbose:
                 print(f"\tDetected bad channels: {bad_channel_ids}")
             recording_cmr = recording_cmr.remove_channels(bad_channel_ids)
-            recording_active = recording.channel_slice(channel_ids=recording_cmr.channel_ids)
+            recording_active = recording.select_channels(channel_ids=recording_cmr.channel_ids)
 
     if verbose:
         print(f"\tActive channels: {len(recording_active.channel_ids)}")
@@ -322,7 +322,7 @@ def process_ecephys(
                     nwbfile=nwbfile_out,
                     unit_table_name=f"RawUnits-{sorter}",
                     unit_table_description=f"Raw units from {sorter} output",
-                    write_in_processing_module=True,
+                    write_in="processing",
                 )
             metadata_ecephys = {}
             # assign existing device
@@ -336,7 +336,7 @@ def process_ecephys(
                 if verbose:
                     print("\tAdding LFP")
                 recording_lfp.set_property("group_name", recording_lfp.get_channel_groups())
-                add_recording(recording_lfp, nwbfile=nwbfile_out, write_as="lfp", metadata=metadata_ecephys)
+                add_recording_to_nwbfile(recording_lfp, nwbfile=nwbfile_out, write_as="lfp", metadata=metadata_ecephys)
             if compute_mua:
                 if verbose:
                     print("\tAdding MUA")
@@ -346,7 +346,7 @@ def process_ecephys(
                     "description": "Rectified signal representing Multi-Unit Activity",
                 }
                 recording_mua.set_property("group_name", recording_mua.get_channel_groups())
-                add_recording(
+                add_recording_to_nwbfile(
                     recording_mua,
                     nwbfile=nwbfile_out,
                     write_as="processed",

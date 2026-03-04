@@ -70,6 +70,7 @@ class TrackMultipleSessions:
         self._verbose = verbose
         self._pbar = progress_bar
         self._templates = {}
+        self._electrode_names = {}
         if self.channel_groups is None:
             dp = get_data_path(self._actions[self.action_list[0]])
             self.channel_groups = get_channel_groups(dp)
@@ -333,7 +334,7 @@ class TrackMultipleSessions:
         """
         group_unit_hash = str(channel_group) + "_" + str(unit_id)
         if action_id in self._templates:
-            return self._templates[action_id][group_unit_hash]
+            return self._templates[action_id][group_unit_hash], self._electrode_names[action_id][group_unit_hash]
 
         action = self._actions[action_id]
 
@@ -342,11 +343,13 @@ class TrackMultipleSessions:
         spike_trains = load_spiketrains(data_path)
 
         self._templates[action_id] = {}
+        self._electrode_names[action_id] = {}
         for sptr in spike_trains:
             group_unit_hash_ = sptr.annotations["group"] + "_" + str(int(sptr.annotations["name"]))
             self._templates[action_id][group_unit_hash_] = sptr.annotations["waveform_mean"]
+            self._electrode_names[action_id][group_unit_hash_] = sptr.annotations["electrode_names"]
 
-        return self._templates[action_id][group_unit_hash]
+        return self._templates[action_id][group_unit_hash], self._electrode_names[action_id][group_unit_hash]
 
     def plot_matches(self, channel_group=None, figsize=(10, 3)):
         """
@@ -383,7 +386,7 @@ class TrackMultipleSessions:
                 axs = None
                 for action_id, unit_id in unit.items():
                     label = f"{action_id} Unit {unit_id} {avg_dsim:.2f}"
-                    template = self.load_template(action_id, ch_group, unit_id)
+                    template, _ = self.load_template(action_id, ch_group, unit_id)
                     if template is None:
                         print(f'Unable to plot "{unit_id}" from action "{action_id}" ch group "{ch_group}"')
                         continue

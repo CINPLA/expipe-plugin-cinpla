@@ -6,6 +6,48 @@ from matplotlib import gridspec
 from scipy.optimize import linear_sum_assignment
 
 
+def order_waveforms_by_electrode_names(templates, names):
+    """
+    templates: list of waveforms, where each waveform has shape (n_timepoints, n_electrodes)
+    names: list of electrode names for each electrode in the waveform. each element of the list
+           has shape (n_electrodes)
+
+    len(templates) == len(names) == number of actions being compared
+    """
+    num_electrodes = templates[0].shape[1]
+
+    uq_names = set().union(*[set(name) for name in names]).difference({-1})
+
+    assert len(uq_names) <= templates[0].shape[1] # number of names can be max number of electrodes
+
+    # order of the waveforms
+    order = sorted(uq_names)
+
+    new_templates = []
+
+    action_orders = []
+    for template, name in zip(templates, names):
+
+        # all dead channels will be given same index
+        dead_channels = np.nonzero(name == -1)[0]
+        num_dead = len(dead_channels)
+        if num_dead > 0:
+            dead_index = dead_channels[0].item()
+
+
+        order_indices = [np.nonzero(name == order_name)[0] for order_name in order]
+        order_indices = [ind.item() if ind.size == 1 else dead_index for ind in order_indices]
+
+        # in case some channel is missing from all trials
+        if len(order_indices) < num_electrodes:
+            order_indices.extend([dead_index]*(num_electrodes - len(order_indices)))
+
+        action_orders.append(order_indices)
+        new_templates.append(template[:,order_indices])
+
+    return new_templates, action_orders
+
+
 def compute_dissimilarity(template_0, template_1):
     """
     Returns a value of dissimilarity of the mean between two templates.
