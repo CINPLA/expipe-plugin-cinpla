@@ -59,7 +59,7 @@ class ProjectLoader:
         self._info["project"] = self._config["project"]
         self._info["project_path"] = self._project_path
         self._info["metadata_path"] = self._metadata_path
-        self._info["probe_path"] = self._config["probe_path"]
+        self._info["probe_path"] = self._config.get("probe_path")
 
     def _ipython_display_(self):
         """
